@@ -1,5 +1,6 @@
 import ply.lex as lex
 import ply.yacc as yacc
+from sys import argv
 
 # reserved words
 reserved = ('module', 'endmodule')
@@ -51,21 +52,48 @@ lexer = lex.lex()
 #     print tok
 
 
+class ParameterList:
+    def __init__(self,param_list):
+        self.__params = param_list
+
+    def params(self):
+        for p in self.__params:
+            yield p
+
+class Module:
+    def __init__(self,name,param):
+        self.__name = name
+        self.__param = param
+
+    def name(self):
+        return self.__name
+
+    def param(self):
+        return self.__param
+
+
+modules = []
+
 def p_module_unit(p):
     '''module_unit : module ID '(' param_list ')' endmodule'''
     print "ID=", p[2]
+    print "p[4]=", p[4]
     for param in p[4]:
         print param
+    m = Module(p[2], ParameterList(p[4]))
+    modules.append(m)
 
 def p_param_list_recursive(p):
-    '''param_list : ID ',' param_list
-                  | ID
-    '''
-    p[0] = p[1]
+    '''param_list : ID ',' param_list'''
+    p[0] = [ p[1] ] + p[3]
+
+def p_param_list_id(p):
+    '''param_list : ID'''
+    p[0] = [1]
 
 def p_param_list_null(p):
     '''param_list : '''
-
+    p[0] = []
 
 def p_error(p):
     if p:
@@ -79,10 +107,13 @@ def p_error(p):
 #     print line
 
 parser = yacc.yacc()
-for line in open('test3.v'):
-    try:
-        parser.parse(line)
-    except EOFError:
-        break
-    
+data = open('test.v' if len(argv)==1 else argv[1]).read()
+
+parser.parse(data)
+
+print "------"
+for m in modules:
+    print "module = ", m.name()
+    print "params = ", [p for p in m.param().params()]
+
 
