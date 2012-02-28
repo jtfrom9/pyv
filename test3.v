@@ -1,0 +1,4 @@
+module hoge()
+
+endmodule
+
