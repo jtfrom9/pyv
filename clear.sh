@@ -1,3 +1,4 @@
 #!/bin/bash
-rm -f parser.out parsetab.py
+
+rm -f parser.out parsetab.py *.pyc
 
