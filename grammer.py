@@ -14,7 +14,10 @@ class Parser:
                 'input', 'output', 'inout',
                 'reg', 'wire',
                 'integer',
-                'for', 'if')
+                'for', 'if', 
+                '<=',
+                '$display', '$finish'
+                )
 
     #reserved_map = { word:word for word in reserved }
     reserved_map = {}
@@ -25,7 +28,7 @@ class Parser:
     tokens = ('ID', 'NUM') + reserved
 
     # literals
-    literals = "()[],.;:$"
+    literals = "()[],.;:$=<+-"
 
     
     def __init__(self):
@@ -56,25 +59,192 @@ class Parser:
 
         
     def p_module_unit(self,p):
-        '''module_unit : module ID '(' param_list ')' endmodule'''
-        print "ID=", p[2]
-        print "p[4]=", p[4]
-        for param in p[4]:
-            print param
-        m = Module(p[2], ParameterList(p[4]))
-        self.modules.append(m)
+        '''module_unit : module ID header module_body endmodule'''
 
-    def p_param_list_recursive(self,p):
-        '''param_list : ID ',' param_list'''
-        p[0] = [ p[1] ] + p[3]
+    def p_task(self,p):
+        '''task : task ID header task_body endtask'''
 
-    def p_param_list_id(self,p):
-        '''param_list : ID'''
-        p[0] = [1]
+    # header
+    def p_header(self,p):
+        '''header : parameters ';' '''
 
-    def p_param_list_null(self,p):
-        '''param_list : '''
-        p[0] = []
+    # parameters
+    def p_parameters(self,p):
+        '''parameters : '(' parameter_list ')'''
+
+    def p_parameters_null(self,p):
+        '''parameters : '('  ') 
+                      |
+        '''
+
+
+    # parameter_list
+
+    def p_parameter_list_recursive(self,p):
+        '''parameter_list : param ',' parameter_list'''
+
+    def p_parameter_list_id(self,p):
+        '''parameter_list : param'''
+
+    def p_parameter_list_null(self,p):
+        '''parameter_list : '''
+
+    # parameter
+
+    def p_parameter(self,p):
+        '''parameter : parameter_type ID'''
+
+    def p_parameter_simple(self,p):
+        '''parameter : ID'''
+
+    # parameter_type
+
+    def p_parameter_type_bits(self,p):
+        '''parameter_type : direction bitwidth'''
+
+    def p_parameter_type_bit(self,p):
+        '''parameter_type : direction '''
+
+    def p_direction(self,p):
+        '''direction : input
+                     | output
+                     | inout'''
+
+    def p_bitwidth(self,p):
+        '''bitwidth : '[' NUM ':' NUM ']' '''
+
+
+    # module_body
+
+    def p_module_body(self,p):
+        '''module_body : variables_declaration module_body
+                       | module_instantiation  module_body
+                       | task_declaration      module_body 
+                       | initial_block         module_body 
+        '''
+
+    def p_module_body_null(self,p):
+        '''module_body : '''
+
+
+    # variables_declaration
+
+    def p_variables_declaration_bits(self,p):
+        '''variables_declaration : variable_type bitwidth variables ';'
+        '''
+
+    def p_variables_declaration_bit(self,p):
+        '''variables_declaration : variable_type variables ';'
+        '''
+
+    def p_variable_type(self,p):
+        '''variable_type : reg
+                         | wire
+                         | integer
+                         '''
+
+    def p_variables_recur(self,p):
+        '''variables : ID ',' variables'''
+
+    def p_variables_single(self,p):
+        '''variables : ID '''
+
+
+    # module_instantiation
+
+    def p_module_instantiation(self,p):
+        '''module_instantiation : ID ID '(' instantiation_parameters ')' ';'
+        '''
+
+    def p_instantiation_parameters_recur(self,p):
+        '''instantiation_parameters : instantiation_parameter ',' instantiation_parameters
+        '''
+
+    def p_instantiation_parameters(self,p):
+        '''instantiation_parameters : instantiation_parameter
+        '''
+        
+    def p_instantiation_parameters_null(self,p):
+        '''instantiation_parameters : 
+        '''
+        
+    # instantiation_parameter
+
+    def p_instantiation_parameter_specify(self,p):
+        '''instantiation_parameter : '.' ID '(' ID ')'
+        '''
+
+    def p_instantiation_parameter(self,p):
+        '''instantiation_parameter : ID
+        '''
+
+    # task_declaration
+    def p_task_declaration(self,p):
+        '''task_declaration : task ID header task_body endtask
+        '''
+
+    def p_task_body(self,p):
+        '''task_body : variables_declaration task_body
+                     | initial_block         task_body
+                     '''
+
+    def p_task_body_null(self,p):
+        '''task_body : '''
+
+    # initial_block
+    def p_initial_block(self,p):
+        '''initial_block : initial block'''
+
+    def p_block_statement(self,p):
+        '''block : statement'''
+
+    def p_block_compound(self,p):
+        '''block : begin statements end'''
+
+    def p_statements_recur(self,p):
+        '''statements : statement statements'''
+
+    def p_statements_null(self,p):
+        '''statements : '''
+
+    def p_statement(self,p):
+        '''statement : delay basic_statement'''
+
+    def p_delay(self,p):
+        '''delay : '#' NUM'''
+
+    def p_basic_statement(self,p):
+        '''basic_statement : block
+                           | assignment
+                           | task_call
+                           | for_statement
+                           '''
+
+    def p_assignment(self,p):
+        '''assignment : ID '=' ID
+                      | ID '<=' ID
+                      '''
+
+    def p_task_call(self,p):
+        '''task_call : system_task task_arguments ';'
+                     | ID task_arguments ';'
+                     '''
+
+    def p_system_task(self,p):
+        '''system_task : $display
+                         $finish
+        '''
+
+    def p_task_arguments(self,p):
+        '''task_arguments : '''
+
+    def p_for_statement(self,p):
+        '''for_statement : for for_constraints block'''
+
+    def p_for_constraints(self,p):
+        '''for_constraints: '(' for_init ',' for_end_cond ',' for_step ')'
+        '''
+
 
     def p_error(self,p):
         if p:
