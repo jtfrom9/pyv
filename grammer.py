@@ -2,9 +2,11 @@ import ply.lex as lex
 import ply.yacc as yacc
 
 from Module import Module
+from Module import ModuleGrammer
 from Module import ParameterList
 
-class Parser:
+
+class Parser(ModuleGrammer):
     # reserved words
     reserved = ('module', 'endmodule', 
                 'task', 'endtask',
@@ -33,7 +35,7 @@ class Parser:
     
     def __init__(self):
         self.lexer  = lex.lex(module=self)
-        self.parser = yacc.yacc(module=self)
+        self.parser = yacc.yacc(module=self,start='module_unit')
         self.modules = []
 
     #t_ID = r'[a-zA-Z_][a-zA-Z0-9_]*'
@@ -66,9 +68,6 @@ class Parser:
         t.lexer.skip(1)
 
         
-    def p_module_unit(self,p):
-        '''module_unit : module ID header module_body endmodule'''
-
     # header
     def p_header(self,p):
         '''header : parameters ';' '''
