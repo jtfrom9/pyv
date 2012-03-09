@@ -1,11 +1,11 @@
-import grammer
 from sys import argv
 
+import Parser
     
 filename = 'test.v' if len(argv)==1 else argv[1]
 file = open(filename)
 
-parser = grammer.Parser()
+parser = Parser.Parser()
 
 
 print "------"
