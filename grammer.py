@@ -14,10 +14,10 @@ class Parser:
                 'input', 'output', 'inout',
                 'reg', 'wire',
                 'integer',
-                'for', 'if', 
-                '<=',
-                '$display', '$finish'
+                'for', 'if'
                 )
+    
+#                'st_display', 'st_finish'
 
     #reserved_map = { word:word for word in reserved }
     reserved_map = {}
@@ -25,7 +25,7 @@ class Parser:
         reserved_map[word] = word
 
     # tokens
-    tokens = ('ID', 'NUM') + reserved
+    tokens = ('ID', 'NUM', 'NB_ASIGN', 'STASK') + reserved
 
     # literals
     literals = "()[],.;:$=<+-"
@@ -47,6 +47,14 @@ class Parser:
         t.value = int(t.value)
         return t
 
+    def t_NB_ASIGN(self,t):
+        r'<='
+        return t
+
+    def t_STASK(self,t):
+        r'\$[a-zA-Z]+'
+        return t
+    
     t_ignore = " \t"
 
     def t_newline(self,t):
@@ -61,33 +69,28 @@ class Parser:
     def p_module_unit(self,p):
         '''module_unit : module ID header module_body endmodule'''
 
-    def p_task(self,p):
-        '''task : task ID header task_body endtask'''
-
     # header
     def p_header(self,p):
         '''header : parameters ';' '''
 
     # parameters
     def p_parameters(self,p):
-        '''parameters : '(' parameter_list ')'''
-
-    def p_parameters_null(self,p):
-        '''parameters : '('  ') 
-                      |
+        '''parameters : '(' parameter_list ')'
         '''
 
+    def p_parameters_null(self,p):
+        '''parameters : '('  ')'
+                      | 
+        '''
 
     # parameter_list
 
     def p_parameter_list_recursive(self,p):
-        '''parameter_list : param ',' parameter_list'''
+        '''parameter_list : parameter ',' parameter_list'''
 
     def p_parameter_list_id(self,p):
-        '''parameter_list : param'''
+        '''parameter_list : parameter'''
 
-    def p_parameter_list_null(self,p):
-        '''parameter_list : '''
 
     # parameter
 
@@ -222,7 +225,7 @@ class Parser:
 
     def p_assignment(self,p):
         '''assignment : ID '=' ID
-                      | ID '<=' ID
+                      | ID NB_ASIGN ID
                       '''
 
     def p_task_call(self,p):
@@ -231,8 +234,7 @@ class Parser:
                      '''
 
     def p_system_task(self,p):
-        '''system_task : $display
-                         $finish
+        '''system_task : STASK
         '''
 
     def p_task_arguments(self,p):
@@ -242,9 +244,19 @@ class Parser:
         '''for_statement : for for_constraints block'''
 
     def p_for_constraints(self,p):
-        '''for_constraints: '(' for_init ',' for_end_cond ',' for_step ')'
+        '''for_constraints : '(' for_init_cond ',' for_end_cond ',' for_next_cond ')'
+        '''
+    def p_for_init_cond(self,p):
+        '''for_init_cond : 
         '''
 
+    def p_for_end_cond(self,p):
+        '''for_end_cond : 
+        '''
+
+    def p_for_next_cond(self,p):
+        '''for_next_cond : 
+        '''
 
     def p_error(self,p):
         if p:
