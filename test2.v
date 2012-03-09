@@ -1,2 +1,3 @@
-module hoge(a,b,foo,bar) endmodule
+module hoge(a,b,foo,bar);
+endmodule
 

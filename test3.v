@@ -1,4 +1,4 @@
-module hoge()
+module hoge;
 
 endmodule
 
