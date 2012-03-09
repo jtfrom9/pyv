@@ -3,7 +3,7 @@ import ply.yacc as yacc
 
 import grammer
 
-class Parser(grammer.Module, grammer.Port, grammer.Variables, grammer.Task):
+class Parser(grammer.Module, grammer.Port, grammer.Variables, grammer.Task, grammer.ModuleInstance):
     # reserved words
     reserved = ('module', 'endmodule', 
                 'task', 'endtask',
@@ -96,21 +96,6 @@ class Parser(grammer.Module, grammer.Port, grammer.Variables, grammer.Task):
 
     # module_instantiation
 
-    def p_module_instantiation(self,p):
-        '''module_instantiation : ID ID '(' instantiation_parameters ')' ';'
-        '''
-
-    def p_instantiation_parameters_recur(self,p):
-        '''instantiation_parameters : instantiation_parameter ',' instantiation_parameters
-        '''
-
-    def p_instantiation_parameters(self,p):
-        '''instantiation_parameters : instantiation_parameter
-        '''
-        
-    def p_instantiation_parameters_null(self,p):
-        '''instantiation_parameters : 
-        '''
         
     # instantiation_parameter
 

@@ -81,3 +81,22 @@ class Task:
         '''task_body : '''
 
     
+class ModuleInstance:
+    def p_module_instantiation(self,p):
+        '''module_instantiation : ID parameter_value_assignment ID port_connections ';'
+        '''
+
+    def p_parameter_value_assignment(self,p):
+        '''parameter_value_assignment : '''
+
+    def p_instantiation_parameters_recur(self,p):
+        '''instantiation_parameters : instantiation_parameter ',' instantiation_parameters
+        '''
+
+    def p_instantiation_parameters(self,p):
+        '''instantiation_parameters : instantiation_parameter
+        '''
+        
+    def p_instantiation_parameters_null(self,p):
+        '''instantiation_parameters : 
+        '''
