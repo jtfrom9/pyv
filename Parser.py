@@ -4,6 +4,8 @@ import ply.yacc as yacc
 from ply.lex import TOKEN
 
 import grammer
+import re
+
 
 class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables,
              grammer.Expression, grammer.Statement,
@@ -19,7 +21,7 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
                 'input', 'output', 'inout',
                 'reg', 'wire',
                 'integer',
-                'for', 'if'
+                'for', 'if', 'else'
                 )
     
     #reserved_map = { word:word for word in reserved }
@@ -63,7 +65,7 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
     @TOKEN(stask_pat)
     def t_STASK(self,t):
         t.type = 'STASK'
-        t.value = re.match(Lexer.stask_pat,t.value).group(1)
+        t.value = re.match(Parser.stask_pat,t.value).group(1)
         return t
 
     t_STRING = r'"[^"]*"'
@@ -85,7 +87,14 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
         else:
             print("Syntax error at EOF")
 
-    def p_empty(self,p):
-        '''empty : '''
-        pass
+#     def p_empty(self,p):
+#         '''empty : '''
+#         pass
             
+    precedence = (('left', 'INPUT_DECL', 'OUTPUT_DECL', 'INOUT_DECL')
+                  ,('left', 'IDS')
+                  ,('left', '+', '-')
+                  ,('left', '*',)
+                  ,('right', 'UNARY')
+                  ,)
+

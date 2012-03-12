@@ -12,11 +12,8 @@ class Module:
 
     def p_module_body(self,p):
         '''module_body : module_item module_body
-                       | empty
+                       | 
         '''
-
-    def p_module_body_empty(self,p):
-        '''module_body : '''
 
 
 class ModuleItem:
@@ -46,7 +43,7 @@ class Port:
         
     def p_port(self,p):
         '''port : port_expression
-                | empty
+                | 
                 '''
 
     def p_port_specified(self,p):
@@ -78,30 +75,30 @@ class Port:
         '''
 
     def p_input_declaration(self,p):
-        '''input_declaration : input signed_oe range_oe ids
+        '''input_declaration : input signed_oe range_oe ids %prec INPUT_DECL
         '''
         
     def p_output_declaration(self,p):
-        '''output_declaration : output signed_oe range_oe ids
+        '''output_declaration : output signed_oe range_oe ids %prec OUTPUT_DECL
         '''
         
     def p_inout_declaration(self,p):
-        '''inout_declaration : output signed_oe range_oe ids
+        '''inout_declaration : inout signed_oe range_oe ids %prec INOUT_DECL
         '''
 
     def p_signed_oe(self,p):
-        '''signed_oe : empty
+        '''signed_oe : 
         '''
 
     def p_range_oe(self,p):
         '''range_oe : range
-                          | empty
+                    | 
         '''
 
 
 class Variables:
     def p_ids(self,p):
-        '''ids : ID ',' ids
+        '''ids : ids ',' ID %prec IDS
                | ID
         '''
 
@@ -133,7 +130,7 @@ class Variables:
 
     def p_expandrange_oe(self,p):
         '''expandrange_oe : expandrange
-                                | empty
+                          | 
         '''
 
     def p_expandrange(self,p):
@@ -142,7 +139,7 @@ class Variables:
 
     def p_delay_oe(self,p):
         '''delay_oe : delay
-                    | empty
+                    | 
         '''
 
     def p_delay(self,p):
@@ -165,20 +162,20 @@ class Expression:
 
     def p_expression(self,p):
         '''expression : primary
-                      | unary_operator primary
-                      | expression binary_operator expression
+                      | unary_expression   
+                      | binary_expression
                       | STRING
         '''
 
-    def p_unary_operator(self,p):
-        '''unary_operator : '+'
-                          | '-'
+    def p_binary_expression(self,p):
+        '''binary_expression : expression '+' expression
+                             | expression '-' expression
+                             | expression '*' expression
         '''
 
-    def p_binary_operator(self,p):
-        '''binary_operator : '+'
-                           | '-'
-                           | '*'
+    def p_unary_expression(self,p):
+        '''unary_expression : '+' primary  %prec UNARY
+                            | '-' primary  %prec UNARY
         '''
 
     def p_primary(self,p):
@@ -198,13 +195,13 @@ class Expression:
 class Statement:
     def p_statement_oe(self,p):
         '''statement_oe : statement
-                        | empty
+                        | 
         '''
         
     def p_statement(self,p):
-        '''statement : blocking_assignment
+        '''statement : conditional_statement
+                     | blocking_assignment
                      | nonblocking_assignment
-                     | if '(' expression ')' statement_oe
                      | seq_block
                      | assign assignment
         '''
@@ -213,6 +210,44 @@ class Statement:
         '''statements : statement statements
                       | statement
         '''
+
+
+#     def p_conditional_statement(self,p):
+#         '''conditional_statement : if '(' expression ')' wo_if_statement 
+#                                  | if '(' expression ')' conditional_statement
+#                                  | if '(' expression ')' wo_if_statement else statement
+#                                  | if '(' expression ')' conditional_statement     else statement
+#         '''
+        
+#     def p_conditional_statement(self,p):
+#         '''conditional_statement : conditional_statement_if
+#                                  | conditional_statement_ifelse
+#         '''
+#     def p_conditional_statement_if(self,p):
+#         '''conditional_statement_if : if '(' expression ')' statement
+#         '''
+        
+#     def p_conditional_statement_ifelse(self,p):
+#         '''conditional_statement_ifelse : if '(' expression ')' wo_if_statement else statement
+#         '''
+
+
+    def p_conditional_statement(self,p):
+        '''conditional_statement : if '(' expression ')' wo_if_statement else statement
+                                 | if '(' expression ')' statement
+        '''
+        
+    def p_wo_if_statement(self,p):
+        '''wo_if_statement : blocking_assignment
+                           | nonblocking_assignment
+                           | seq_block
+                           | assign assignment
+        '''
+        # この方が正確。 if-elseはshift/reduce conflictが発生しても仕方ない
+#     def p_conditional_statement(self,p):
+#         '''conditional_statement : if '(' expression ')' statement else statement
+#                                  | if '(' expression ')' statement
+#         '''
         
     def p_assignment(self,p):
         '''assignment : lvalue '=' expression
@@ -254,7 +289,7 @@ class TaskAndFunction:
 
     def p_tf_declarations_oe(self,p):
         '''tf_declarations_oe : tf_declarations
-                              | empty
+                              | 
         '''
 
     def p_tf_declaration(self,p):
@@ -274,7 +309,7 @@ class TaskAndFunction:
     
     # まだmoduleのインスタンス化を書いてないので一旦おいておく
     def p_function_call(self,p):
-        '''function_call : ID 
+        '''function_call : ID '(' ')'
         '''
         pass
 
