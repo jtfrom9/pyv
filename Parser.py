@@ -17,11 +17,12 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
                 'begin', 'end',
                 'assign',
                 'initial',
-                'always',
+                'always', 'posedge', 'negedge',
                 'input', 'output', 'inout',
                 'reg', 'wire',
                 'integer',
-                'for', 'if', 'else'
+                'for', 'if', 'else',
+                'or'
                 )
     
     #reserved_map = { word:word for word in reserved }
@@ -30,10 +31,10 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
         reserved_map[word] = word
 
     # tokens
-    tokens = ('ID', 'NUM', 'NB_ASIGN', 'STASK', 'STRING') + reserved
+    tokens = ('ID', 'NUM', 'NB_ASIGN', 'STASK', 'STRING', 'AT_ASTA') + reserved
 
     # literals
-    literals = "()[],.;:$=<+-"
+    literals = "()[],.;:$=<+-*@"
 
     
     def __init__(self):
@@ -58,7 +59,7 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
         return t
 
     t_NB_ASIGN = r'<='
-
+    t_AT_ASTA  = r'@\*'
 
     stask_pat = r'\$([a-zA-Z_][a-zA-Z0-9]*)'
 
@@ -81,8 +82,14 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
         t.lexer.skip(1)
 
         
+    def p_debug_node(self,p):
+        '''debug : '''
+        print " * debug * "
+
+
     def p_error(self,p):
         if p:
+            print p
             print("Syntax error at '%s'" % p.value)
         else:
             print("Syntax error at EOF")
@@ -91,10 +98,13 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
 #         '''empty : '''
 #         pass
             
-    precedence = (('left', 'INPUT_DECL', 'OUTPUT_DECL', 'INOUT_DECL')
-                  ,('left', 'IDS')
-                  ,('left', '+', '-')
-                  ,('left', '*',)
-                  ,('right', 'UNARY')
-                  ,)
+    precedence = (
+        ('nonassoc', 'NULL_STATEMENT'),
+        ('left', 'assign', 'begin', '@', '#', 'AT_ASTA',),
+        ('left', 'INPUT_DECL', 'OUTPUT_DECL', 'INOUT_DECL'),
+        ('left', 'IDS') ,
+        ('left', '+', '-'),
+        ('left', '*',),
+        ('right', 'UNARY'))
+
 

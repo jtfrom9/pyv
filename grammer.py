@@ -113,15 +113,15 @@ class Variables:
         '''
         
     def p_reg_declaration(self,p):
-        '''reg_declaration : reg range_oe vars 
+        '''reg_declaration : reg range_oe vars ';'
         '''
 
     def p_integer_declaration(self,p):
-        '''integer_declaration : integer vars
+        '''integer_declaration : integer vars ';'
         '''
 
     def p_net_declaration(self,p):
-        '''net_declaration : nettype expandrange_oe delay_oe vars
+        '''net_declaration : nettype expandrange_oe delay_oe vars ';'
         '''
 
     def p_nettype(self,p):
@@ -194,8 +194,8 @@ class Expression:
         
 class Statement:
     def p_statement_oe(self,p):
-        '''statement_oe : statement
-                        | 
+        '''statement_oe : statement 
+                        |              %prec NULL_STATEMENT
         '''
         
     def p_statement(self,p):
@@ -203,7 +203,8 @@ class Statement:
                      | blocking_assignment
                      | nonblocking_assignment
                      | seq_block
-                     | assign assignment
+                     | assign assignment          
+                     | procedural_timing_control_statement
         '''
 
     def p_statements(self,p):
@@ -270,7 +271,38 @@ class Statement:
     def p_always_statement(self,p):
         '''always_statement : always statement
         '''
-        
+
+    def p_procedural_timing_control_statement(self,p):
+        '''procedural_timing_control_statement : procedural_timing_control statement_oe
+        '''
+
+    def p_procedural_timing_control(self,p):
+        '''procedural_timing_control : delay_control
+                                     | event_control
+                                     '''
+
+    def p_event_control(self,p):
+        '''event_control : '@' ID
+                         | '@' '(' event_expression ')'
+                         | AT_ASTA
+                         | '@' '(' '*' ')'
+                         '''
+
+    def p_delay_control(self,p):
+        '''delay_control : '#' delay_value
+        '''
+
+    def p_delay_value(self,p):
+        '''delay_value : NUM '''
+
+    def p_event_expression(self,p):
+        '''event_expression : expression
+                            | posedge expression
+                            | negedge expression
+                            | event_expression or event_expression
+                            | event_expression ',' event_expression
+                            '''
+
 class TaskAndFunction:
     def p_function_definition(self,p):
         '''function_definition : begin_function statement endfunction
