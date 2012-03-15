@@ -99,7 +99,7 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
 #         pass
             
     precedence = (
-        ('nonassoc', 'NULL_STATEMENT'),
+        ('nonassoc', 'NULL_STATEMENT', ',', 'or'),
         ('left', 'assign', 'begin', '@', '#', 'AT_ASTA',),
         ('left', 'INPUT_DECL', 'OUTPUT_DECL', 'INOUT_DECL'),
         ('left', 'IDS') ,
