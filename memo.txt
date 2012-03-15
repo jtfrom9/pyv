@@ -1,0 +1,85 @@
+
+
+state 116
+
+    (34) input_declaration -> input signed_oe range_oe ids .
+    (40) ids -> ids . , ID
+
+  ! shift/reduce conflict for , resolved as shift
+    input           reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    reg             reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    integer         reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    assign          reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    if              reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    begin           reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    ID              reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    endtask         reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    )               reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    output          reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    inout           reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    initial         reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    always          reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    wire            reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    task            reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    function        reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    endmodule       reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .)
+    ,               shift and go to state 151
+
+  ! ,               [ reduce using rule 34 (input_declaration -> input signed_oe range_oe ids .) ]
+
+
+とかあった時、
+state 116は、(34)(40)というruleによる状態遷移の遷移前状態を意味する。
+つまり、
+(34)のruleを適用してinput_declarationにreduceする
+か、
+(40)のruleを適用できることを期待して、shiftする
+かを判断する。
+その時の、次の入力は、
+input reg integer assign ... endmodule ,
+のどれか
+(それ以外が来たら文法エラー)
+
+
+ここで、
+ ,
+が来た場合に(34)/(40)のいずれを適用するかが決められないので、conflictしている
+と読む
+
+
+判断した結果、(40)の適用可能性を期待して、shiftさせたい。
+つまり(40)のルールのprecedenceを、(34)のルールのprecedenceより高くすればいい。
+
+よって、%prec 指定で、以下の文法を修飾しておく
+
+    def p_ids(self,p):
+        '''ids : ids ',' ID %prec IDS
+               | ID
+        '''
+
+    def p_input_declaration(self,p):
+        '''input_declaration : input signed_oe range_oe ids %prec INPUT_DECL
+        '''
+        
+    precedence = (('left', 'INPUT_DECL', 'OUTPUT_DECL', 'INOUT_DECL')
+                  ,('left', 'IDS')
+                  ,('left', '+', '-')
+                  ,('left', '*',)
+                  ,('right', 'UNARY')
+                  ,)
+
+
+これは、
+        '''ids : ids ',' ID %prec IDS
+により、
+ (40)のルールのprecedenceをIDSという名前をつけた
+
+また
+        '''input_declaration : input signed_oe range_oe ids %prec INPUT_DECL
+により
+ (34)のルールのprecedenceにINPUT_DECLという名前をつけた
+
+
+precedenceの定義により IDS > INPUT_DECL なので、
+(40)のルールの適用可能性のほうを優先するので、shiftが選択された。
+
