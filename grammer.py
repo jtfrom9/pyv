@@ -1,39 +1,53 @@
 # -*- coding: utf-8 -*-
 
+class Top:
+    def p_soruce_text(self,p):
+        '''source_text : description source_text
+                       | description
+                       |
+        '''
+        
+    def p_description(self,p):
+        '''description : module_declaration
+        '''
+        
 class Module:
-    def p_module_definition(self,p):
-        '''module_definition : begin_module module_body endmodule
+    def p_module_declaration(self,p):
+        '''module_declaration : module ID list_of_ports             ';' module_items          endmodule
+                              | module ID list_of_port_declarations ';' non_port_module_items endmodule
         '''
 
-    def p_begin_module(self,p):
-        '''begin_module : module ID ports_list ';'
-                        | module ID ';'
-        '''
-
-    def p_module_body(self,p):
-        '''module_body : module_item module_body
-                       | 
-        '''
 
 
 class ModuleItem:
     def p_module_item(self,p):
-        '''module_item : input_declaration
-                       | output_declaration
-                       | inout_declaration
+        '''module_item : module_or_generate_item
+                       | port_declaration ';'
                        | reg_declaration
                        | net_declaration
                        | integer_declaration
-                       | initial_statemnt
-                       | always_statement
                        | task_definition
                        | function_definition
         '''
 
+    def p_non_port_module_items(self,p):
+        '''non_port_module_items : non_port_module_item non_port_module_items
+                                 | non_port_module_item
+                                 |
+        '''
+    def p_non_port_module_item(self,p):
+        '''non_port_module_item : module_or_generate_item
+        '''
+        
+    def p_module_or_generate_item(self,p):
+        '''module_or_generate_item : initial_construct      
+                                   | always_construct
+                                   | module_instantiation
+        '''
         
 class Port:
-    def p_ports_list(self,p):
-        '''ports_list : '(' ports ')'
+    def p_list_of_ports(self,p):
+        '''list_of_ports : '(' ports ')'
         '''
 
     def p_ports(self,p):
@@ -43,20 +57,15 @@ class Port:
         
     def p_port(self,p):
         '''port : port_expression
+                | '.' ID '(' port_expressions ')'
+                | '.' ID '('                  ')'
                 | 
                 '''
 
-    def p_port_specified(self,p):
-        '''port : '.' ID '(' port_expression ')'
-                | '.' ID '('                 ')'
+    def p_port_expressions(self,p):
+        '''port_expressions : port_expression port_expressions
+                            | port_expression
         '''
-
-    def p_port_direction(self,p):
-        '''port : input_declaration
-                | output_declaration
-                | inout_declaration
-        '''
-
     def p_port_expression(self,p):
         '''port_expression : port_reference
                            | '{' port_reference ',' port_references '}'
@@ -74,6 +83,22 @@ class Port:
                           | ID '[' constant_expression ':' constant_expression  ']'
         '''
 
+    def p_list_of_port_declarations(self,p):
+        '''list_of_port_declarations : '(' port_declarations ')'
+                                     | '(' ')'
+        '''
+
+    def p_port_declarations(self,p):
+        '''port_declarations : port_declaration ',' port_declarations
+                             | port_declaration
+        '''
+        
+    def p_port_declaration(self,p):
+        '''port_declaration : inout_declaration
+                            | input_declaration
+                            | output_declaration
+        '''
+        
     def p_input_declaration(self,p):
         '''input_declaration : input signed_oe range_oe ids %prec INPUT_DECL
         '''
@@ -265,11 +290,11 @@ class Statement:
         '''seq_block : begin statements end
         '''
     def p_initial_statement(self,p):
-        '''initial_statemnt : initial statement
+        '''initial_construct : initial statement
         '''
 
-    def p_always_statement(self,p):
-        '''always_statement : always statement
+    def p_always_construct(self,p):
+        '''always_construct : always statement
         '''
 
     def p_procedural_timing_control_statement(self,p):
