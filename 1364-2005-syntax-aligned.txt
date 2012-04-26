@@ -208,7 +208,11 @@ strength1 ::= supply1
 		| weak1
 charge_strength ::= ( small ) 
 		| ( medium ) 
-		| ( large ) A.2.2.3 Delays
+		| ( large ) 
+
+
+A.2.2.3 Delays
+
 delay3 ::= # delay_value 
 		| # ( mintypmax_expression [ , mintypmax_expression [ , mintypmax_expression ] ] )
 delay2 ::= # delay_value 
@@ -219,6 +223,7 @@ delay_value ::= unsigned_number
 
 
 A.2.3 Declaration lists
+
 list_of_defparam_assignments ::= defparam_assignment { , defparam_assignment }
 list_of_event_identifiers ::= event_identifier [ dimension { dimension }] { , event_identifier [ dimension { dimension }] }
 list_of_genvar_identifiers ::= genvar_identifier { , genvar_identifier }

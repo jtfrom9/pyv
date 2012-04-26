@@ -4,11 +4,12 @@ import re
 import sys
 from sys import argv
 
-reserved = ('::=', '|')
+reserved = ('::=')
+literals = "()[],.-+;:|#\""
+
 tokens = ('IDENTIFIER',) + reserved
 
-t_IDENTIFIER = r'[a-zA-Z][a-zA-Z_]*'
-
+t_IDENTIFIER = r'[a-zA-Z][a-zA-Z0-9_]*'
 
 def p_input(p):
     '''input : definitions'''
@@ -20,7 +21,9 @@ def p_definitions(p):
     pass
 
 def p_definition(p):
-    '''definition : IDENTIFIER ::= conditions'''
+    '''definition : IDENTIFIER ::= conditions
+                  | chapter
+    '''   
     pass
 
 def p_conditions(p):
@@ -44,17 +47,32 @@ def p_condition_optional(p):
     pass
 
 
+def p_special_simbol(p):
+    '''special_simbol : '#'
+                      | '|'
+                      | '+'
+                      | '-'
+                      | ';'
+                      | ':'
+                      | '"'
+    '''
+    pass
+
+
 def testIDENTIFIER(str):
     m = re.search(t_IDENTIFIER, str)
-    sys.stdout.write(str + "  =>  ")
-    if !m:
-        sys.stdout.write(m.group)
+    sys.stdout.write('\'' + str + '\'  ... ')
+    if not m:
+        sys.stdout.write("* NOT MATCH*")
+    else:
+        sys.stdout.write(m.group(0))
     sys.stdout.write('\n')
     
 if __name__ == '__main__':
     #print tokens
     testIDENTIFIER('::=')
     testIDENTIFIER('hoge')
+    testIDENTIFIER('|')
     
 
 
