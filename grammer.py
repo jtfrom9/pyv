@@ -9,388 +9,282 @@ class Top:
         
     def p_description(self,p):
         '''description : module_declaration
+                       | interface_declaration
+                       | program_declaration
+                       | package_declaration
         '''
-        
+
+    def p_interface_declaration(self,p):
+        '''interface_declaration : NOTDEFINED'''
+        pass
+
+    def p_program_declaration(self,p):
+        '''program_declaration : NOTDEFINED'''
+        pass
+
+    def p_package_declaration(self,p):
+        '''package_declaration : NOTDEFINED'''
+        pass
+
+    
 class Module:
+    def p_module_ansi_header(self,p):
+        '''module_ansi_header : module ID opt_parameter_port_list opt_list_of_port_declarations ';'
+        '''
+        pass
+
     def p_module_declaration(self,p):
-        '''module_declaration : module ID list_of_ports             ';' module_items          endmodule
-                              | module ID list_of_port_declarations ';' non_port_module_items endmodule
+        '''module_declaration : module_ansi_header             non_port_module_items endmodule
+                              | module ID '(' DOTASTA ')' ';'  module_items          endmodule  
         '''
+        pass
+    
+    def p_opt_parameter_port_list(self,p):
+        '''opt_parameter_port_list : parameter_port_list
+                                   |
+                                   '''
+        pass
 
+    def p_parameter_port_list(self,p):
+        '''parameter_port_list : NOTDEFINED'''
+        pass
 
+    def p_opt_list_of_port_declarations(self,p):
+        '''opt_list_of_port_declarations : NOTDEFINED'''
+        pass
 
+    def p_port_declaration(self,p):
+        '''port_declaration : NOTDEFINED'''
+        pass
+    
 class ModuleItem:
-    def p_module_item(self,p):
-        '''module_item : module_or_generate_item
-                       | port_declaration ';'
-                       | reg_declaration
-                       | net_declaration
-                       | integer_declaration
-                       | task_definition
-                       | function_definition
+    def p_module_items(self,p):
+        '''module_items : module_item module_items
+                        | module_item
         '''
+        pass
+    
+    def p_module_common_item(self,p):
+        '''module_common_item : module_or_generate_item_declaration
+                              | interface_instantiation
+                              | program_instantiation
+                              | concurrent_assertion_item
+                              | bind_directive
+                              | continuous_assign
+                              | net_alias
+                              | initial_construct
+                              | final_construct
+                              | always_construct
+        '''
+    
+    def p_module_item(self,p):
+        '''module_item : port_declaration ';'
+                       | non_port_module_item
+                       '''
+        pass
+
+    def p_module_or_generate_item(self,p):
+        '''module_or_generate_item : parameter_override
+                                   | module_instantiation
+                                   | module_common_item
+                                   '''
+        pass
+
+    def p_module_or_generate_item_declaration(self,p):
+        '''module_or_generate_item_declaration : package_or_generate_item_declaration
+                                               '''
+        pass
 
     def p_non_port_module_items(self,p):
         '''non_port_module_items : non_port_module_item non_port_module_items
                                  | non_port_module_item
                                  |
         '''
+        
     def p_non_port_module_item(self,p):
         '''non_port_module_item : module_or_generate_item
         '''
+        pass
+
+    def p_program_instantiation(self,p):
+        '''program_instantiation : NOTDEFINED'''
+        pass
+
+    def p_concurrent_assertion_item(self,p):
+        '''concurrent_assertion_item : NOTDEFINED'''
+        pass
+
+    def p_bind_directive(self,p):
+        '''bind_directive : NOTDEFINED'''
+        pass
+
+    def p_net_alias(self,p):
+        '''net_alias : NOTDEFINED'''
+        pass
+
+    def p_final_construct(self,p):
+        '''final_construct : NOTDEFINED'''
+        pass
+
+    def p_interface_instantiation(self,p):
+        '''interface_instantiation : NOTDEFINED'''
+        pass
+    
+    def p_parameter_override(self,p):
+        '''parameter_override : NOTDEFINED'''
+        pass
+
+    def p_continuous_assign(self,p):
+        '''continuous_assign : NOTDEFINED'''
+        pass
+
+
+    def p_package_or_generate_item_declaration(self,p):
+        '''package_or_generate_item_declaration : net_declaration
+                                                | data_declaration
+                                                | task_declaration
+                                                | function_declaration
+         '''
+        pass
+
+    
+class ModuleInstance:
+    def p_module_instantiation(self,p):
+        '''module_instantiation : ID opt_parameter_value_assignment hierarchical_instances
+        '''
+        pass
+
+    def p_opt_parameter_value_assignment(self,p):
+        '''opt_parameter_value_assignment : parameter_value_assignment
+                                          |
+        '''
+        pass
+
+    def p_parameter_value_assignment(self,p):
+        '''parameter_value_assignment : '''
+        pass
+    
+    def p_hierarchical_instances(self,p):
+        '''hierarchical_instances : hierarchical_instance ',' hierarchical_instances
+                                  | hierarchical_instance
+        '''
+        pass
+
+    def p_hierarchical_instance(self,p):
+        '''hierarchical_instance : name_of_instance '(' list_of_port_connections ')'
+                                 | name_of_instance '('                          ')'
+        '''
+        pass
+
+    def p_name_of_instance(self,p):
+        '''name_of_instance : ID opt_unpacked_dimensions
+        '''
+        pass
+
+
+    def p_list_of_port_connections(self,p):
+        '''list_of_port_connections : ordered_port_connections
+                                    | named_port_connections
+        '''
+        pass
+
+    def p_ordered_port_connections(self,p):
+        '''ordered_port_connections : ordered_port_connection ',' ordered_port_connections
+                                    | ordered_port_connection
+        '''
+        pass
+
+    def p_ordered_port_connection(self,p):
+        '''ordered_port_connection : expression
+        '''
+        pass
+    
+    def p_named_port_connections(self,p):
+        '''named_port_connections : named_port_connection ',' named_port_connections
+                                  | named_port_connection
+                                  '''
+        pass
+
+    def p_named_port_connection(self,p):
+        '''named_port_connection : '.' ID '(' expression ')'
+                                 | '.' ID
+                                 | DOTASTA
+        '''
+        pass
+
         
-    def p_module_or_generate_item(self,p):
-        '''module_or_generate_item : initial_construct      
-                                   | always_construct
-                                   | module_instantiation
-        '''
-        
-class Port:
-    def p_list_of_ports(self,p):
-        '''list_of_ports : '(' ports ')'
-        '''
-
-    def p_ports(self,p):
-        '''ports : port ',' ports
-                 | port
-        '''
-        
-    def p_port(self,p):
-        '''port : port_expression
-                | '.' ID '(' port_expressions ')'
-                | '.' ID '('                  ')'
-                | 
-                '''
-
-    def p_port_expressions(self,p):
-        '''port_expressions : port_expression port_expressions
-                            | port_expression
-        '''
-    def p_port_expression(self,p):
-        '''port_expression : port_reference
-                           | '{' port_reference ',' port_references '}'
-                           | '{' port_reference                     '}'
-        '''
-
-    def p_port_references(self,p):
-        '''port_references : port_reference port_references
-                           | port_reference
-        '''
-        
-    def p_port_reference(self,p):
-        '''port_reference : ID
-                          | ID '[' constant_expression                          ']'
-                          | ID '[' constant_expression ':' constant_expression  ']'
-        '''
-
-    def p_list_of_port_declarations(self,p):
-        '''list_of_port_declarations : '(' port_declarations ')'
-                                     | '(' ')'
-        '''
-
-    def p_port_declarations(self,p):
-        '''port_declarations : port_declaration ',' port_declarations
-                             | port_declaration
-        '''
-        
-    def p_port_declaration(self,p):
-        '''port_declaration : inout_declaration
-                            | input_declaration
-                            | output_declaration
-        '''
-        
-    def p_input_declaration(self,p):
-        '''input_declaration : input signed_oe range_oe ids %prec INPUT_DECL
-        '''
-        
-    def p_output_declaration(self,p):
-        '''output_declaration : output signed_oe range_oe ids %prec OUTPUT_DECL
-        '''
-        
-    def p_inout_declaration(self,p):
-        '''inout_declaration : inout signed_oe range_oe ids %prec INOUT_DECL
-        '''
-
-    def p_signed_oe(self,p):
-        '''signed_oe : 
-        '''
-
-    def p_range_oe(self,p):
-        '''range_oe : range
-                    | 
-        '''
-
-
-class Variables:
-    def p_ids(self,p):
-        '''ids : ids ',' ID %prec IDS
-               | ID
-        '''
-
-    def p_var(self,p):
-        '''var : ID
-               | ID '[' constant_expression ':' constant_expression ']'
-        '''
-        
-    def p_vars(self,p):
-        '''vars : var ',' vars
-                | var
-        '''
-        
-    def p_reg_declaration(self,p):
-        '''reg_declaration : reg range_oe vars ';'
-        '''
-
-    def p_integer_declaration(self,p):
-        '''integer_declaration : integer vars ';'
-        '''
-
+class Declaration:
     def p_net_declaration(self,p):
-        '''net_declaration : nettype expandrange_oe delay_oe vars ';'
-        '''
-
-    def p_nettype(self,p):
-        '''nettype : wire
-        '''
-
-    def p_expandrange_oe(self,p):
-        '''expandrange_oe : expandrange
-                          | 
-        '''
-
-    def p_expandrange(self,p):
-        '''expandrange : range
-        '''
-
-    def p_delay_oe(self,p):
-        '''delay_oe : delay
-                    | 
-        '''
-
-    def p_delay(self,p):
-        '''delay : '#' number
-                 | '#' ID
-        '''
-        
-class Expression:
-    def p_number(self,p):
-        '''number : NUM
-        '''
-        
-    def p_constant_expression(self,p):
-        '''constant_expression : expression
-        '''
-        
-    def p_range(self,p):
-        '''range : '[' constant_expression ':' constant_expression ']'
-        '''
-
-    def p_expression(self,p):
-        '''expression : primary
-                      | unary_expression   
-                      | binary_expression
-                      | STRING
-        '''
-
-    def p_binary_expression(self,p):
-        '''binary_expression : expression '+' expression
-                             | expression '-' expression
-                             | expression '*' expression
-        '''
-
-    def p_unary_expression(self,p):
-        '''unary_expression : '+' primary  %prec UNARY
-                            | '-' primary  %prec UNARY
-        '''
-
-    def p_primary(self,p):
-        '''primary : number
-                   | ID
-                   | ID '[' expression ']'
-                   | ID '[' constant_expression ':' constant_expression ']'
-                   | function_call
-        '''
-
-    def p_lvalue(self,p):
-        '''lvalue : ID
-                  | ID '[' expression ']'
-                  | ID '[' constant_expression ':' constant_expression ']'
-        '''
-        
-class Statement:
-    def p_statement_oe(self,p):
-        '''statement_oe : statement 
-                        |              %prec NULL_STATEMENT
-        '''
-        
-    def p_statement(self,p):
-        '''statement : conditional_statement
-                     | blocking_assignment
-                     | nonblocking_assignment
-                     | seq_block
-                     | assign assignment          
-                     | procedural_timing_control_statement
-        '''
-
-    def p_statements(self,p):
-        '''statements : statement statements
-                      | statement
-        '''
-
-
-#     def p_conditional_statement(self,p):
-#         '''conditional_statement : if '(' expression ')' wo_if_statement 
-#                                  | if '(' expression ')' conditional_statement
-#                                  | if '(' expression ')' wo_if_statement else statement
-#                                  | if '(' expression ')' conditional_statement     else statement
-#         '''
-        
-#     def p_conditional_statement(self,p):
-#         '''conditional_statement : conditional_statement_if
-#                                  | conditional_statement_ifelse
-#         '''
-#     def p_conditional_statement_if(self,p):
-#         '''conditional_statement_if : if '(' expression ')' statement
-#         '''
-        
-#     def p_conditional_statement_ifelse(self,p):
-#         '''conditional_statement_ifelse : if '(' expression ')' wo_if_statement else statement
-#         '''
-
-
-    def p_conditional_statement(self,p):
-        '''conditional_statement : if '(' expression ')' wo_if_statement else statement
-                                 | if '(' expression ')' statement
-        '''
-        
-    def p_wo_if_statement(self,p):
-        '''wo_if_statement : blocking_assignment
-                           | nonblocking_assignment
-                           | seq_block
-                           | assign assignment
-        '''
-        # この方が正確。 if-elseはshift/reduce conflictが発生しても仕方ない
-#     def p_conditional_statement(self,p):
-#         '''conditional_statement : if '(' expression ')' statement else statement
-#                                  | if '(' expression ')' statement
-#         '''
-        
-    def p_assignment(self,p):
-        '''assignment : lvalue '=' expression
-        '''
+        '''net_declaration : NOTDEFINED'''
+        pass
     
-    def p_blocking_assignment(self,p):
-        '''blocking_assignment : lvalue '=' expression
+    def p_task_declaration(self,p):
+        '''task_declaration : NOTDEFINED'''
+        pass
+
+    def p_function_declaration(self,p):
+        '''function_declaration : NOTDEFINED'''
+        pass
+
+    def p_data_declaration(self,p):
+        '''data_declaration : NOTDEFINED'''
+        pass
+
+    def p_opt_unpacked_dimensions(self,p):
+        '''opt_unpacked_dimensions : unpacked_dimension
+                                   |
         '''
+        pass
     
-    def p_nonblocking_assignment(self,p):
-        '''nonblocking_assignment : lvalue NB_ASIGN expression
+    def p_unpacked_dimension(self,p):
+        '''unpacked_dimension : '[' constant_range ']'
+                              | '[' constant_expression ']'
         '''
-    def p_seq_block(self,p):
-        '''seq_block : begin statements end
+        pass
+
+    def p_packed_dimension(self,p):
+        '''packed_dimension : '[' constant_range ']'
         '''
-    def p_initial_statement(self,p):
-        '''initial_construct : initial statement
-        '''
+        pass
+
+    
+class BehavioralStatement:
+    def p_initial_construct(self,p):
+        '''initial_construct : NOTDEFINED'''
+        pass
 
     def p_always_construct(self,p):
-        '''always_construct : always statement
-        '''
-
-    def p_procedural_timing_control_statement(self,p):
-        '''procedural_timing_control_statement : procedural_timing_control statement_oe
-        '''
-
-    def p_procedural_timing_control(self,p):
-        '''procedural_timing_control : delay_control
-                                     | event_control
-                                     '''
-
-    def p_event_control(self,p):
-        '''event_control : '@' ID
-                         | '@' '(' event_expression ')'
-                         | AT_ASTA
-                         | '@' '(' '*' ')'
-                         '''
-
-    def p_delay_control(self,p):
-        '''delay_control : '#' delay_value
-        '''
-
-    def p_delay_value(self,p):
-        '''delay_value : NUM '''
-
-    def p_event_expression(self,p):
-        '''event_expression : expression
-                            | posedge expression
-                            | negedge expression
-                            | event_expression or event_expression
-                            | event_expression ',' event_expression
-                            '''
-
-class TaskAndFunction:
-    def p_function_definition(self,p):
-        '''function_definition : begin_function statement endfunction
-        '''
+        '''always_construct : NOTDEFINED'''
+        pass
+    
+class Expression:
+    def p_expression(self,p):
+        '''expression : NOTDEFINED'''
         pass
 
-    def p_begin_function(self,p):
-        '''begin_function : function range_oe ID ports_list ';'
-                          | function range_oe ID            ';' tf_declarations
-        '''
-        
-    def p_tf_declarations(self,p):
-        '''tf_declarations : tf_declaration tf_declarations
-                           | tf_declaration
-        '''
+    def p_constant_range(self,p):
+        '''constant_range : constant_expression ':' constant_expression'''
+        pass
 
-    def p_tf_declarations_oe(self,p):
-        '''tf_declarations_oe : tf_declarations
-                              | 
-        '''
+    def p_constant_expression(self,p):
+        '''constant_expression : constant_primary
+                               | unary_operator constant_primary
+                               | constant_expression binary_operator constant_expression
+                               | constant_expression '?' constant_expression ':' constant_expression
+                               '''
+        pass
 
-    def p_tf_declaration(self,p):
-        '''tf_declaration : input_declaration
-                          | reg_declaration
-                          | integer_declaration
-        '''
-        
-    def p_task_definition(self,p):
-        '''task_definition : begin_task statement_oe endtask
-        '''
-
-    def p_begin_task(self,p):
-        '''begin_task : task ID ports_list ';'
-                      | task ID            ';' tf_declarations_oe
-        '''
-    
-    # まだmoduleのインスタンス化を書いてないので一旦おいておく
-    def p_function_call(self,p):
-        '''function_call : ID '(' ')'
-        '''
+    def p_constant_primary(self,p):
+        '''constant_primary : NOTDEFINED'''
         pass
 
 
+    def p_binary_operator(self,p):
+        '''binary_operator : NOTDEFINED'''
+        pass
 
-
-       
-    
-# class ModuleInstance:
-#     def p_module_instantiation(self,p):
-#         '''module_instantiation : ID parameter_value_assignment ID port_connections ';'
-#         '''
-
-#     def p_parameter_value_assignment(self,p):
-#         '''parameter_value_assignment : '''
-
-#     def p_instantiation_parameters_recur(self,p):
-#         '''instantiation_parameters : instantiation_parameter ',' instantiation_parameters
-#         '''
-
-#     def p_instantiation_parameters(self,p):
-#         '''instantiation_parameters : instantiation_parameter
-#         '''
+    def p_unary_operator(self,p):
+        '''unary_operator : NOTDEFINED'''
+        pass
         
-#     def p_instantiation_parameters_null(self,p):
-#         '''instantiation_parameters : 
-#         '''
+    

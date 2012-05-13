@@ -7,9 +7,14 @@ import grammer
 import re
 
 
-class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables,
-             grammer.Expression, grammer.Statement,
-             grammer.TaskAndFunction):
+class Parser(grammer.Top,
+             grammer.Module,
+             grammer.ModuleItem,
+             grammer.ModuleInstance,
+             grammer.BehavioralStatement,
+             grammer.Declaration,
+             grammer.Expression):
+    
     # reserved words
     reserved = ('module', 'endmodule',
                 'function', 'endfunction',
@@ -31,7 +36,7 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
         reserved_map[word] = word
 
     # tokens
-    tokens = ('ID', 'NUM', 'NB_ASIGN', 'STASK', 'STRING', 'AT_ASTA') + reserved
+    tokens = ('ID', 'NUM', 'NB_ASIGN', 'STASK', 'STRING', 'AT_ASTA', 'DOTASTA', 'NOTDEFINED') + reserved
 
     # literals
     literals = "()[],.;:$=<+-*@"
@@ -39,7 +44,7 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
     
     def __init__(self):
         self.lexer  = lex.lex(module=self)
-        self.parser = yacc.yacc(module=self,start='module_definition')
+        self.parser = yacc.yacc(module=self,start='source_text')
         self.modules = []
 
     def parse(self, buf):
@@ -60,6 +65,7 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
 
     t_NB_ASIGN = r'<='
     t_AT_ASTA  = r'@\*'
+    t_DOTASTA  = r'.\*'
 
     stask_pat = r'\$([a-zA-Z_][a-zA-Z0-9]*)'
 
@@ -98,13 +104,13 @@ class Parser(grammer.Module, grammer.ModuleItem, grammer.Port, grammer.Variables
 #         '''empty : '''
 #         pass
             
-    precedence = (
-        ('nonassoc', 'NULL_STATEMENT', ',', 'or'),
-        ('left', 'assign', 'begin', '@', '#', 'AT_ASTA',),
-        ('left', 'INPUT_DECL', 'OUTPUT_DECL', 'INOUT_DECL'),
-        ('left', 'IDS') ,
-        ('left', '+', '-'),
-        ('left', '*',),
-        ('right', 'UNARY'))
+#     precedence = (
+#         ('nonassoc', 'NULL_STATEMENT', ',', 'or'),
+#         ('left', 'assign', 'begin', '@', '#', 'AT_ASTA',),
+#         ('left', 'INPUT_DECL', 'OUTPUT_DECL', 'INOUT_DECL'),
+#         ('left', 'IDS') ,
+#         ('left', '+', '-'),
+#         ('left', '*',),
+#         ('right', 'UNARY'))
 
 
