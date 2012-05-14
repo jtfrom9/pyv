@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-class Top:
+class Module:
+    #A.1.3 Module and primitive source text
     def p_soruce_text(self,p):
         '''source_text : description source_text
                        | description
@@ -14,6 +15,19 @@ class Top:
                        | package_declaration
         '''
 
+    def p_module_ansi_header(self,p):
+        '''module_ansi_header : module ID opt_parameter_port_list list_of_port_declarations ';'
+                              | module ID opt_parameter_port_list ';'
+        '''
+        pass
+
+    def p_module_declaration(self,p):
+        '''module_declaration : module_ansi_header             non_port_module_items endmodule
+                              | module ID '(' DOTASTA ')' ';'  module_items          endmodule  
+        '''
+        pass
+    
+
     def p_interface_declaration(self,p):
         '''interface_declaration : NOTDEFINED'''
         pass
@@ -26,19 +40,8 @@ class Top:
         '''package_declaration : NOTDEFINED'''
         pass
 
-    
-class Module:
-    def p_module_ansi_header(self,p):
-        '''module_ansi_header : module ID opt_parameter_port_list opt_list_of_port_declarations ';'
-        '''
-        pass
 
-    def p_module_declaration(self,p):
-        '''module_declaration : module_ansi_header             non_port_module_items endmodule
-                              | module ID '(' DOTASTA ')' ';'  module_items          endmodule  
-        '''
-        pass
-    
+    #A.1.4 Module parameters and ports
     def p_opt_parameter_port_list(self,p):
         '''opt_parameter_port_list : parameter_port_list
                                    |
@@ -49,14 +52,98 @@ class Module:
         '''parameter_port_list : NOTDEFINED'''
         pass
 
-    def p_opt_list_of_port_declarations(self,p):
-        '''opt_list_of_port_declarations : NOTDEFINED'''
+
+    def p_list_of_ports(self,p):
+        '''list_of_ports : '(' port opt_ports ')'
+        '''
         pass
 
-    def p_port_declaration(self,p):
-        '''port_declaration : NOTDEFINED'''
+    def p_opt_ports(self,p):
+        '''opt_ports : ',' port opt_ports
+                     | ',' port 
+        '''
+    
+    def p_list_of_port_declarations(self,p):
+        '''list_of_port_declarations : '(' ansi_port_declaration opt_ansi_port_declarations ')'
+        '''
         pass
     
+    def p_port_declaration(self,p):
+        '''port_declaration : inout_declaration
+                            | input_declaration
+                            | output_declaration
+                            | ref_declaration
+                            | interface_port_declaration
+                            '''
+        pass
+
+
+    def p_port(self,p):
+        '''port : port_expression
+                | '.' ID '(' port_expression ')'
+        '''
+        pass
+
+    def p_port_expression(self,p):
+        '''port_expression : port_reference
+                           | port_reference ',' port_expression
+                           |
+        '''
+        pass
+
+    def p_port_reference(self,p):
+        '''port_reference : ID constant_select'''
+        pass
+    
+    def p_port_direction(self,p):
+        '''port_direction : input
+                          | output
+                          | inout
+                          | ref
+                          '''
+        pass
+    
+    def p_net_port_header(self,p):
+        '''net_port_header : port_direction port_type
+                           |                port_type
+        '''
+        pass
+
+    def p_variable_port_header(self,p):
+        '''variable_port_header : port_direction data_type
+                                |                data_type
+        '''
+        pass
+
+    def p_interface_port_header(self,p):
+        '''interface_port_header : NOTDEFINED'''
+        pass
+
+    def p_opt_ansi_port_declarations(self,p):
+        '''opt_ansi_port_declarations : ',' ansi_port_declaration opt_ansi_port_declarations
+                                      | ',' ansi_port_declaration
+                                      '''
+        pass
+
+    def p_ansi_port_declaration(self,p):
+        '''ansi_port_declaration : net_port_header       ID opt_unpacked_dimensions
+                                 | interface_port_header ID opt_unpacked_dimensions
+                                 |                       ID opt_unpacked_dimensions
+                                 | variable_port_header  ID variable_dimension opt_default_constant_expression
+                                 |                       ID variable_dimension opt_default_constant_expression
+                                 | net_port_header      '.' ID '(' opt_expression ')'
+                                 | variable_port_header '.' ID '(' opt_expression ')'
+                                 |                      '.' ID '(' opt_expression ')'
+        '''
+        pass
+
+    def p_opt_default_constant_expression(self,p):
+        '''opt_default_constant_expression : '=' constant_expression
+                                           |
+        '''
+        pass
+
+
 class ModuleItem:
     def p_module_items(self,p):
         '''module_items : module_item module_items
@@ -214,24 +301,108 @@ class ModuleInstance:
 
         
 class Declaration:
-    def p_net_declaration(self,p):
-        '''net_declaration : NOTDEFINED'''
-        pass
+    #A.2.1.1 Module parameter declarations
     
-    def p_task_declaration(self,p):
-        '''task_declaration : NOTDEFINED'''
+    #A.2.1.2 Port declarations
+    def p_inout_declaration(self,p):
+        '''inout_declaration : inout port_type list_of_port_identifiers'''
         pass
 
-    def p_function_declaration(self,p):
-        '''function_declaration : NOTDEFINED'''
+    def p_input_declaration(self,p):
+        '''input_declaration : input port_type list_of_port_identifiers
+                             | input data_type list_of_variable_identifiers
+                             '''
         pass
 
+    def p_output_declaration(self,p):
+        '''output_declaration : output port_type list_of_port_identifiers
+                              | output data_type list_of_variable_identifiers
+        '''
+        pass
+
+    def p_interface_port_declaration(self,p):
+        '''interface_port_declaration : ID        list_of_interface_identifiers
+                                      | ID '.' ID list_of_interface_identifiers
+        '''
+        pass
+
+    def p_ref_declaration(self,p):
+        '''ref_declaration : ref data_type list_of_port_identifiers
+        '''
+        pass
+
+    #A.2.1.3 Type declarations
     def p_data_declaration(self,p):
         '''data_declaration : NOTDEFINED'''
         pass
 
+    def p_net_declaration(self,p):
+        '''net_declaration : NOTDEFINED'''
+        pass
+
+    #A.2.2.1 Net and variable types
+    def p_data_type(self,p):
+        '''data_type : NOTDEFINED'''
+        pass
+        
+    def p_net_type(self,p):
+        '''net_type : wire'''
+        pass
+    
+    def p_port_type(self,p):
+        '''port_type : net_type_or_trireg opt_signing opt_packed_dimensions'''
+        pass
+
+    def p_net_type_or_trireg(self,p):
+        '''net_type_or_trireg : net_type
+        '''
+        pass
+    
+    def p_opt_signing(self,p):
+        '''opt_signing : signing
+                       |'''
+        pass
+
+    def p_signing(self,p):
+        '''signing : signed
+                   | unsigned
+        '''
+        pass
+
+    
+    #A.2.3 Declaration lists
+    def p_list_of_interface_identifiers(self,p):
+        '''list_of_interface_identifiers : ID opt_unpacked_dimensions ',' list_of_interface_identifiers
+                                         | ID opt_unpacked_dimensions 
+        '''
+        pass
+    
+    def p_list_of_net_identifiers(self,p):
+        '''list_of_net_identifiers : ID opt_unpacked_dimensions ',' list_of_net_identifiers
+                                   | ID opt_unpacked_dimensions 
+        '''
+        pass
+    
+    def p_list_of_port_identifiers(self,p):
+        '''list_of_port_identifiers : ID opt_unpacked_dimensions ',' list_of_port_identifiers
+                                    | ID opt_unpacked_dimensions
+        '''
+        pass
+
+    def p_list_of_variable_identifiers(self,p):
+        '''list_of_variable_identifiers : ID variable_dimension ',' list_of_variable_identifiers
+                                        | ID variable_dimension 
+        '''
+        pass
+    
+    #A.2.4 Declaration assignments
+    def p_variable_dimension(self,p):
+        '''variable_dimension : NOTDEFINED'''
+        pass
+    
+    #A.2.5 Declaration ranges
     def p_opt_unpacked_dimensions(self,p):
-        '''opt_unpacked_dimensions : unpacked_dimension
+        '''opt_unpacked_dimensions : unpacked_dimension opt_unpacked_dimensions
                                    |
         '''
         pass
@@ -247,6 +418,24 @@ class Declaration:
         '''
         pass
 
+    def p_opt_packed_dimensions(self,p):
+        '''opt_packed_dimensions : packed_dimension opt_packed_dimensions
+                                 |
+        '''
+        pass
+    
+    #A.2.6 Function declarations
+    def p_function_declaration(self,p):
+        '''function_declaration : NOTDEFINED'''
+        pass
+
+    #A.2.7 Task declarations
+    def p_task_declaration(self,p):
+        '''task_declaration : NOTDEFINED'''
+        pass
+
+
+
     
 class BehavioralStatement:
     def p_initial_construct(self,p):
@@ -256,16 +445,10 @@ class BehavioralStatement:
     def p_always_construct(self,p):
         '''always_construct : NOTDEFINED'''
         pass
+
     
 class Expression:
-    def p_expression(self,p):
-        '''expression : NOTDEFINED'''
-        pass
-
-    def p_constant_range(self,p):
-        '''constant_range : constant_expression ':' constant_expression'''
-        pass
-
+    #A.8.3 Expressions
     def p_constant_expression(self,p):
         '''constant_expression : constant_primary
                                | unary_operator constant_primary
@@ -274,17 +457,37 @@ class Expression:
                                '''
         pass
 
+    def p_constant_range(self,p):
+        '''constant_range : constant_expression ':' constant_expression'''
+        pass
+
+    def p_opt_expression(self,p):
+        '''opt_expression : expression
+                          |
+        '''
+        pass
+    
+    def p_expression(self,p):
+        '''expression : NOTDEFINED'''
+        pass
+
+    #A.8.4 Primaries
     def p_constant_primary(self,p):
         '''constant_primary : NOTDEFINED'''
         pass
 
+    def p_constant_select(self,p):
+        '''constant_select : NOTDEFINED
+        '''
 
+    #A.8.5 Expression left-side values
+    #A.8.6 Operators
+    def p_unary_operator(self,p):
+        '''unary_operator : NOTDEFINED'''
+        pass
+    
     def p_binary_operator(self,p):
         '''binary_operator : NOTDEFINED'''
         pass
 
-    def p_unary_operator(self,p):
-        '''unary_operator : NOTDEFINED'''
-        pass
         
-    

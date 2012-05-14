@@ -7,8 +7,7 @@ import grammer
 import re
 
 
-class Parser(grammer.Top,
-             grammer.Module,
+class Parser(grammer.Module,
              grammer.ModuleItem,
              grammer.ModuleInstance,
              grammer.BehavioralStatement,
@@ -23,11 +22,12 @@ class Parser(grammer.Top,
                 'assign',
                 'initial',
                 'always', 'posedge', 'negedge',
-                'input', 'output', 'inout',
+                'input', 'output', 'inout', 'ref', 
                 'reg', 'wire',
                 'integer',
                 'for', 'if', 'else',
-                'or'
+                'or', 'and',
+                'signed', 'unsigned'
                 )
     
     #reserved_map = { word:word for word in reserved }
