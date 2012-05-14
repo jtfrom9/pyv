@@ -48,7 +48,7 @@ class Parser(grammer.Module,
         self.modules = []
 
     def parse(self, buf):
-        self.parser.parse(buf)
+        self.parser.parse(buf,debug=1)
         return self.modules
 
    
@@ -100,11 +100,16 @@ class Parser(grammer.Module,
         else:
             print("Syntax error at EOF")
 
+
 #     def p_empty(self,p):
 #         '''empty : '''
 #         pass
-            
-#     precedence = (
+
+    precedence = (
+        ('left', '('),
+        ('left', 'PARAM_PORTS'),
+        )
+    #     precedence = (
 #         ('nonassoc', 'NULL_STATEMENT', ',', 'or'),
 #         ('left', 'assign', 'begin', '@', '#', 'AT_ASTA',),
 #         ('left', 'INPUT_DECL', 'OUTPUT_DECL', 'INOUT_DECL'),

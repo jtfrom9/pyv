@@ -23,10 +23,10 @@ class Module:
 
     def p_module_declaration(self,p):
         '''module_declaration : module_ansi_header             non_port_module_items endmodule
+                              | module ID '(' DOTASTA ')' ';'  module_items          endmodule  
         '''
         pass
     
-#                              | module ID '(' DOTASTA ')' ';'  module_items          endmodule  
 
     def p_interface_declaration(self,p):
         '''interface_declaration : NOTDEFINED'''
@@ -43,7 +43,7 @@ class Module:
 
     #A.1.4 Module parameters and ports
     def p_opt_parameter_port_list(self,p):
-        '''opt_parameter_port_list : parameter_port_list
+        '''opt_parameter_port_list : parameter_port_list %prec PARAM_PORTS
                                    |
                                    '''
         pass
@@ -64,7 +64,7 @@ class Module:
         '''
     
     def p_list_of_port_declarations(self,p):
-        '''list_of_port_declarations : '(' ansi_port_declaration opt_ansi_port_declarations ')'
+        '''list_of_port_declarations : '(' ansi_port_declaration opt_ansi_port_declarations ')' 
         '''
         #p[0] = p[2] + p[3]
         print "# ", p[2],' #',p[3]
