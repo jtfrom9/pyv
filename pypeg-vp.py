@@ -2,6 +2,7 @@ import re, fileinput
 import pyPEG
 from pyPEG import parse
 from pyPEG import keyword, _and, _not, ignore
+from xmlast import pyAST2XML
 
 def source_text():
     return -1, descriptrion
@@ -9,9 +10,10 @@ def source_text():
 def descriptrion():
     return module_declaration
 
+reserved = ("endmodule", "module")
 
 def ID():
-    return _not("endmodule"), _not("module"), re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*')
+    return tuple(_not(x) for x in reserved) + (re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*'),)
     
 
 def module_declaration():
@@ -30,5 +32,6 @@ def ansi_port_declaration():
 pyPEG.print_trace = True
 
 files = fileinput.input()
-result = parse(source_text, files, True)
-print result
+result = parse((source_text,), files, True)
+#print result
+print pyAST2XML(result)
