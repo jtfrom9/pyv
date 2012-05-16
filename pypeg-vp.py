@@ -2,7 +2,8 @@ import re, fileinput
 import pyPEG
 from pyPEG import parse
 from pyPEG import keyword, _and, _not, ignore
-from xmlast import pyAST2XML
+from xml.sax.saxutils import escape
+from pyPEG import Symbol
 
 def source_text():
     return -1, descriptrion
@@ -29,9 +30,50 @@ def ansi_port_declaration():
     return ID
 
 
+def pyAST2XML(pyAST):
+    if isinstance(pyAST, unicode) or isinstance(pyAST, str):
+        return escape(pyAST)
+    if type(pyAST) is Symbol:
+#         if pyAST[1][0] is not Symbol:
+#             print "****",pyAST[1], type(pyAST[1])
+#             print "****",pyAST[1][0], type(pyAST[1][0])
+#             result = u"<" + pyAST[0].replace("_","-") + "=" + pyAST[1][0] + u"/>"
+#         else:
+#         if pyAST[0]=="ID":
+#             print "---"
+#             print type(pyAST)
+#             print type(pyAST[0])
+#             print type(pyAST[1])
+#             print type(pyAST[1][0])
+#             print len(pyAST[1])
+#             print pyAST
+
+#         if len(pyAST[1])==1:
+#             print "---", pyAST[0],"=", pyAST[1], "   ", type(pyAST[1][0])
+            
+#         if len(pyAST[1])==1 and type(pyAST[1][0]) is unicode:
+#             print "---", pyAST[0],"=", pyAST[1]
+
+
+        if type(pyAST[1][0]) is not Symbol:
+            result = u"<" + pyAST[0].replace("_","-") + "=" + pyAST[1][0] + u"/>"
+        else:
+            result = u"<" + pyAST[0].replace("_", "-") + u">"
+            for e in pyAST[1:]:
+                result += pyAST2XML(e)
+            result += u"</" + pyAST[0].replace("_", "-") + u">"
+    else:
+        result = u""
+        for e in pyAST:
+            result += pyAST2XML(e)
+    return result
+
+
 pyPEG.print_trace = True
 
 files = fileinput.input()
 result = parse((source_text,), files, True)
 #print result
-print pyAST2XML(result)
+xml=pyAST2XML(result)
+
+print xml
