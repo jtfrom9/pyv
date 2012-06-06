@@ -1,35 +1,33 @@
 # -*- coding: utf-8 -*-
 from pyparsing import *
-import sys
-import collections
 import pprint
 
 RESERVED_KEYWORDS = ('module', 'endmodule')
 
 ID = ~MatchFirst([Keyword(w) for w in RESERVED_KEYWORDS]) + Word(alphas, alphanums+'_')
 
-#source_text << ZeroOrMore( Group(description) )("descriptions")
-source_text << ZeroOrMore(description)("source_text")
-description << Group( Group(module_declaration)("module") | ID("id").setParseAction(lambda t: "__id__") )("description")
 
 # リテラルも事前にSuppress定義する
-LP = Suppress("(")
-RP = Suppress(")")
-SM = Suppress(";")
+LP,RP,SM = map(Suppress,("();"))
 
 # asXML()の出力がうまくいかなくなる
+module, endmodule = map(Suppress,[Keyword(w) for w in ('module', 'endmodule')])
 
 
-non_port_module_item = ID
-list_of_port_declarations = LP + delimitedList(ID) + RP
+non_port_module_item = ID("moditem")
 
 # 非終端は基本的に全体をGroupで囲む
 # 名前をつける(setResultsName)しても良いが、呼ばれる側で設定されていれば上書きされる
-# 基本は名前を付ける
-module_declaration = Group(\
-    module + ID("modname") + Group(list_of_port_declarations)("params") + SM \
-    + Group(ZeroOrMore(non_port_module_item))("body") \
-    + endmodule)("module_declaration") \
+# 汎用性の高いもの（複数の箇所で再利用される可能性のあるもの）は名前をつけないでおく
+list_of_port_declarations = Group(LP + delimitedList(ID("port")) + RP)
+
+# 非終端は基本的に全体をGroupで囲む
+# 名前をつける(setResultsName)しても良いが、呼ばれる側で設定されていれば上書きされる
+# 特殊なものは名前を付けておく
+module_declaration = Group(module + ID("modname") + list_of_port_declarations("params") + SM \
+                           + Group(ZeroOrMore(non_port_module_item))("body") \
+                           + endmodule) \
+                           ("module_declaration")
     
 # 他の非終端を呼ぶところでsetResultsNameすると、元々ついていた名前を上書く
 description = Group( module_declaration("module_declaration_call") | ID("id2") )("description")
@@ -65,6 +63,8 @@ func
 always
 endmodule
 ''')
+    print result.asXML()
+
 #     print result
 #     for index,desc in enumerate(result.descriptions):
 #         print "desc[",index,"]=",desc
@@ -78,19 +78,17 @@ endmodule
 #     print result
 #     print result.asXML()
 
-    for index,desc in enumerate(result.source_text):
-#         print index, desc
-
-#         print dir(desc)
-        for i,d in enumerate(desc):
-            print index, i, " +++ ", d, type(d)
-
-        if(isinstance(d,str)):
-            print "str"
-        elif(isinstance(d,ParseResults)):
-            print "Result"
-
-    print result.asXML()
+#    for index,desc in enumerate(result.source_text):
+##         print index, desc
+#
+##         print dir(desc)
+#        for i,d in enumerate(desc):
+#            print index, i, " +++ ", d, type(d)
+#
+#        if(isinstance(d,str)):
+#            print "str"
+#        elif(isinstance(d,ParseResults)):
+#            print "Result"
     
 if __name__=='__main__':
     main()
