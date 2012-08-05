@@ -40,6 +40,9 @@ list_of_net_identifiers
 list_of_port_identifers
 list_of_variable_identifiers
 list_of_variable_port_identifers
+list_of_net_decl_assignments
+list_of_real_identifiers
+net_decl_assignment
 dimension
 _range
 function_declaration
@@ -66,4 +69,5 @@ mintypmax_expression
 statement
 statement_or_null
 function_statement
-
+drive_strength
+expression
