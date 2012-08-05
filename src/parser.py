@@ -26,57 +26,67 @@ with open("non_terminal_symbols.txt","r") as f:
 source_text << ZeroOrMore( description )
 description << Group ( module_declaration )
 
-module_declaration1 = \
-    MODULE + ID + Optional( module_parameter_port_list ) + Optional( list_of_ports ) + SEMICOLON + \
-    ZeroOrMore( module_item ) + \
+module_declaration << Group (  
+    MODULE + ID + Optional( module_parameter_port_list ) + Optional( list_of_ports ) + SEMICOLON + 
+    ZeroOrMore( module_item ) + 
     ENDMODULE
-module_declaration2 = \
-    MODULE + ID + Optional( module_parameter_port_list ) + Optional( list_of_port_declarations) + SEMICOLON + \
-    ZeroOrMore( non_port_module_item ) + \
-    ENDMODULE
-
-module_declaration << Group ( module_declaration1 | module_declaration2 )
+    | 
+    MODULE + ID + Optional( module_parameter_port_list ) + Optional( list_of_port_declarations) + SEMICOLON + 
+    ZeroOrMore( non_port_module_item ) + 
+    ENDMODULE )
+    
+    
 
 #
 # A.1.4 Module parametersand ports
 #
 module_parameter_port_list << ID
 list_of_ports << LP + delimitedList( port ) + RP
-list_of_port_declarations << Group( \
-    LP + delimitedList( port_declaration ) + RP | \
+
+list_of_port_declarations << Group( 
+    LP + delimitedList( port_declaration ) + RP  |
     LP + RP  )
 
-    
-port1 = Optional( port_expression ) 
-port2 = PERIOD + ID + LP + Optional( port_expression ) + RP 
-port << Group( port1 | port2 )
+port << Group( 
+    Optional( port_expression ) |
+    PERIOD + ID + LP + Optional( port_expression ) + RP )
 
-                
-port_expression1 = port_reference 
-port_expression2 = LC + delimitedList( port_reference ) + RC
-port_expression << Group( port_expression1 | port_expression2 )
+port_expression << Group( 
+    port_reference |
+    LC + delimitedList( port_reference ) + RC )
 
-port_reference1 = ID + LB + constant_expression + RB
-port_reference2 = ID + LB + range_expression +  RB
-port_reference << Group( port_reference1 | port_reference2 | ID )
+port_reference << Group( 
+    ID + LB + constant_expression + RB |
+    ID + LB + range_expression +  RB   |
+    ID )
 
-port_declaration << Group( inout_declaration | input_declaration | output_declaration )
+port_declaration << Group( 
+    inout_declaration | 
+    input_declaration | 
+    output_declaration )
 
 #
 # A.1.5 Module items
 #
 module_item << Group( module_or_generate_item | port_declaration  )
 
-module_or_generate_item << Group( \
-    module_or_generate_item_declaration |\
-        continuous_assign |\
-        module_instatantiation |\
-        initial_construct | always_construct  )
+module_or_generate_item << Group( 
+    module_or_generate_item_declaration |
+    continuous_assign      |
+    module_instatantiation |
+    initial_construct      | 
+    always_construct  )
 
 module_or_generate_item_declaration << Group( \
-    net_declaration | reg_declaration | integer_declaration | real_declaration |\
-        time_declaration | realtime_declaration | event_declaration | \
-        task_declaration | function_declaration )
+    net_declaration      | 
+    reg_declaration      | 
+    integer_declaration  |
+    real_declaration     |
+    time_declaration     |
+    realtime_declaration | 
+    event_declaration    |
+    task_declaration     | 
+    function_declaration )
 
 #non_port_module_item << 
  
@@ -86,21 +96,18 @@ module_or_generate_item_declaration << Group( \
 
 #A.2.1.1 Module parameter declarations
 #A.2.1.2 Port declarations
-inout_declaration << \
-    INOUT + Optional( net_type ) + Optional( SIGNED ) + Optional ( _range ) + \
-    list_of_port_identifers
+inout_declaration << Group(
+    INOUT + Optional( net_type ) + Optional( SIGNED ) + Optional ( _range ) + list_of_port_identifers )
 
-input_declaration << \
-    INPUT + Optional( net_type ) + Optional( SIGNED ) + Optional ( _range ) + \
-    list_of_port_identifers
+input_declaration << Group(
+    INPUT + Optional( net_type ) + Optional( SIGNED ) + Optional ( _range ) + list_of_port_identifers )
 
-output_declaration1 = OUTPUT + Optional(net_type) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers
-output_declaration2 = OUTPUT + Optional(REG)      + Optional(SIGNED) + Optional(_range) + list_of_port_identifers
-output_declaration3 = OUTPUT + REG                + Optional(SIGNED) + Optional(_range) + list_of_variable_port_identifers
-output_declaration4 = OUTPUT + Optional( output_variable_type )                         + list_of_port_identifers
-output_declaration5 = OUTPUT + output_variable_type                                     + list_of_variable_port_identifers
-output_declaration << Group( \
-    output_declaration1 | output_declaration2 | output_declaration3 | output_declaration4 | output_declaration5 )
+output_declaration << Group( 
+    OUTPUT + Optional(net_type) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers |
+    OUTPUT + Optional(REG)      + Optional(SIGNED) + Optional(_range) + list_of_port_identifers |
+    OUTPUT + REG                + Optional(SIGNED) + Optional(_range) + list_of_variable_port_identifers |
+    OUTPUT + Optional( output_variable_type )                         + list_of_port_identifers          |
+    OUTPUT + output_variable_type                                     + list_of_variable_port_identifers )
 
 #A.2.1.3 Type declarations
 event_declaration   << Group(EVENT   + list_of_event_identifiers    + SEMICOLON)
@@ -115,23 +122,23 @@ time_declaration    << Group(TIME + list_of_variable_identifiers)
 net_type << WIRE
 output_variable_type << Group( INTEGER | TIME )
 
-real_type << Group( \
-    ID + Optional( EQUAL + constant_expression ) |\
+real_type << Group( 
+    ID + Optional( EQUAL + constant_expression ) |
     ID + dimension + ZeroOrMore ( dimension ) )
 
-variable_type << Group( \
-    ID + Optional( EQUAL + constant_expression ) | \
+variable_type << Group( 
+    ID + Optional( EQUAL + constant_expression ) | 
     ID + dimension + ZeroOrMore ( dimension ) )
 
 #A.2.2.2 Strenghths
 #A.2.2.3 Delays
-delay3 << Group( \
-    SHARP + delay_value | \
+delay3 << Group( 
+    SHARP + delay_value | 
     SHARP + LP + delay_value + Optional( CAMMA + delay_value + Optional ( CAMMA + delay_value ) ) + RP )
 
-delay2 << Group( \
-    SHARP + delay_value | \
-        SHARP + LP + delay_value + Optional( CAMMA + delay_value ) + RP )
+delay2 << Group( 
+    SHARP + delay_value | 
+    SHARP + LP + delay_value + Optional( CAMMA + delay_value ) + RP )
 
 delay_value << Group( unsigned_number | mintypmax_expression )
 
@@ -149,36 +156,33 @@ dimension << LB + dimension_constant_expression + COLON + dimension_constant_exp
 _range    << LB + msb_constant_expression       + COLON + lsb_constant_expression       + RB
 
 #A.2.6 Function declarations
-function_declaration1 = \
-    FUNCTION + Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + ID + SEMICOLON + \
-    function_item_declaration + ZeroOrMore( function_item_declaration ) + \
-    function_statement + \
+function_declaration << Group( 
+    FUNCTION + Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + ID + SEMICOLON + 
+    function_item_declaration + ZeroOrMore( function_item_declaration ) + 
+    function_statement + 
     ENDFUNCTION
-function_declaration2 = \
-    FUNCTION + Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + ID + LP + function_port_list + RP + SEMICOLON + \
-    block_item_declaration + ZeroOrMore(block_item_declaration) + \
-    function_statement + \
+    |
+    FUNCTION + Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + ID + LP + function_port_list + RP + SEMICOLON + 
+    block_item_declaration + ZeroOrMore(block_item_declaration) + 
+    function_statement + 
     ENDFUNCTION
-
-function_declaration << Group( function_declaration1 | function_declaration2 )
+    )
 
 function_item_declaration << Group( block_item_declaration | tf_input_declaration + SEMICOLON )
 function_port_list << Group( tf_input_declaration + ZeroOrMore( CAMMA + tf_input_declaration ) )
 range_or_type << Group( _range | INTEGER | TIME )
 
 #A.2.7 Task declarations
-task_declaration1 = \
-    TASK + Optional(AUTOMATIC) + ID + SEMICOLON + \
-    ZeroOrMore( task_item_declaration ) + \
-    statement + \
+task_declaration << Group( 
+    TASK + Optional(AUTOMATIC) + ID + SEMICOLON + 
+    ZeroOrMore( task_item_declaration ) + 
+    statement + 
     ENDTASK
-task_declaration2 = \
-    TASK + Optional(AUTOMATIC) + ID + LP + task_port_list + RP + SEMICOLON + \
-    ZeroOrMore( block_item_declaration ) + \
-    statement + \
-    ENDTASK
-
-task_declaration << Group( task_declaration1 | task_declaration2 )
+    |
+    TASK + Optional(AUTOMATIC) + ID + LP + task_port_list + RP + SEMICOLON + 
+    ZeroOrMore( block_item_declaration ) + 
+    statement + 
+    ENDTASK )
 
 task_item_declaration << Group( 
     block_item_declaration | tf_input_declaration | tf_output_declaration | tf_inout_declaration )
@@ -186,24 +190,25 @@ task_item_declaration << Group(
 task_port_list << Group( delimitedList( task_port_item ) )
 task_port_item << Group( tf_inout_declaration | tf_output_declaration | tf_inout_declaration )
 
-tf_input_declaration <<  Group( \
-    INPUT + Optional(REG) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers | \
+tf_input_declaration <<  Group( 
+    INPUT + Optional(REG) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers | 
     INPUT + Optional(task_port_type) + list_of_port_identifers )
 
-tf_output_declaration <<  Group( \
-    OUTPUT + Optional(REG) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers | \
+tf_output_declaration <<  Group( 
+    OUTPUT + Optional(REG) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers | 
     OUTPUT + Optional(task_port_type) + list_of_port_identifers )
 
-tf_inout_declaration <<  Group( \
-    INOUT + Optional(REG) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers | \
+tf_inout_declaration <<  Group( 
+    INOUT + Optional(REG) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers | 
     INOUT + Optional(task_port_type) + list_of_port_identifers )
 
 task_port_type << Group( TIME | INTEGER )
 
 #A.2.8 Block item declarations
-block_item_declaration << Group( block_reg_declaration | event_declaration | integer_declaration | \
+block_item_declaration << Group( block_reg_declaration | event_declaration | integer_declaration | 
                                      real_declaration | realtime_declaration | time_declaration )
-block_reg_declaration << Group( \
+
+block_reg_declaration << Group( 
     REG + Optional(SIGNED) + Optional(_range) + list_of_block_variable_identifiers + SEMICOLON )
 
 list_of_block_variable_identifiers << Group( delimitedList( block_variable_type ) )

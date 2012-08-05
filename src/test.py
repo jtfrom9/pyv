@@ -7,6 +7,10 @@ def main():
     foo = Group("?" + id("name") + "!")("foo")
     bar = Group(("(" + delimitedList(foo) + ")"))("bar")
     
+
+    hoge = Group( foo +
+                  bar )
+    
 #     print id.parseString("""hoge""")
 #     print idlist.parseString("""A, B, C""").asXML()
 #     print foo.parseString("? abc !").asXML()
