@@ -1,0 +1,16 @@
+module
+endmodule
+inout
+input
+output
+signed
+reg
+event
+wire
+integer
+time
+function
+endfunction
+automatic
+task
+endtask
