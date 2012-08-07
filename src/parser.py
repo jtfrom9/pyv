@@ -506,14 +506,22 @@ unary_module_path_operator  << oneOf("! ~ & ~& | ~| ^ ~^ ^~                     
 binary_module_path_operator << oneOf("== != && || & | ^ ^~ ~^                                              ")("binary_module_path_operator")
 
 # A.8.7 Numbers
-number         << Group( decimal_number | octal_number | binary_number | hex_number | real_number )
-real_number    << Group( unsigned_number + PERIOD + unsigned_number |
-                         unsigned_number + Optional( PERIOD + unsigned_number ) + exp + Optional( sign ) + unsigned_number )
+number         << Group( decimal_number ^ 
+                         octal_number   ^ 
+                         binary_number  ^ 
+                         hex_number     ^ 
+                         real_number    )
+
+real_number    << Group( 
+    unsigned_number + Optional( PERIOD + unsigned_number ) + exp + Optional( sign ) + unsigned_number |
+    unsigned_number + PERIOD + unsigned_number                                                        )
+
+
 exp            << Group( Suppress("e") | Suppress("E") )
-decimal_number << Group( unsigned_number                                               |
+decimal_number << Group( Optional( size ) + decimal_base + x_digit + ZeroOrMore( USC ) |
+                         Optional( size ) + decimal_base + z_digit + ZeroOrMore( USC ) |
                          Optional( size ) + decimal_base + unsigned_number             |
-                         Optional( size ) + decimal_base + x_digit + ZeroOrMore( USC ) |
-                         Optional( size ) + decimal_base + z_digit + ZeroOrMore( USC ) )
+                         unsigned_number                                               )
 binary_number  << Group( Optional( size ) + binary_base + binary_value )
 octal_number   << Group( Optional( size ) + octal_base  + octal_value  )
 hex_number     << Group( Optional( size ) + hex_base    + hex_value    )
@@ -525,17 +533,17 @@ size                     << non_zero_unsigned_number
 # binary_value             << binary_digit  + ZeroOrMore( USC | binary_digit )
 # octal_value              << octal_digit   + ZeroOrMore( USC | octal_digit )
 # hex_value                << hex_digit     + ZeroOrMore( USC | hex_digit )
-decimal_base             << APS + Optional( oneOf("s S") ) + oneOf("d D")
-binary_base              << APS + Optional( oneOf("s S") ) + oneOf("b B")
-octal_base               << APS + Optional( oneOf("s S") ) + oneOf("o O")
-hex_base                 << APS + Optional( oneOf("s S") ) + oneOf("h H")
+# decimal_base             << APS + Optional( oneOf("s S") ) + oneOf("d D")
+# binary_base              << APS + Optional( oneOf("s S") ) + oneOf("b B")
+# octal_base               << APS + Optional( oneOf("s S") ) + oneOf("o O")
+# hex_base                 << APS + Optional( oneOf("s S") ) + oneOf("h H")
 # non_zero_decimal_digit   << oneOf("  1 2 3 4 5 6 7 8 9")
 # decimal_digit            << oneOf("0 1 2 3 4 5 6 7 8 9")
 # binary_digit             << Group( x_digit | z_digit | Suppress("0") | Suppress("1") )
 # octal_digit              << Group( x_digit | z_digit | oneOf("0 1 2 3 4 5 6 7") )
 # hex_digit                << Group( x_digit | z_digit | oneOf("0 1 2 3 4 5 6 7 8 9 a b c d ef A B C D E F") )
-# x_digit                  << oneOf("x X")
-# z_digit                  << oneOf("z Z ?")
+x_digit                  << oneOf("x X")
+z_digit                  << oneOf("z Z ?")
 
 
 non_zero_unsigned_number << Regex(r"[1-9][_0-9]*")
@@ -543,6 +551,10 @@ unsigned_number          << Regex(r"[0-9][_0-9]*")
 binary_value             << Regex(r"[01xXzZ][_01xXzZ\?]*")
 octal_value              << Regex(r"[0-7xXzZ][_0-7xXzZ\?]*")
 hex_value                << Regex(r"[0-9a-fA-FxXzZ][_0-9a-fA-FxXzZ\?]*")
+decimal_base             << Regex(r"'[sS]?[dD]")
+binary_base              << Regex(r"'[sS]?[bB]")
+octal_base               << Regex(r"'[sS]?[oO]")
+hex_base                 << Regex(r"'[sS]?[hH]")
 
 # A.8.8 Strings
 string << Suppress("\"") + ZeroOrMore( CharsNotIn("\"\n") ) + Suppress("\"")
