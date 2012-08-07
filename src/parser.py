@@ -8,7 +8,7 @@ with open("keywords.txt","r") as f:
     _keywords = [line.strip() for line in f]
 
 ID = ~MatchFirst([Keyword(w) for w in _keywords]) + Word(alphas, alphanums+'_')("id")
-LP,RP,LB,RB,LC,RC,COLON,SEMICOLON,CAMMA,PERIOD,SHARP,EQUAL,AT,ASTA,Q,PLUS,MINUS = map(Suppress,("()[]{}:;,.#=@*?+-"))
+LP,RP,LB,RB,LC,RC,COLON,SEMICOLON,CAMMA,PERIOD,SHARP,EQUAL,AT,ASTA,Q,PLUS,MINUS,USC,APS = map(Suppress,("()[]{}:;,.#=@*?+-_'"))
 
 NB = Suppress(Keyword("<="))
 TRIG = Suppress(Keyword("->"))
@@ -24,7 +24,7 @@ with open("non_terminal_symbols.txt","r") as f:
     for sym in (line.strip() for line in f):
         setattr(self, sym, Forward()(sym))
 
-# A.1 Source text
+# A.1 Source text2
 # A.1.1 Library source text
 # A.1.2 Configuration source text
 
@@ -78,8 +78,8 @@ module_or_generate_item_declaration << Group( net_declaration      |
                                               task_declaration     | 
                                               function_declaration )
 
-non_port_module_item                << Group( module_or_generate_item )
- 
+non_port_module_item                << module_or_generate_item
+
 
 # A.2   Declarations
 # A.2.1 Declaration types   
@@ -418,7 +418,7 @@ conditional_expression   << Group( expression + Q + expression - COLON + express
 constant_base_expression << constant_expression
 constant_expression      << Group( constant_primary                                                            |
                                    unary_operator + constant_primary                                           |
-                                   constant_expression binary_operator constant_expression                     |
+                                   constant_expression + binary_operator + constant_expression                 |
                                    constant_expression + Q + constant_expression - COLON + constant_expression |
                                    string )
 
@@ -432,10 +432,10 @@ constant_range_expression     << Group( constant_expression                     
                                         constant_base_expression + MINUS + COLON + width_constant_expression )
 
 dimension_constant_expression << constant_expression
-expression                    << Group( primary                                 |
-                                        unary_operator + primary                |
-                                        expression binary_operator + expression |
-                                        conditional_expression                  |
+expression                    << Group( primary                                   |
+                                        unary_operator + primary                  |
+                                        expression + binary_operator + expression |
+                                        conditional_expression                    |
                                         string )
 lsb_constant_expression            << constant_expression
 msb_constant_expression            << constant_expression
@@ -458,57 +458,92 @@ range_expression << Group( expression                                           
 
 width_constant_expression << constant_expression
 
+# A.8.4 Primaries
+constant_primary << Group( constant_concatenation                  |
+                           constant_function_call                  |
+                           LP - constant_mintypmax_expression - RP |
+                           constant_multiple_concatenation         |
+                           number )
+
+module_path_primary << Group( number                                     |
+                              ID                                         |
+                              module_path_concatenation                  |
+                              module_path_multiple_concatenation         |
+                              function_call                              |
+                              system_function_call                       |
+                              constant_function_call                     |
+                              LP + module_path_mintypmax_expression - RP )
+
+primary << Group( number                                                                                   |
+                  hierarchical_identifier                                                                  |
+                  hierarchical_identifier + OneOrMore( LB + expression - RB )                              |
+                  hierarchical_identifier + OneOrMore( LB + expression - RB ) + LB + range_expression - LB |
+                  hierarchical_identifier + LB + range_expression - RB                                     |
+                  concatenation                                                                            |
+                  multiple_concatenation                                                                   |
+                  function_call                                                                            |
+                  system_function_call                                                                     |
+                  constant_function_call                                                                   |
+                  LP + mintypmax_expression - RP                                                           )
+
+# A.8.5 Expression left-side value
+net_lvalue << Group( hierarchical_net_identifier                                                                                    |
+                     hierarchical_net_identifier + OneOrMore( LB + constant_expression - RB )                                       |
+                     hierarchical_net_identifier + OneOrMore( LB + constant_expression - RB ) + LB + constant_range_expression - RB |
+                     hierarchical_net_identifier + LB + constant_range_expression - RB                                              |
+                     net_concatenation )
+
+variable_lvalue << Group( hierarchical_variable_identifier                                                                  |
+                          hierarchical_variable_identifier + OneOrMore( LB + expression - RB )                              |
+                          hierarchical_variable_identifier + OneOrMore( LB + expression - RB ) + LB + range_expression - RB |
+                          hierarchical_variable_identifier + LB + range_expression - RB                                     |
+                          variable_concatenation )
+
+# A.8.6 Operators
+unary_operator              << oneOf("+ - ! ~ & ~& | ~| ^ ~^ ^~                                            ")("unary_operator")
+binary_operator             << oneOf("+ - * / % == != === !== && || ** < <= > >= & | ^ ^~ ~^ >> << >>> <<< ")("binary_operator")
+unary_module_path_operator  << oneOf("! ~ & ~& | ~| ^ ~^ ^~                                                ")("unary_module_path_operator")
+binary_module_path_operator << oneOf("== != && || & | ^ ^~ ~^                                              ")("binary_module_path_operator")
+
 # A.8.7 Numbers
+number         << Group( decimal_number | octal_number | binary_number | hex_number | real_number )
+real_number    << Group( unsigned_number + PERIOD + unsigned_number |
+                         unsigned_number + Optional( PERIOD + unsigned_number ) + exp + Optional( sign ) + unsigned_number )
+exp            << Group( Suppress("e") | Suppress("E") )
+decimal_number << Group( unsigned_number                                               |
+                         Optional( size ) + decimal_base + unsigned_number             |
+                         Optional( size ) + decimal_base + x_digit + ZeroOrMore( USC ) |
+                         Optional( size ) + decimal_base + z_digit + ZeroOrMore( USC ) )
+binary_number  << Group( Optional( size ) + binary_base + binary_value )
+octal_number   << Group( Optional( size ) + octal_base  + octal_value  )
+hex_number     << Group( Optional( size ) + hex_base    + hex_value    )
+
+sign                     << oneOf("+ -")
+size                     << non_zero_unsigned_number
+# non_zero_unsigned_number << non_zero_decimal_digit + ZeroOrMore( USC | decimal_digit )
+# unsigned_number          << decimal_digit + ZeroOrMore( USC | decimal_digit ) 
+# binary_value             << binary_digit  + ZeroOrMore( USC | binary_digit )
+# octal_value              << octal_digit   + ZeroOrMore( USC | octal_digit )
+# hex_value                << hex_digit     + ZeroOrMore( USC | hex_digit )
+decimal_base             << APS + Optional( oneOf("s S") ) + oneOf("d D")
+binary_base              << APS + Optional( oneOf("s S") ) + oneOf("b B")
+octal_base               << APS + Optional( oneOf("s S") ) + oneOf("o O")
+hex_base                 << APS + Optional( oneOf("s S") ) + oneOf("h H")
+# non_zero_decimal_digit   << oneOf("  1 2 3 4 5 6 7 8 9")
+# decimal_digit            << oneOf("0 1 2 3 4 5 6 7 8 9")
+# binary_digit             << Group( x_digit | z_digit | Suppress("0") | Suppress("1") )
+# octal_digit              << Group( x_digit | z_digit | oneOf("0 1 2 3 4 5 6 7") )
+# hex_digit                << Group( x_digit | z_digit | oneOf("0 1 2 3 4 5 6 7 8 9 a b c d ef A B C D E F") )
+# x_digit                  << oneOf("x X")
+# z_digit                  << oneOf("z Z ?")
 
 
+non_zero_unsigned_number << Regex(r"[1-9][_0-9]*")
+unsigned_number          << Regex(r"[0-9][_0-9]*")
+binary_value             << Regex(r"[01xXzZ][_01xXzZ\?]*")
+octal_value              << Regex(r"[0-7xXzZ][_0-7xXzZ\?]*")
+hex_value                << Regex(r"[0-9a-fA-FxXzZ][_0-9a-fA-FxXzZ\?]*")
 
+# A.8.8 Strings
+string << Suppress("\"") + ZeroOrMore( CharsNotIn("\"\n") ) + Suppress("\"")
 
-file = '''
-
-module hoge ( a,b, c, d  , e ); 
-
- wire a, b;
-
-wire x;
-integer A;
-reg foo;
-
-input A;
-
-task foo;
-   
-output B;
-inout C;
-reg x,y;
-reg a,b;
-
-statement
-endtask
-
-endmodule
-'''
-
-def main():
-    try:
-        result = (source_text + stringEnd).parseString(file)
-        print(result.asXML())
-    except ParseSyntaxException,pfe:
-        # for p in dir(pfe):
-        #     print("Error: "+p)
-        # print("col={0}".format(pfe.col))
-        print("line={0}".format(pfe.line))
-        # print("lineno={0}".format(pfe.lineno))
-        # print("loc={0}".format(pfe.loc))
-        #print("markInputLine={0}".format(pfe.markInputLine()))
-        print("msg={0}".format(pfe.msg))
-        #print(LastParseLoc)
-        print(pfe)
-        print(pfe.line);
-        # import itertools
-        # s=""
-        # print(s.join(" " for i in range(len(pfe.line)-1)) + "^")
-        #for s in itertools.repeat(" ",len(pfe.line)):
-
-
-if __name__=='__main__':
-    main()
