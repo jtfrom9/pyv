@@ -2,6 +2,7 @@ import parser as p
 import pyparsing as pp
 from test_common import *
 
+
 test(p.non_zero_decimal_digit.leaveWhitespace(), "1")
 test(p.non_zero_decimal_digit.leaveWhitespace(), "1 2")
 test(p.non_zero_decimal_digit.leaveWhitespace(), "12")

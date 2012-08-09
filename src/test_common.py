@@ -1,24 +1,43 @@
 import parser as p
 import pyparsing as pp
+import unittest
 
-def test(grammer, text, xml=False):
-    try:
-        print("=== " + grammer.resultsName + " <- \"" + text + "\" ===")
-        result = (grammer + pp.stringEnd).parseString(text)
-        if result:
-            if xml:
-                print(result.asXML())
-            else:
-                print(result)
-    except pp.ParseException,pfe:
-        print("*** Error detect.")
-        print("line={0}".format(pfe.line))
-        print("msg={0}".format(pfe.msg))
-        print(pfe)
-        print(pfe.line);
-    except pp.ParseSyntaxException,pfe:
-        print("Error detect.")
-        print("line={0}".format(pfe.line))
-        print("msg={0}".format(pfe.msg))
-        print(pfe)
-        print(pfe.line);
+class TestGrammer(unittest.TestCase):
+    def getGrammer(self):
+        pass
+
+    def _test(self, text):
+        try:
+            result = (self.getGrammer() + pp.stringEnd).parseString(text)
+        except (pp.ParseException, pp.ParseSyntaxException) as e:
+            print("** line={0},msg={1}".format(e.line, e.msg))
+            return None
+        return result
+
+    def _testp(self,text):
+        result = self._test(text)
+        if result: 
+            print("******")
+            for p in dir(result):
+                print(p)
+            print("result={0}".format(result.asXML()))
+        return result
+
+class Test_binary_number(TestGrammer):
+    def getGrammer(self):
+        return p.binary_number
+
+    def test1(self):
+        self.assertTrue(self._testp("4'b0000"))
+        self.assertTrue(self._test("4'SB0?00"))
+        self.assertTrue(self._test("8'Sbzzzz_xxxx"))
+        self.assertTrue(self._test("'b0000"))
+        self.assertFalse(self._test("'b00 00 "))
+        self.assertTrue(self._test("'b 0000 "))
+        self.assertTrue(self._test(" 32 'b 0000 "))
+        self.assertFalse(self._test(" 3 2 'b 0000 "))
+
+
+suite = unittest.TestLoader().loadTestsFromTestCase(Test_binary_number)
+unittest.TextTestRunner(verbosity=2).run(suite)
+
