@@ -2,42 +2,66 @@ import parser as p
 import pyparsing as pp
 import unittest
 
-class TestGrammer(unittest.TestCase):
-    def getGrammer(self):
+class GrammarTestCase(unittest.TestCase):
+    def grammar(self):
         pass
 
-    def _test(self, text):
+    def _check(self, text, success, expect):
+        result = None
         try:
-            result = (self.getGrammer() + pp.stringEnd).parseString(text)
+            result = (self.grammar() + pp.stringEnd).parseString(text)
         except (pp.ParseException, pp.ParseSyntaxException) as e:
-            print("** line={0},msg={1}".format(e.line, e.msg))
-            return None
+            if success:
+                self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e.msg))
+            else:
+                self.assertTrue(True)
+            return
+        except:
+            if success:
+                self.fail()
+            else:
+                self.assertTrue(True)
+            return
+        self.assertTrue(success,"input = \"{0}\", expect = {1}, result = {2}".format(text, expect, result))
+        if expect:
+            self.assertEqual(result, expect, "input = \"{0}\", expect = {1}".format(text,expect))
+        else:
+            self.assertTrue(True)
         return result
 
-    def _testp(self,text):
-        result = self._test(text)
-        if result: 
-            print("******")
-            for p in dir(result):
-                print(p)
-            print("result={0}".format(result.asXML()))
-        return result
+    def check_pass(self, text, expect=None):
+        return self._check(text, True, expect)
 
-class Test_binary_number(TestGrammer):
-    def getGrammer(self):
-        return p.binary_number
+    def check_fail(self, text):
+        return self._check(text, False, None)
 
-    def test1(self):
-        self.assertTrue(self._testp("4'b0000"))
-        self.assertTrue(self._test("4'SB0?00"))
-        self.assertTrue(self._test("8'Sbzzzz_xxxx"))
-        self.assertTrue(self._test("'b0000"))
-        self.assertFalse(self._test("'b00 00 "))
-        self.assertTrue(self._test("'b 0000 "))
-        self.assertTrue(self._test(" 32 'b 0000 "))
-        self.assertFalse(self._test(" 3 2 'b 0000 "))
+# def TestCase(grammar):
+#     def _decolator(test_func):
+#         class _TestCase(GrammarTestCase):
+#             def grammar(self):
+#                 return grammar
+#             def runTest(self):
+#                 test_func(self)
+#         return _TestCase
+#     return _decolator
+        
+def TestCase(grammarSet):
+    prefix = "test_"
 
+    def _decolator(test_func):
+        func_name = test_func.__name__
+        grammar_name_index = func_name.index(prefix)
+        grammar_name = func_name[len(prefix):]
+        g = getattr(grammarSet, grammar_name)
+        class _TestCase(GrammarTestCase):
+            def grammar(self):
+                return g
+            def runTest(self):
+                test_func(self)
+        _TestCase.__name__   = test_func.__name__
+        _TestCase.__module__ = test_func.__module__
+        return _TestCase
+    return _decolator
+        
 
-suite = unittest.TestLoader().loadTestsFromTestCase(Test_binary_number)
-unittest.TextTestRunner(verbosity=2).run(suite)
 

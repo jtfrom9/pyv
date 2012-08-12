@@ -82,6 +82,8 @@ non_port_module_item                << module_or_generate_item
 
 
 # A.2   Declarations
+
+
 # A.2.1 Declaration types   
 
 # A.2.1.1 Module parameter declarations
@@ -474,16 +476,16 @@ module_path_primary << Group( number                                     |
                               constant_function_call                     |
                               LP + module_path_mintypmax_expression - RP )
 
-primary << Group( number                                                                                   |
-                  hierarchical_identifier                                                                  |
-                  hierarchical_identifier + OneOrMore( LB + expression - RB )                              |
-                  hierarchical_identifier + OneOrMore( LB + expression - RB ) + LB + range_expression - LB |
-                  hierarchical_identifier + LB + range_expression - RB                                     |
-                  concatenation                                                                            |
-                  multiple_concatenation                                                                   |
-                  function_call                                                                            |
-                  system_function_call                                                                     |
-                  constant_function_call                                                                   |
+primary << Group( number                                                                                   ^
+                  hierarchical_identifier                                                                  ^
+                  hierarchical_identifier + OneOrMore( LB + expression - RB )                              ^
+                  hierarchical_identifier + OneOrMore( LB + expression - RB ) + LB + range_expression - LB ^
+                  hierarchical_identifier + LB + range_expression - RB                                     ^
+                  concatenation                                                                            ^
+                  multiple_concatenation                                                                   ^
+                  function_call                                                                            ^
+                  system_function_call                                                                     ^
+                  constant_function_call                                                                   ^
                   LP + mintypmax_expression - RP                                                           )
 
 # A.8.5 Expression left-side value
@@ -548,9 +550,9 @@ z_digit                  << oneOf("z Z ?")
 
 non_zero_unsigned_number << Regex(r"[1-9][_0-9]*")
 unsigned_number          << Regex(r"[0-9][_0-9]*")
-binary_value             << Regex(r"[01xXzZ][_01xXzZ\?]*")
-octal_value              << Regex(r"[0-7xXzZ][_0-7xXzZ\?]*")
-hex_value                << Regex(r"[0-9a-fA-FxXzZ][_0-9a-fA-FxXzZ\?]*")
+binary_value             << Regex(r"[01xXzZ\?][_01xXzZ\?]*")
+octal_value              << Regex(r"[0-7xXzZ\?][_0-7xXzZ\?]*")
+hex_value                << Regex(r"[0-9a-fA-FxXzZ\?][_0-9a-fA-FxXzZ\?]*")
 decimal_base             << Regex(r"'[sS]?[dD]")
 binary_base              << Regex(r"'[sS]?[bB]")
 octal_base               << Regex(r"'[sS]?[oO]")
@@ -558,4 +560,21 @@ hex_base                 << Regex(r"'[sS]?[hH]")
 
 # A.8.8 Strings
 string << Suppress("\"") + ZeroOrMore( CharsNotIn("\"\n") ) + Suppress("\"")
+
+# A.9 General
+# A.9.1 Attributes
+# A.9.2 Comments
+
+# A.9.3 Idnetifiers
+hierarchical_block_identifier    << hierarchical_identifier
+hierarchical_event_identifier    << hierarchical_identifier
+hierarchical_function_identifier << hierarchical_identifier
+hierarchical_net_identifier      << hierarchical_net_identifier
+hierarchical_variable_identifier << hierarchical_variable_identifier
+hierarchical_task_identifier     << hierarchical_identifier
+
+# todo
+hierarchical_identifier          << ID
+
+system_task_identifier << Regex(r"$[a-zA-Z0-9_$][a-zA-Z0-9_$]*")
 
