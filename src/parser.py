@@ -10,8 +10,8 @@ with open("keywords.txt","r") as f:
 ID = ~MatchFirst([Keyword(w) for w in _keywords]) + Word(alphas, alphanums+'_')("id")
 LP,RP,LB,RB,LC,RC,COLON,SEMICOLON,CAMMA,PERIOD,SHARP,EQUAL,AT,ASTA,Q,PLUS,MINUS,USC,APS = map(Suppress,("()[]{}:;,.#=@*?+-_'"))
 
-NB = Suppress(Keyword("<="))
-TRIG = Suppress(Keyword("->"))
+NB = Suppress(Literal("<="))
+TRIG = Suppress(Literal("->"))
 
 #LP/RP : left/right paren          ()
 #LB/RB : left/right bracket        []
@@ -33,18 +33,18 @@ source_text << ZeroOrMore( description )
 description << Group ( module_declaration )
 
 module_declaration << Group (  
-    MODULE - ID + Optional( module_parameter_port_list ) + Optional( list_of_ports ) - SEMICOLON +
+    (MODULE - ID + Optional( module_parameter_port_list ) + Optional( list_of_ports ) - SEMICOLON +
     ZeroOrMore( module_item ) -
-    ENDMODULE
-    | 
-    MODULE - ID + Optional( module_parameter_port_list ) + Optional( list_of_port_declarations) - SEMICOLON + 
+    ENDMODULE)
+    ^
+    (MODULE - ID + Optional( module_parameter_port_list ) + Optional( list_of_port_declarations ) - SEMICOLON + 
     ZeroOrMore( non_port_module_item ) -
-    ENDMODULE )
+    ENDMODULE ))
     
 # A.1.4 Module parametersand ports
 #module_parameter_port_list << SHARP + LP parameter
 list_of_ports              << LP + delimitedList( port ) - RP
-list_of_port_declarations  << Group( LP + delimitedList( port_declaration ) - RP | 
+list_of_port_declarations  << Group( LP + delimitedList( port_declaration ) + RP | 
                                      LP - RP  )
                                      
 port             << Group( Optional( port_expression ) | 
@@ -238,8 +238,8 @@ net_assignment         << Group( net_lvalue - EQUAL + expression )
 # A.6.2 Procedural blocks and assigments
 initial_construct      << Group( INITIAL + statement )
 always_construct       << Group( ALWAYS  + statement )
-blocking_assignment    << Group( variable_lvalue - EQUAL + Optional( delay_or_event_control ) + expression )
-nonblocking_assignment << Group( variable_lvalue - NB    + Optional( delay_or_event_control ) + expression )
+blocking_assignment    << Group( variable_lvalue + EQUAL + Optional( delay_or_event_control ) + expression )
+nonblocking_assignment << Group( variable_lvalue + NB    + Optional( delay_or_event_control ) + expression )
 
 procedural_continuous_assignments << Group( ASSIGN   + variable_assignment |
                                             DEASSIGN + variable_lvalue     |
@@ -264,13 +264,13 @@ seq_block           << Group( BEGIN + Optional( COLON + ID + ZeroOrMore( block_i
                               END )
 
 # A.6.4 Statements
-statement << Group( blocking_assignment               - SEMICOLON |
+statement << Group( nonblocking_assignment            + SEMICOLON |
+                    blocking_assignment               + SEMICOLON |
                     case_statement                                |
                     conditional_statement                         |
                     disable_statement                             |
                     event_trigger                                 |
                     loop_statement                                |
-                    nonblocking_assignment            - SEMICOLON |
                     par_block                                     |
                     procedural_continuous_assignments - SEMICOLON |
                     procedural_timing_control_statement           |
@@ -279,7 +279,7 @@ statement << Group( blocking_assignment               - SEMICOLON |
                     task_enable                                   |
                     wait_statement                                )
 
-statement_or_null  << Group( statement | SEMICOLON )
+statement_or_null  << Group(  SEMICOLON | statement  )
 function_statement << Group( function_blocking_assignment - SEMICOLON |
                              function_case_statement                  |
                              function_conditional_statement           |
@@ -434,11 +434,13 @@ constant_range_expression     << Group( constant_expression                     
                                         constant_base_expression + MINUS + COLON + width_constant_expression )
 
 dimension_constant_expression << constant_expression
-expression                    << Group( primary                                   |
+_expression                    = Group( primary                                   |
+                                        string                                    |
                                         unary_operator + primary                  |
-                                        expression + binary_operator + expression |
-                                        conditional_expression                    |
-                                        string )
+                                        conditional_expression                    )
+#                                        expression + binary_operator + expression )
+expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.RIGHT) ])
+
 lsb_constant_expression            << constant_expression
 msb_constant_expression            << constant_expression
 mintypmax_expression               << Group( expression | expression + COLON + expression + COLON + expression )
@@ -570,7 +572,7 @@ hierarchical_block_identifier    << hierarchical_identifier
 hierarchical_event_identifier    << hierarchical_identifier
 hierarchical_function_identifier << hierarchical_identifier
 hierarchical_net_identifier      << hierarchical_net_identifier
-hierarchical_variable_identifier << hierarchical_variable_identifier
+hierarchical_variable_identifier << hierarchical_identifier
 hierarchical_task_identifier     << hierarchical_identifier
 
 # todo

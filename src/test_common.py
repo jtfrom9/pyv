@@ -16,12 +16,13 @@ class GrammarTestCase(unittest.TestCase):
             else:
                 self.assertTrue(True)
             return
-        except:
+        except Exception, e:
             if success:
-                self.fail()
+                self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e))
             else:
                 self.assertTrue(True)
             return
+
         self.assertTrue(success,"input = \"{0}\", expect = {1}, result = {2}".format(text, expect, result))
         if expect:
             self.assertEqual(result, expect, "input = \"{0}\", expect = {1}".format(text,expect))
