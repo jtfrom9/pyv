@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import pyparsing as pp
 import unittest
@@ -7,91 +8,114 @@ import pprint
 import parser as p
 from test_common import *
 
-def action_unsigned_number(s,loc,tok):
-    return int(tok[0])
-p.unsigned_number.setParseAction(action_unsigned_number)
-p.size.setParseAction(lambda t: int(t[0]))
+def GroupedAction(action):
+    def _decorator(*args):
+        string=None
+        loc=None
+        tokens=None
+        print("args={0}".format(args))
+        print("len={0}".format(len(args)))
+        if len(args)==3:
+            string = args[0]
+            loc    = args[1]
+            tokens = args[2]
+            action(string, loc, tokens[0])
+        elif (len(args)==2):
+            loc    = args[0]
+            tokens = args[1]
+            action(string, loc, tokens[0])
+        elif len(args)==1:
+            tokens = args[0]
+            action(string, loc, tokens[0])
 
-def print_props(obj):
-    for prop in dir(obj):
-        print("{0} = {1}".format(prop,getattr(obj,prop)))
+    return _decorator
 
-def action_number(s,l,tok):
-    print("action_number")
-    if tok.number[0].decimal_number:
-        print("OK")
-        #print(tok.number[0].decimal_number.asXML())
-        pprint.pprint(tok.number[0].decimal_number)
-    #print_props(tok.number[0].decimal_number)
-    # print("  # of tok={0}".format(len(tok[0])))
-    # for i,t in enumerate(tok[0]):
-    #     print("    tok[{0}]={1} {2} {3}".format(i,t,type(t),dir(t)))
-    #     print("             {0}".format(dir(t)))
-p.number.setParseAction(action_number)
+class Numeric(object):
+    def __init__(self, string):
+        self.string = string
+    def __repr__(self):
+        return self.string
+
+class FixedWidth(Numeric):
+    Binary = 2
+    Octal  = 8
+    Hex    = 16
+    Decimal = 10
+
+    def __init__(self, string, width, vtype):
+        self.string = string
+        self.width  = width
+        self.vtype  = vtype
+
+class State2Value(FixedWidth):
+    def __init__(self, string, width, vtype):
+        super(State2Value,self).__init__(string,width,vtype)
+        print("string={0}, vtype={1}".format(string,vtype))
+        self.vale = int(string,vtype)
+
+class State4Value(FixedWidth):
+    def __init__(self, string, width, vtype, bits):
+        super(State4Value,self).__init__(string,width,vtype)
+        self.bits = bits
+
+class Float(Numeric):
+    def __init__(self, string):
+        super(Float,self).__init__(string)
+        self.value = float(string)
+    def __repr__(self):
+        return self.value
 
 
-def action_real(s,l,tok):
-    return float(s)
-    print("action_real")
-    print("  # of tok={0}".format(len(tok[0])))
-    print("         s={0}".format(s))
-    for i,t in enumerate(tok[0]):
-        print("    tok[{0}]={1} {2}".format(i,t,type(t)))
-#        print("             {0}".format(dir(t)))
-    if len(tok[0])==2:
-        return float(s)
+p.real_number.setParseAction(lambda s,l,t: Float(s))
+
+@GroupedAction
+def decimalAction(string, loc, token):
+    print("string={0}".format(string))
+    print("len={0}".format(len(token)))
+    print("dir={0}".format(dir(token)))
+    print("token={0}".format(token))
+    if len(token)==1:
+        return State2Value(token.unsigned_number,32,FixedWidth.Decimal)
     else:
-        return float(s)
-        # token=tok[0]
-        # i=0
-        # value = token[i]
-        # i++
-        # if type(token[i])==type(int):
-        #     value = 
+        if token.size: 
+            width = token.size 
+        else:
+            width = 32 # temp
+        if token.x_digit:
+            return State4Value(string,width,FixedWidth.Decimal,string) #temp
+        if token.z_digit:
+            return State4Value(string,width,FixedWidth.Decimal,string) #temp
+        if token.unsigned_number:
+            print("OK")
+            print("={0}".format(token.unsigned_number))
+            return State2Value(token.unsigned_number,width,FixedWidth.Decimal,string) #temp
 
-p.real_number.setParseAction(action_real)
+p.decimal_number.setParseAction(decimalAction)
 
-@pp.traceParseAction
-def action_decimal_number(s,l,tok):
-    print("action_decimal_number")
-    print("  # of tok={0}".format(len(tok[0])))
-    print("         s={0}".format(s))
-    for i,t in enumerate(tok[0]):
-        print("    tok[{0}]={1} {2}".format(i,t,type(t)))
-    #print(dir(tok[0]))
-    # print("tok={0}".format(dir(tok)))
-    # print("tok.decimal_number={0}".format(dir(tok.decimal_number)))
-    # print("tok.decimal_number={0}".format(dir(tok[0])))
-    # print("tok.decimal_number.size={0}".format(dir(tok.decimal_number.size)))
-    # print("tok.decimal_number.unsi={0}".format(dir(tok.decimal_number.unsigned_number)))
-    print(dir(tok.decimal_number.size))
-    print(tok.asXML())
-        
-p.decimal_number.setParseAction(action_decimal_number)
-
-
-# @TestCase(p)
-# def test_unsigned_number(self):
-#     self.check_pass('''  10''')
-@TestCase(p)
-def test_number(self):
-    #self.check_pass('''  10''')
-    #self.check_pass("1.0")
-    self.check_pass("1e10")
+def decimal(s,l,t): return t[0]
+p.non_zero_unsigned_number.setParseAction(decimal)
+p.unsigned_number.setParseAction(decimal)
 
 
 if __name__=='__main__':
-    result = p.number.parseString("20.03")
-    print(result.asXML())
-    result = p.number.parseString("20e30")
-    print(result.asXML())
-    result = p.number.parseString("20e+30")
-    print(result.asXML())
-    result = p.number.parseString("20.12e+30")
-    print(result.asXML())
-    result = p.number.parseString("1")
-    print(result.asXML())
-    result = p.number.parseString("10'd10")
-    print(result.asXML())
+    # for gen in p.number.scanString("1"):
+    #     print(type(gen))
     #unittest.main()
+
+    # print(p.unsigned_number.parseString("1").asXML())
+    # print(p.non_zero_unsigned_number.parseString("1").asXML())
+    # result = p.decimal_number.parseString("1")
+    # print(result.asXML())
+    result = p.decimal_number.parseString("1'd5")
+    print(result.asXML())
+    # print("={0}".format(dir(result)))
+    # print("={0}".format(dir(result.decimal_number)))
+    # print("={0}".format(dir(result.decimal_number[0])))
+    # print("={0}".format(result.decimal_number[0]))
+    # print("={0}".format(dir(result.decimal_number[0].unsigned_number)))
+
+    print(result.decimal_number[0].size)
+    print(result.decimal_number[0].decimal_base)
+    print(result.decimal_number[0].unsigned_number)
+    
     

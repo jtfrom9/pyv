@@ -138,7 +138,7 @@ def test_decimal_number(self):
     self.check_pass("123")
     self.check_pass("01")
     self.check_pass("'d0")
-    self.check_pass("5'd0")
+    print(self.check_pass("5'd0").asXML())
     self.check_pass("5'dx")
     self.check_pass("5'dZ")
     self.check_pass("5'd?")
