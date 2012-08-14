@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import parser as p
 import pyparsing as pp
 import unittest

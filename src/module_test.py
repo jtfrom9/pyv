@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pyparsing as pp
 import parser as p
 import sys
