@@ -4,6 +4,7 @@ import unittest
 from pyparsing import stringEnd
 
 import grammar
+import action
 from test_common import GrammarTestCase, TestCase
 
 class TestModule(unittest.TestCase):

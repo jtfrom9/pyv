@@ -4,6 +4,7 @@ import unittest
 
 from test_common import GrammarTestCase, TestCase
 import grammar
+import action
 
 @TestCase(grammar)
 def test_non_zero_unsigned_number(self):
@@ -150,6 +151,10 @@ def test_decimal_number(self):
     self.check_pass("1'd1")
     self.check_fail("0'd1")
     self.check_fail("1'd1x")
+    print(self.check_pass("1'd5").asXML())
+    print(self.check_pass("10'dx").asXML())
+    print(self.check_pass("1'd?").asXML())
+    print(self.check_pass("20").asXML())
 
 @TestCase(grammar)
 def test_binary_number(self):
@@ -161,7 +166,28 @@ def test_binary_number(self):
     self.check_pass("'b 0000 ")
     self.check_pass(" 32 'b 0000 ")
     self.check_fail(" 3 2 'b 0000 ")
+    print(self.check_pass("'b0000").asXML())
+    print(self.check_pass("'b1000").asXML())
+    print(self.check_pass("8'B11").asXML())
+    print(self.check_pass("8'b110x0").asXML())
+    print(self.check_pass("40'b1??Zx0z011?1").asXML())
 
+@TestCase(grammar)
+def test_octal_number(self):
+    print(self.check_pass("'o0000").asXML())
+    print(self.check_pass("'o01234567").asXML())
+    print(self.check_pass("8'o77").asXML())
+    print(self.check_pass("8'o110x0").asXML())
+    print(self.check_pass("40'o1??Zx0z011?1").asXML())
+
+
+@TestCase(grammar)
+def test_hex_number(self):
+    print(self.check_pass("'h0000").asXML())
+    print(self.check_pass("'h0123456789abcdef").asXML())
+    print(self.check_pass("8'h77").asXML())
+    print(self.check_pass("8'hF1Fx0").asXML())
+    print(self.check_pass("40'h1??Zx0z011?1").asXML())
 
 @TestCase(grammar)
 def test_real_number(self):
@@ -173,6 +199,7 @@ def test_real_number(self):
     self.check_pass("1.0e-0")
     self.check_pass("1.0e+0")
     self.check_fail("-0.0")
+    
 
 if __name__=='__main__':
     unittest.main()
