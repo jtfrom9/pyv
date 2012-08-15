@@ -22,7 +22,8 @@ for kw in _keywords:
 
 with open("non_terminal_symbols.txt","r") as f:
     for sym in (line.strip() for line in f):
-        setattr(self, sym, Forward()(sym))
+        result_name = sym if not sym.endswith("identifier") else "id"
+        setattr(self, sym, Forward()(result_name))
 
 # A.1 Source text2
 # A.1.1 Library source text
