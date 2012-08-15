@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
-import parser as p
 import sys
-
 import unittest
-from test_common import GrammarTestCase, TestCase
 
-@TestCase(p)
+from test_common import GrammarTestCase, TestCase
+import grammar
+
+@TestCase(grammar)
 def test_primary(self):
     # print(self.check_pass("10").asXML())
     # print(self.check_pass("hoge").asXML())
     print(self.check_pass("hoge(a)").asXML())
     #self.check_pass("hoge(a)")
 
-@TestCase(p)
+@TestCase(grammar)
 def test_function_call(self):
     print(self.check_pass("hoge(a)").asXML())
     # result = self.check_pass("hoge(a)")

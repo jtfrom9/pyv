@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-import pyparsing as pp
-import parser as p
 import sys
-
 import unittest
+from pyparsing import stringEnd
+
+import grammar
 from test_common import GrammarTestCase, TestCase
 
 class TestModule(unittest.TestCase):
     def do_test(self, text):
-        result = (p.source_text + pp.stringEnd).parseString(text)
+        result = (grammar.source_text + stringEnd).parseString(text)
         print(result.asXML())
         
     def test1(self):
@@ -50,14 +50,14 @@ endmodule
         self.do_test(text)
 
 
-@TestCase(p)
+@TestCase(grammar)
 def test_port_declaration(self):
     print(self.check_pass('''input [3:0]
 a'''
                           ).asXML())
 
 
-@TestCase(p)
+@TestCase(grammar)
 def test_list_of_port_declarations(self):
     print(self.check_pass('''(input [3:0] a, 
   output [10:4] b)'''
@@ -69,17 +69,17 @@ def test_list_of_port_declarations(self):
 ''').asXML())
 
 
-@TestCase(p)
+@TestCase(grammar)
 def test_always_construct(self):
     print(self.check_pass('''always hoge=1+2;'''
 ).asXML())
     
-@TestCase(p)
+@TestCase(grammar)
 def test_procedural_timing_control_statement(self):
     print(self.check_pass("@hoge;").asXML())
     print(self.check_pass("@*;").asXML())
     
-@TestCase(p)
+@TestCase(grammar)
 def test_event_control(self):
     print(self.check_pass("@hoge").asXML())
 
@@ -87,20 +87,20 @@ def test_event_control(self):
 ''').asXML())
     print(self.check_pass("@*").asXML())
 
-@TestCase(p)
+@TestCase(grammar)
 def test_statement_or_null(self):
     print(self.check_pass(";").asXML())
     print(self.check_pass("hoge = 1 + 2;").asXML())
 
-@TestCase(p)
+@TestCase(grammar)
 def test_variable_lvalue(self):
     print(self.check_pass("hoge").asXML())
     
-@TestCase(p)    
+@TestCase(grammar)    
 def test_blocking_assignment(self):
     print(self.check_pass("hoge = 1 + 2").asXML())
 
-@TestCase(p)
+@TestCase(grammar)
 def test_expression(self):
     print(self.check_pass("1").asXML())
     print(self.check_pass("+2").asXML())

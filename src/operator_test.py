@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
-import parser as p
-import pyparsing as pp
 import sys
-
 import unittest
-from test_common import GrammarTestCase, TestCase
 
-@TestCase(p)
+from test_common import GrammarTestCase, TestCase
+import grammar
+
+@TestCase(grammar)
 def test_unary_operator(self):
     self.check_pass("~|")
     self.check_pass("~^")
     self.check_pass("^~")
 
-@TestCase(p)
+@TestCase(grammar)
 def test_binary_operator(self):
     self.check_pass("|| ")
     self.check_pass("** ")

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import pyparsing as pp
+from pyparsing import ParseFatalException
 import unittest
 import pprint
 
-import parser as p
+import grammar
 import ast
 from test_common import *
 
@@ -29,12 +29,12 @@ def GroupedAction(action):
         try:
             return action(string, loc, tokens[0])
         except Exception, e:
-            raise pp.ParseFatalException(string, loc, 
+            raise ParseFatalException(string, loc, 
                                       "parse action \'{0}\' throw an exception: {1}".format(action.__name__, e))
     return _decorator
 
 
-p.real_number.setParseAction(lambda s,l,t: Float(s))
+grammar.real_number.setParseAction(lambda s,l,t: Float(s))
 
 @GroupedAction
 def decimalAction(s, loc, token):
@@ -55,14 +55,14 @@ def decimalAction(s, loc, token):
         if token.unsigned_number:
             return s2val(token.size)
 
-p.decimal_number.setParseAction(decimalAction)
+grammar.decimal_number.setParseAction(decimalAction)
 
-p.non_zero_unsigned_number.setParseAction(lambda t: t[0])
-p.unsigned_number.setParseAction         (lambda t: t[0])
-p.size.setParseAction(                    lambda t: int(t[0]))
+grammar.non_zero_unsigned_number.setParseAction(lambda t: t[0])
+grammar.unsigned_number.setParseAction         (lambda t: t[0])
+grammar.size.setParseAction(                    lambda t: int(t[0]))
 
 
-@TestCase(p)
+@TestCase(grammar)
 def test_decimal_number(self):
     print(self.check_pass("1'd5").asXML())
     print(self.check_pass("10'dx").asXML())
@@ -71,21 +71,5 @@ def test_decimal_number(self):
 
 
 if __name__=='__main__':
-    # for gen in p.number.scanString("1"):
-    #     print(type(gen))
     unittest.main()
 
-    # #result = p.decimal_number.parseString("1'd5")
-    # result = p.decimal_number.parseString("1'd?")
-    # #result = p.decimal_number.parseString("1")
-    # print(result.asXML())
-
-    # print(type(result))
-    # print(dir(result))
-    # print(type(result.decimal_number))
-    # print(dir(result.decimal_number))
-    # print("result={0}".format(result.decimal_number))
-
-    # print(result.decimal_number[0].size)
-    # print(result.decimal_number[0].decimal_base)
-    # print(result.decimal_number[0].unsigned_number)

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-import parser as p
-import pyparsing as pp
 import unittest
+from pyparsing import stringEnd, ParseException, ParseSyntaxException
 
 class GrammarTestCase(unittest.TestCase):
     def grammar(self):
@@ -10,8 +9,8 @@ class GrammarTestCase(unittest.TestCase):
     def _check(self, text, success, expect):
         result = None
         try:
-            result = (self.grammar() + pp.stringEnd).parseString(text)
-        except (pp.ParseException, pp.ParseSyntaxException) as e:
+            result = (self.grammar() + stringEnd).parseString(text)
+        except (ParseException, ParseSyntaxException) as e:
             if success:
                 self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e.msg))
             else:
