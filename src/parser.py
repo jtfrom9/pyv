@@ -545,8 +545,8 @@ size                     << non_zero_unsigned_number
 # binary_digit             << Group( x_digit | z_digit | Suppress("0") | Suppress("1") )
 # octal_digit              << Group( x_digit | z_digit | oneOf("0 1 2 3 4 5 6 7") )
 # hex_digit                << Group( x_digit | z_digit | oneOf("0 1 2 3 4 5 6 7 8 9 a b c d ef A B C D E F") )
-x_digit                  << Group( oneOf("x X") )
-z_digit                  << Group( oneOf("z Z ?") )
+x_digit                  << oneOf("x X")
+z_digit                  << oneOf("z Z ?")
 
 non_zero_unsigned_number << Regex(r"[1-9][_0-9]*")
 unsigned_number          << Regex(r"[0-9][_0-9]*")

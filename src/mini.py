@@ -1,7 +1,7 @@
 #/bin/python3
 
 import sys
-#from pyparsing import *
+from pyparsing import *
 
 current = sys.modules[__name__]
 

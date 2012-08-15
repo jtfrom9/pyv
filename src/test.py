@@ -6,7 +6,7 @@ import unittest
 import module_test
 import operator_test
 import primary_test 
-#import statement_test
+import statement_test
 import value_test
 
 this = sys.modules[__name__]
