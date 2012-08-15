@@ -41,6 +41,12 @@ def Action(grammar):
         return func
     return _decorator
 
+@Action(grammar.primary)
+def primaryAction(s,l,token):
+    pass
+
+
+
 @Action(grammar.real_number)
 def realNumberAction(s,l,token):
     return ast.Float(s)

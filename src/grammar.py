@@ -51,7 +51,7 @@ port             << Group( Optional( port_expression ) |
                            PERIOD - ID - LP - Optional( port_expression ) - RP )
 port_expression  << Group( port_reference                            | 
                            LC + delimitedList( port_reference ) - RC )
-port_reference   << Group( ID                                 |
+port_reference   << Group( port_identifier                    |
                            ID + LB + constant_expression - RB |
                            ID + LB + range_expression    - RB )
 port_declaration << Group ( inout_declaration | 
@@ -115,10 +115,10 @@ time_declaration     << Group(TIME                                      + list_o
 # A.2.2.1 Net and variable types
 net_type             << WIRE
 output_variable_type << Group( INTEGER | TIME )
-real_type            << Group( ID + Optional( EQUAL + constant_expression ) |
-                               ID + dimension + ZeroOrMore ( dimension ) )
-variable_type        << Group( ID + Optional( EQUAL + constant_expression ) | 
-                               ID + dimension + ZeroOrMore ( dimension ) )
+real_type            << Group( real_identifier + Optional( EQUAL + constant_expression ) |
+                               real_identifier + dimension + ZeroOrMore ( dimension ) )
+variable_type        << Group( variable_identifier + Optional( EQUAL + constant_expression ) | 
+                               variable_identifier + dimension + ZeroOrMore ( dimension ) )
 
 # A.2.2.2 Strenghths
 
@@ -130,16 +130,16 @@ delay2      << Group( SHARP + delay_value |
 delay_value << Group( unsigned_number | mintypmax_expression )
 
 # A.2.3 Declaration lists
-list_of_event_identifiers        << Group(delimitedList( ID + Optional( dimension + ZeroOrMore(dimension) ) ))
-list_of_net_decl_assignments     << Group(delimitedList( net_decl_assignment                                ))
-list_of_net_identifiers          << Group(delimitedList( ID + Optional( dimension + ZeroOrMore(dimension) ) ))
-list_of_port_identifers          << Group(delimitedList( ID                                                 ))
-list_of_real_identifiers         << Group(delimitedList( real_type                                          ))
-list_of_variable_identifiers     << Group(delimitedList( variable_type                                      ))
-list_of_variable_port_identifers << Group(delimitedList( ID + Optional( EQUAL + constant_expression )       ))
+list_of_event_identifiers        << Group(delimitedList( event_identifier + Optional( dimension + ZeroOrMore(dimension) ) ))
+list_of_net_decl_assignments     << Group(delimitedList( net_decl_assignment                                              ))
+list_of_net_identifiers          << Group(delimitedList( net_identifier + Optional( dimension + ZeroOrMore(dimension) )   ))
+list_of_port_identifers          << Group(delimitedList( port_identifier                                                  ))
+list_of_real_identifiers         << Group(delimitedList( real_type                                                        ))
+list_of_variable_identifiers     << Group(delimitedList( variable_type                                                    ))
+list_of_variable_port_identifers << Group(delimitedList( port_identifier + Optional( EQUAL + constant_expression )        ))
 
 # A.2.4 Declaration assignments
-net_decl_assignment << Group( ID - EQUAL + expression )
+net_decl_assignment << Group( net_identifier - EQUAL + expression )
 
 # A.2.5 Declaration ranges
 dimension << LB + dimension_constant_expression - COLON + dimension_constant_expression - RB
@@ -147,12 +147,14 @@ _range    << LB + msb_constant_expression       - COLON + lsb_constant_expressio
 
 # A.2.6 Function declarations
 function_declaration << Group( 
-    FUNCTION + Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + ID + SEMICOLON + 
+    FUNCTION + 
+    Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + function_identifier + SEMICOLON + 
     function_item_declaration + ZeroOrMore( function_item_declaration ) + 
     function_statement + 
     ENDFUNCTION
-    |
-    FUNCTION + Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + ID + LP + function_port_list + RP + SEMICOLON + 
+    ^
+    FUNCTION + 
+    Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + function_identifier + LP + function_port_list + RP + SEMICOLON + 
     block_item_declaration + ZeroOrMore(block_item_declaration) + 
     function_statement + 
     ENDFUNCTION
@@ -164,12 +166,12 @@ range_or_type             << Group( _range | INTEGER | REAL | REALTIME | TIME )
 
 # A.2.7 Task declarations
 task_declaration << Group( 
-    TASK + Optional(AUTOMATIC) + ID + SEMICOLON + 
+    TASK + Optional(AUTOMATIC) + task_identifier + SEMICOLON + 
     ZeroOrMore( task_item_declaration ) + 
     statement + 
     ENDTASK
-    |
-    TASK + Optional(AUTOMATIC) + ID + LP + task_port_list + RP + SEMICOLON + 
+    ^
+    TASK + Optional(AUTOMATIC) + task_identifier + LP + task_port_list + RP + SEMICOLON + 
     ZeroOrMore( block_item_declaration ) + 
     statement + 
     ENDTASK )
@@ -207,19 +209,19 @@ block_item_declaration << Group(
 
 block_reg_declaration              << Group( REG + Optional(SIGNED) + Optional(_range) + list_of_block_variable_identifiers + SEMICOLON )
 list_of_block_variable_identifiers << Group( delimitedList( block_variable_type ) )
-block_variable_type                << Group( ID | ID + dimension + ZeroOrMore(dimension) )
+block_variable_type                << Group( variable_identifier | variable_identifier + dimension + ZeroOrMore(dimension) )
 
 # A.3 Primitive instances
 
 # A.4 Module and generated instantiation
 # A.4.1 Module instantiation
-module_instantiation     << Group( ID + Optional( parameter_value_assignment ) + delimitedList( module_instance ) - SEMICOLON )
+module_instantiation     << Group( module_identifier + Optional( parameter_value_assignment ) + delimitedList( module_instance ) - SEMICOLON )
 module_instance          << Group( name_of_instance - LP + Optional( list_of_port_connections ) - RP )
-name_of_instance         << Group( ID + Optional( _range ) )
+name_of_instance         << Group( module_instance_identifier + Optional( _range ) )
 list_of_port_connections << Group( delimitedList ( ordered_port_connection ) |
                                    delimitedList ( named_port_connection   ) )
 ordered_port_connection  << Group( Optional( expression ) )
-named_port_connection    << Group( PERIOD - ID - LP + Optional( expression ) - RP )
+named_port_connection    << Group( PERIOD - port_identifier - LP + Optional( expression ) - RP )
 
 # A.4.2 Generated instantiation
 
@@ -252,14 +254,14 @@ function_blocking_assignment << Group( variable_lvalue - EQUAL + expression )
 function_statement_or_null   << Group( function_statement | SEMICOLON )
 
 # A.6.3 Parallel and sequential blocks
-function_seq_block  << Group( BEGIN + Optional( COLON + ID + ZeroOrMore( block_item_declaration ) ) +
+function_seq_block  << Group( BEGIN + Optional( COLON + block_identifier + ZeroOrMore( block_item_declaration ) ) +
                               ZeroOrMore( function_statement ) -
                               END )
 variable_assignment << Group( variable_lvalue - EQUAL + expression )
-par_block           << Group( FORK + Optional( COLON + ID  + ZeroOrMore( block_item_declaration ) ) +
+par_block           << Group( FORK + Optional( COLON + block_identifier  + ZeroOrMore( block_item_declaration ) ) +
                               ZeroOrMore( statement ) -
                               JOIN )
-seq_block           << Group( BEGIN + Optional( COLON + ID + ZeroOrMore( block_item_declaration ) ) +
+seq_block           << Group( BEGIN + Optional( COLON + block_identifier + ZeroOrMore( block_item_declaration ) ) +
                               ZeroOrMore( statement ) -
                               END )
 
@@ -296,7 +298,7 @@ delay_or_event_control << Group( delay_control |
                                  REPEAT - LP + expression - RP + event_control )
 disable_statement      << Group( DISABLE + hierarchical_task_identifier  - SEMICOLON |
                                  DISABLE + hierarchical_block_identifier - SEMICOLON )
-event_control          << Group( AT + ID                         |
+event_control          << Group( AT + event_identifier           |
                                  AT + LP + event_expression - RP |
                                  AT + ASTA                       |
                                  AT + LP - ASTA - RP             )
@@ -410,7 +412,7 @@ variable_concatenation_value << Group(
     variable_concatenation )
 
 # A.8.2 Function calls
-constant_function_call << Group( ID - LP + delimitedList( constant_expression )                      - RP )
+constant_function_call << Group( function_identifier - LP + delimitedList( constant_expression )     - RP )
 function_call          << Group( hierarchical_function_identifier - LP + delimitedList( expression ) - RP )
 system_function_call   << Group( system_task_identifier + Optional( LP + delimitedList( expression ) - RP ) )
 
@@ -470,7 +472,7 @@ constant_primary << Group( constant_concatenation                  |
                            number )
 
 module_path_primary << Group( number                                     |
-                              ID                                         |
+                              identifier                                 |
                               module_path_concatenation                  |
                               module_path_multiple_concatenation         |
                               function_call                              |
@@ -565,16 +567,53 @@ string << Suppress("\"") + ZeroOrMore( CharsNotIn("\"\n") ) + Suppress("\"")
 # A.9.1 Attributes
 # A.9.2 Comments
 
-# A.9.3 Idnetifiers
+# A.9.3 Identifiers
+
+# [ a-zA-Z_ ] { [ a-zA-Z0-9_$ ] }
+simple_identifier         << ID  
+simple_arrayed_identifier << simple_identifier + LB + _range + RB
+
+# \ {Any_ASCII_character_except_white_space} white_space
+escaped_identifier         << identifier # temp
+escaped_arrayed_identifier << escaped_identifier + LB + _range + RB
+
+identifier                 << Group( escaped_identifier         | simple_identifier )
+arrayed_identifier         << Group( escaped_arrayed_identifier | simple_arrayed_identifier  )
+
+event_identifier           << identifier
+function_identifier        << identifier
+module_identifier          << identifier
+module_instance_identifier << arrayed_identifier 
+net_identifier             << identifier
+port_identifier            << identifier
+real_identifier            << identifier
+task_identifier            << identifier
+variable_identifier        << identifier
+
+hierarchical_identifier    << Group( escaped_hierarchical_identifier |
+                                     simple_hierarchical_identifier  )
+
+simple_hierarchical_identifier << Group(
+    simple_hierarchical_branch + Optional( PERIOD + escaped_identifier ) )
+escaped_hierarchical_identifier << Group(
+    escaped_hierarchical_branch + ZeroOrMore( 
+        PERIOD + simple_hierarchical_branch ^
+        PERIOD + escaped_hierarchical_branch ) )
+
+simple_hierarchical_branch  << Group(
+    simple_identifier + Optional( LB + unsigned_number + RB ) + Optional( 
+        ZeroOrMore( PERIOD + simple_identifier + Optional( LB + unsigned_number + RB ) ) ) )
+
+escaped_hierarchical_branch << Group(
+    escaped_identifier + Optional( LB + unsigned_number + RB ) + Optional(
+        ZeroOrMore( PERIOD + escaped_identifier + Optional( LB + unsigned_number + RB ) ) ) )
+
 hierarchical_block_identifier    << hierarchical_identifier
 hierarchical_event_identifier    << hierarchical_identifier
 hierarchical_function_identifier << hierarchical_identifier
-hierarchical_net_identifier      << hierarchical_net_identifier
+hierarchical_net_identifier      << hierarchical_identifier
 hierarchical_variable_identifier << hierarchical_identifier
 hierarchical_task_identifier     << hierarchical_identifier
-
-# todo
-hierarchical_identifier          << ID
 
 system_task_identifier << Regex(r"$[a-zA-Z0-9_$][a-zA-Z0-9_$]*")
 
