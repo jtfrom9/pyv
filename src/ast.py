@@ -22,29 +22,21 @@ class State2Value(FixedWidthValue):
         super(State2Value,self).__init__(string, width, vtype)
         self.value = value
     def __repr__(self):
-        return "{clsname}[{left}:{right}],value={value}({string})".format(
+        return "{clsname}({value},[{left}:{right}],{string})".format(
             clsname=self.__class__.__name__,
             left=self.width-1,
             right=0,
             value=self.value,
             string=self.string)
 
-
 class State4Value(FixedWidthValue):
     def __init__(self, string, width, vtype, bits):
         super(State4Value,self).__init__(string,width,vtype)
         self.bits = bits
         
-    @staticmethod
-    def makeAllBits(width, v):
-        return v*width
-
 class Float(Numeric):
     def __init__(self, string):
         super(Float,self).__init__(string)
         self.value = float(string)
-    # def __repr__(self):
-    #     print("???")
-    #     return self.__class__.__name__ + "(" + self.value + ")"
 
 
