@@ -7,7 +7,8 @@ self = sys.modules[__name__]
 with open("keywords.txt","r") as f:
     _keywords = [line.strip() for line in f]
 
-ID = ~MatchFirst([Keyword(w) for w in _keywords]) + Word(alphas, alphanums+'_')("id")
+#ID = ~MatchFirst([Keyword(w) for w in _keywords]) + Word(alphas+'_', alphanums+'_')("id")
+ID = ~MatchFirst([Keyword(w) for w in _keywords]) + Regex(r"[a-zA-Z_][a-zA-Z0-9_$]*")("id")
 LP,RP,LB,RB,LC,RC,COLON,SEMICOLON,CAMMA,PERIOD,SHARP,EQUAL,AT,ASTA,Q,PLUS,MINUS,USC,APS = map(Suppress,("()[]{}:;,.#=@*?+-_'"))
 
 NB = Suppress(Literal("<="))
@@ -22,7 +23,8 @@ for kw in _keywords:
 
 with open("non_terminal_symbols.txt","r") as f:
     for sym in (line.strip() for line in f):
-        result_name = sym if not sym.endswith("identifier") else "id"
+        #result_name = sym if not sym.endswith("identifier") else "id"
+        result_name = sym
         setattr(self, sym, Forward()(result_name))
 
 # A.1 Source text2
@@ -143,8 +145,8 @@ list_of_variable_port_identifers << Group(delimitedList( port_identifier + Optio
 net_decl_assignment << Group( net_identifier - EQUAL + expression )
 
 # A.2.5 Declaration ranges
-dimension << LB + dimension_constant_expression - COLON + dimension_constant_expression - RB
-_range    << LB + msb_constant_expression       - COLON + lsb_constant_expression       - RB
+dimension << Group( LB + dimension_constant_expression - COLON + dimension_constant_expression - RB )
+_range    << Group( LB + msb_constant_expression       - COLON + lsb_constant_expression       - RB )
 
 # A.2.6 Function declarations
 function_declaration << Group( 
@@ -572,14 +574,14 @@ string << Suppress("\"") + ZeroOrMore( CharsNotIn("\"\n") ) + Suppress("\"")
 
 # [ a-zA-Z_ ] { [ a-zA-Z0-9_$ ] }
 simple_identifier         << ID  
-simple_arrayed_identifier << simple_identifier + LB + _range + RB
+simple_arrayed_identifier << Group( simple_identifier + Optional( _range ) )
 
 # \ {Any_ASCII_character_except_white_space} white_space
-escaped_identifier         << identifier # temp
-escaped_arrayed_identifier << escaped_identifier + LB + _range + RB
+escaped_identifier         << simple_identifier # temp
+escaped_arrayed_identifier << Group( escaped_identifier + Optional( _range ) )
 
-identifier                 << Group( escaped_identifier         | simple_identifier )
-arrayed_identifier         << Group( escaped_arrayed_identifier | simple_arrayed_identifier  )
+identifier                 << Group( simple_identifier         | escaped_identifier         )
+arrayed_identifier         << Group( simple_arrayed_identifier | escaped_arrayed_identifier ) 
 
 event_identifier           << identifier
 function_identifier        << identifier
@@ -591,19 +593,20 @@ real_identifier            << identifier
 task_identifier            << identifier
 variable_identifier        << identifier
 
-hierarchical_identifier    << Group( escaped_hierarchical_identifier |
-                                     simple_hierarchical_identifier  )
+hierarchical_identifier         << Group( simple_hierarchical_identifier | escaped_hierarchical_identifier )
+simple_hierarchical_identifier  << Group( simple_hierarchical_branch + Optional( PERIOD + escaped_identifier ) )
 
-simple_hierarchical_identifier << Group(
-    simple_hierarchical_branch + Optional( PERIOD + escaped_identifier ) )
-escaped_hierarchical_identifier << Group(
+escaped_hierarchical_identifier << Group( 
     escaped_hierarchical_branch + ZeroOrMore( 
-        PERIOD + simple_hierarchical_branch ^
-        PERIOD + escaped_hierarchical_branch ) )
+        PERIOD + simple_hierarchical_branch ^ PERIOD + escaped_hierarchical_branch ) )
 
+    
+_simple_hierarchical_branch_part = Group( PERIOD + simple_identifier("name") + Optional( LB + unsigned_number("index") + RB ) )
 simple_hierarchical_branch  << Group(
-    simple_identifier + Optional( LB + unsigned_number + RB ) + Optional( 
-        ZeroOrMore( PERIOD + simple_identifier + Optional( LB + unsigned_number + RB ) ) ) )
+    simple_identifier 
+    + Optional( LB + unsigned_number("index") + RB )
+    + Group( Optional( ZeroOrMore( _simple_hierarchical_branch_part ) ) ) ("nodes")
+    )
 
 escaped_hierarchical_branch << Group(
     escaped_identifier + Optional( LB + unsigned_number + RB ) + Optional(

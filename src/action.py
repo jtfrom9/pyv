@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 from pyparsing import ParseFatalException
 import unittest
 import pprint
@@ -27,11 +29,15 @@ def GroupedAction(action):
     #         tokens = args[0]
     #     action(string, loc, tokens[0])
     def _decorator(string,loc,tokens):
+        result = None
+        #print(">> enter {0}: s={1}, l={2}, token={3}".format(action.__name__, string, loc, tokens[0]))
         try:
-            return action(string, loc, tokens[0])
+            result = action(string, loc, tokens[0])
         except Exception as e:
             raise ParseFatalException(string, loc, 
                                       "parse action \'{0}\' throw an exception: {1}".format(action.__name__, e))
+        #print("<< exit  {0}: ret={1}".format(action.__name__, result))
+        return result
     return _decorator
 
 def Action(grammar):
@@ -45,7 +51,9 @@ def Action(grammar):
 def primaryAction(s,l,token):
     pass
 
-
+@Action(grammar.number)
+def numberAction(s,l,token): 
+    return token
 
 @Action(grammar.real_number)
 def realNumberAction(s,l,token):
@@ -98,6 +106,74 @@ grammar.binary_value.setParseAction            (lambda t: t[0])
 grammar.octal_value.setParseAction             (lambda t: t[0])
 grammar.hex_value.setParseAction               (lambda t: t[0])
 
+@Action(grammar.simple_identifier)
+def simpleIdentifierAction(s,loc,token):
+    return ast.BasicId(token)
+
+@Action(grammar.identifier)
+def identifierAction(s,loc,token):
+    if token.simple_identifier:
+        return token.simple_identifier
+    elif token.escaped_identifier:
+        return token.escaped_identifier
+    else:
+        assert False
+
+@Action(grammar._range)
+def rangeAction(s,loc,token):
+    # print("rangeAction: s={0}, loc={1}, token={2}".format(s,loc,token))
+    # print("msb_constant_expression={0}".format(token.msb_constant_expression.asXML()))
+    # print("lsb_constant_expression={0}".format(token.lsb_constant_expression))
+    try:
+        if not token.msb_constant_expression:
+            raise Exception("1")
+        if not token.msb_constant_expression.constant_expression:
+            raise Exception("2")
+        if not token.msb_constant_expression.constant_expression[0].constant_primary:
+            raise Exception("3")
+        if not token.msb_constant_expression.constant_expression[0].constant_primary[0].number:
+            raise Exception("4")
+    except Exception as msg:
+        print("_range Not Implemented completely: {0}".format(msg))
+        assert False
+    return ast.Range(s,
+                     token.msb_constant_expression.constant_expression[0].constant_primary[0].number,
+                     token.lsb_constant_expression.constant_expression[0].constant_primary[0].number)
+
+@Action(grammar.simple_arrayed_identifier)
+def simpleArrayedIdentifierAction(s,loc,token):
+    if token._range:
+        return ast.RangedId(s,token._range)
+    else:
+        return ast.BasicId(s)
+
+@Action(grammar.arrayed_identifier)
+def arrayedIdentifierAction(s,loc,token):
+    if token.simple_arrayed_identifier:
+        return token.simple_arrayed_identifier
+    elif token.escaped_arrayed_identifier:
+        return token.escaped_arrayed_identifier
+    else:
+        assert False
     
+@Action(grammar.simple_hierarchical_branch)
+def simpleHierarchicalBranchAction(s,loc,token):
+    index = None
+    if token.index:
+        index = int(token.index)
+    ids=[]
+    for node in token.nodes:
+        if node.index:
+            ids.append(ast.IndexedId(node.name[0], int(node.index)))
+        else:
+            ids.append(ast.BasicId(node.name[0]))
+    return ast.HierarchicalId(s, token.simple_identifier, index, ids)
 
-
+@Action(grammar.simple_hierarchical_identifier)
+def simpleHierarchicalIdnetifierAction(s,loc,token):
+    if not token.escaped_identifier:
+        return token
+    else:
+        assert isinstance(token, HierarchicalId)
+        token.addId(ast.BasicId(token.escaped_identifier))
+        
