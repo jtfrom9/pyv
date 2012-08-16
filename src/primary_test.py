@@ -7,11 +7,19 @@ import grammar
 import action
 
     
+# @TestCase(grammar)
+# def test_primary(self):
+#     print(self.check_pass("10").asXML())
+#     print(self.check_pass("hoge").asXML())
+#     print(self.check_pass("hoge(a)").asXML())
+#     print(self.check_pass("foo.bar").asXML())
+
+
 @TestCase(grammar)
-def test_primary(self):
-    print(self.check_pass("10").asXML())
-    print(self.check_pass("hoge").asXML())
-    print(self.check_pass("hoge(a)").asXML())
+def test_expression(self):
+    print(self.check_pass("A+10").asXML())
+    print(self.check_pass("-X").asXML())
+    print(self.check_pass("-X+10+A").asXML())
 
 # @TestCase(grammar)
 # def test_function_call(self):

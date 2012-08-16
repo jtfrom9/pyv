@@ -30,13 +30,13 @@ def GroupedAction(action):
     #     action(string, loc, tokens[0])
     def _decorator(_s,loc,tokens):
         result = None
-        #print(">> enter {0}: l={1}, token={2}".format(action.__name__, loc, tokens[0]))
+        print(">> enter {0}: l={1}, token={2}".format(action.__name__, loc, tokens[0]))
         try:
             result = action(_s, loc, tokens[0])
         except Exception as e:
             raise ParseFatalException(_s, loc, 
                                       "parse action \'{0}\' throw an exception: {1}".format(action.__name__, e))
-        #print("<< exit  {0}: ret={1}".format(action.__name__, result))
+        print("<< exit  {0}: ret={1}".format(action.__name__, result))
         return result
     return _decorator
 
@@ -70,11 +70,70 @@ def rangeAction(_s,loc,token):
     return ast.Range(token.msb_constant_expression.constant_expression[0].constant_primary[0].number,
                      token.lsb_constant_expression.constant_expression[0].constant_primary[0].number)
 
+class Expression(object):
+    #def __init__(self, constant):
+    def __init__(self):
+        pass
+
+class Primary(Expression):
+    def __init__(self, obj):
+        self.obj = obj
+    def __repr__(self):
+        data = None
+        if isinstance(self.obj,tuple):
+            head = self.obj[0]
+            data = str(head[0])
+        elif isinstance(self.obj, ast.Numeric):
+            data = str(self.obj)
+        else:
+            print(type(self.obj))
+            assert False
+        return "({0} {1})".format(self.__class__.__name__,data)
+
+class UnaryExpression(Expression):
+    def __init__(self, op, exp):
+        self.op = op
+        self.exp = exp
+    def __repr__(self):
+        return "({0} {1})".format(self.op, self.exp)
+
+class BinaryExpression(Expression):
+    def __init__(self,op,left,right):
+        self.op   =op
+        self.lexp = left
+        self.rexp = right
+    def __repr__(self):
+        return "({0} {1} {2})".format(self.op, self.lexp[0], self.rexp[0])
+
+# A.8.3 Expressions
+
+@Action(grammar.expression)
+def expressionAction(_s,l,token):
+    if token.unary_operator:
+        return UnaryExpression(token.unary_operator, token.primary)
+    elif token.binary_operator:
+        return BinaryExpression(token.binary_operator, token[0], token[2])
+    elif token.primary:
+        return token
+    else:
+        raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
+    
 # A.8.4 Primaries
 
-# @Action(grammar.primary)
-# def primaryAction(_s,l,token):
-    
+@Action(grammar.primary)
+def primaryAction(_s,l,token):
+    if token.number:
+        return Primary(token.number[0])
+    elif token.hierarchical_identifier:
+        exp  = token.expression[0] if token.expression else None
+        rexp = token.range_expression[0] if token.range_expression else None
+        return Primary((token.hierarchical_identifier[0], exp, rexp))
+    elif token.function_call:
+        pass
+    else:
+        raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
+
+
 
 
 # A.8.7 Numbers
