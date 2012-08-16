@@ -30,13 +30,13 @@ def GroupedAction(action):
     #     action(string, loc, tokens[0])
     def _decorator(_s,loc,tokens):
         result = None
-        print(">> enter {0}: l={1}, token={2}".format(action.__name__, loc, tokens[0]))
+        #print(">> enter {0}: l={1}, token={2}".format(action.__name__, loc, tokens[0]))
         try:
             result = action(_s, loc, tokens[0])
         except Exception as e:
             raise ParseFatalException(_s, loc, 
                                       "parse action \'{0}\' throw an exception: {1}".format(action.__name__, e))
-        print("<< exit  {0}: ret={1}".format(action.__name__, result))
+        #print("<< exit  {0}: ret={1}".format(action.__name__, result))
         return result
     return _decorator
 
@@ -70,7 +70,7 @@ def rangeAction(_s,loc,token):
     return ast.Range(token.msb_constant_expression.constant_expression[0].constant_primary[0].number,
                      token.lsb_constant_expression.constant_expression[0].constant_primary[0].number)
 
-class Expression(object):
+class Expression(ast.AstNode):
     #def __init__(self, constant):
     def __init__(self):
         pass
@@ -78,7 +78,7 @@ class Expression(object):
 class Primary(Expression):
     def __init__(self, obj):
         self.obj = obj
-    def __repr__(self):
+    def longName(self):
         data = None
         if isinstance(self.obj,tuple):
             head = self.obj[0]
@@ -94,7 +94,7 @@ class UnaryExpression(Expression):
     def __init__(self, op, exp):
         self.op = op
         self.exp = exp
-    def __repr__(self):
+    def longName(self):
         return "({0} {1})".format(self.op, self.exp)
 
 class BinaryExpression(Expression):
@@ -102,7 +102,7 @@ class BinaryExpression(Expression):
         self.op   =op
         self.lexp = left
         self.rexp = right
-    def __repr__(self):
+    def longName(self):
         return "({0} {1} {2})".format(self.op, self.lexp[0], self.rexp[0])
 
 # A.8.3 Expressions
@@ -144,7 +144,7 @@ def numberAction(_s,l,token):
 
 @Action(grammar.real_number)
 def realNumberAction(_s,l,token):
-    return ast.Float(s)
+    return ast.Float(token)    # TODO: fixme
 
 @Action(grammar.decimal_number)
 def decimalNumberAction(_s, loc, token):
@@ -157,7 +157,7 @@ def decimalNumberAction(_s, loc, token):
                     token.unsigned_number, width, pow(2,width)-1))
         return ast.State2Value(token.unsigned_number,width,ast.FixedWidthValue.Decimal, val)
     def s4val(width,v):
-        return ast.State4Value(token.unsigned_number,width,ast.FixedWidthValue.Decimal, v*width)
+        return ast.State4Value(v,width,ast.FixedWidthValue.Decimal, v*width)
 
     if len(token)==1:
         return s2val(32)
@@ -174,12 +174,12 @@ def valueActions(name,vtype):
     @GroupedAction
     def _action(_s,loc,token):
         width = token.size if token.size else 32
-        value_token = getattr(token,name)
-        trans = value_token.translate(None,'xXzZ?')
-        if trans==value_token:
-            return ast.State2Value(s,width,vtype,int(value_token,vtype))
+        vstr = getattr(token,name)
+        trans = vstr.translate(None,'xXzZ?')
+        if trans==vstr:
+            return ast.State2Value(vstr,width,vtype,int(vstr,vtype))
         else:
-            return ast.State4Value(s,width,vtype,value_token)
+            return ast.State4Value(vstr,width,vtype,vstr)
     return _action
 
 grammar.binary_number.setParseAction (valueActions('binary_value' , ast.FixedWidthValue.Binary))
@@ -210,10 +210,12 @@ def identifierAction(_s,loc,token):
 
 @Action(grammar.simple_arrayed_identifier)
 def simpleArrayedIdentifierAction(_s,loc,token):
+    print(__name__)
+    print(token.simple_identifier)
     if token._range:
-        return ast.RangedId(_s,token._range)
+        return ast.RangedId(token.simple_identifier.shortName(), token._range)
     else:
-        return ast.BasicId(s)
+        return ast.BasicId(token.simple_identifier.shortName())
 
 @Action(grammar.arrayed_identifier)
 def arrayedIdentifierAction(_s,loc,token):
@@ -235,7 +237,7 @@ def simpleHierarchicalBranchAction(_s,loc,token):
             ids.append(ast.IndexedId(node.name[0], int(node.index)))
         else:
             ids.append(ast.BasicId(node.name[0]))
-    return ast.HierarchicalId(_s, token.simple_identifier, index, ids)
+    return ast.HierarchicalId(token.simple_identifier, index, ids)
 
 @Action(grammar.simple_hierarchical_identifier)
 def simpleHierarchicalIdnetifierAction(_s,loc,token):
