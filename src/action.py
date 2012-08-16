@@ -29,7 +29,7 @@ def GroupedAction(action):
     def _decorator(string,loc,tokens):
         try:
             return action(string, loc, tokens[0])
-        except Exception, e:
+        except Exception as e:
             raise ParseFatalException(string, loc, 
                                       "parse action \'{0}\' throw an exception: {1}".format(action.__name__, e))
     return _decorator

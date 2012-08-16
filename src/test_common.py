@@ -16,7 +16,7 @@ class GrammarTestCase(unittest.TestCase):
             else:
                 self.assertTrue(True)
             return
-        except Exception, e:
+        except Exception as e:
             if success:
                 self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e))
             else:
