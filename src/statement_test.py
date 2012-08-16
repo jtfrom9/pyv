@@ -20,6 +20,10 @@ def test_statement(self):
 #     print(self.check_pass("A <= 1").asXML())
 #     print(self.check_pass("A <=1").asXML())
 
+@TestCase(grammar)
+def test_procedural_continuous_assignments(self):
+    print(self.check_pass("assign hoge = 1").asXML())
+
 
 if __name__=='__main__':
     unittest.main()

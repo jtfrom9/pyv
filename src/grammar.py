@@ -319,7 +319,7 @@ wait_statement                      << Group( WAIT - LP + expression - RP + stat
 # A.6.6 Conditional statements
 conditional_statement << Group( 
     IF + LP + expression - RP + statement_or_null + Optional( ELSE + statement_or_null ) 
-    |
+    ^
     if_else_if_statement )
 
 if_else_if_statement << Group( 
@@ -496,17 +496,17 @@ primary << Group( number                                                        
                   LP + mintypmax_expression - RP                                                           )
 
 # A.8.5 Expression left-side value
-net_lvalue << Group( hierarchical_net_identifier                                                                                    |
-                     hierarchical_net_identifier + OneOrMore( LB + constant_expression - RB )                                       |
-                     hierarchical_net_identifier + OneOrMore( LB + constant_expression - RB ) + LB + constant_range_expression - RB |
-                     hierarchical_net_identifier + LB + constant_range_expression - RB                                              |
-                     net_concatenation )
+net_lvalue << Group( hierarchical_net_identifier + Group(OneOrMore( LB + constant_expression - RB ))("exps") + LB + constant_range_expression - RB |
+                     hierarchical_net_identifier + Group(OneOrMore( LB + constant_expression - RB ))("exps")                                       |
+                     hierarchical_net_identifier                                                             + LB + constant_range_expression - RB |
+                     net_concatenation                                                                                                             |
+                     hierarchical_net_identifier                                                                                                   )
 
-variable_lvalue << Group( hierarchical_variable_identifier                                                                  |
-                          hierarchical_variable_identifier + OneOrMore( LB + expression - RB )                              |
-                          hierarchical_variable_identifier + OneOrMore( LB + expression - RB ) + LB + range_expression - RB |
-                          hierarchical_variable_identifier + LB + range_expression - RB                                     |
-                          variable_concatenation )
+variable_lvalue << Group( hierarchical_variable_identifier + Group(OneOrMore( LB + expression - RB ))("exps") + LB + range_expression - RB |
+                          hierarchical_variable_identifier + Group(OneOrMore( LB + expression - RB ))("exps")                              |
+                          hierarchical_variable_identifier                                                    + LB + range_expression - RB |
+                          variable_concatenation                                                                                           |
+                          hierarchical_variable_identifier                                                                                 )
 
 # A.8.6 Operators
 unary_operator              << oneOf("+ - ! ~ & ~& | ~| ^ ~^ ^~                                            ")("unary_operator")

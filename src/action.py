@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
@@ -47,8 +48,20 @@ def Action(grammar):
         return func
     return _decorator
 
+def node(token, fail_ret=None):
+    if token:
+        return token[0]
+    else:
+        return fail_ret
 
-# A.2.5 Declaration ranges
+# A.2.1.2 Port declarations (0/3)
+# A.2.1.3 Type declarations (0/7)
+# A.2.2.1 Net and variable types (0/4)
+# A.2.2.3 Delays (0/3)
+# A.2.3 Declaration lists (0/7)
+# A.2.4 Declaration assignments (0/1)
+
+# A.2.5 Declaration ranges (1/2)
 
 @Action(grammar._range)
 def rangeAction(_s,loc,token):
@@ -70,71 +83,155 @@ def rangeAction(_s,loc,token):
     return ast.Range(token.msb_constant_expression.constant_expression[0].constant_primary[0].number,
                      token.lsb_constant_expression.constant_expression[0].constant_primary[0].number)
 
-class Expression(ast.AstNode):
-    #def __init__(self, constant):
-    def __init__(self):
-        pass
+# A.2.6 Function declarations (0/4)
+# A.2.7 Task declarations (0/8)
+# A.2.8 Block item declarations (0/4)
 
-class Primary(Expression):
-    def __init__(self, obj):
-        self.obj = obj
-    def longName(self):
-        data = None
-        if isinstance(self.obj,tuple):
-            head = self.obj[0]
-            data = str(head[0])
-        elif isinstance(self.obj, ast.Numeric):
-            data = str(self.obj)
-        else:
-            print(type(self.obj))
-            assert False
-        return "({0} {1})".format(self.__class__.__name__,data)
+# A.4.1 Module instantiation (0/6)
 
-class UnaryExpression(Expression):
-    def __init__(self, op, exp):
-        self.op = op
-        self.exp = exp
-    def longName(self):
-        return "({0} {1})".format(self.op, self.exp)
+# A.6.1 Continuous assignment statements (1/3)
+@Action(grammar.net_assignment)
+def netAssignmentAction(_s,l,token):
+    return ast.Assignment( node(token.net_lvalue), None, node(token.expression) )
 
-class BinaryExpression(Expression):
-    def __init__(self,op,left,right):
-        self.op   =op
-        self.lexp = left
-        self.rexp = right
-    def longName(self):
-        return "({0} {1} {2})".format(self.op, self.lexp[0], self.rexp[0])
+                           
+# A.6.2 Procedural blocks and assignments (3/7)
 
-# A.8.3 Expressions
+@Action(grammar.nonblocking_assignment)
+def nonBlockingAssignmentAction(_s,l,token):
+    return ast.Assignment( node( token.variable_lvalue ),
+                           node( token.delay_or_event_control ),
+                           node( token.expression ),
+                           blocking = False )
+
+@Action(grammar.blocking_assignment)
+def blockingAssignmentAction(_s,l,token):
+    return ast.Assignment( node( token.variable_lvalue ),
+                           node( token.delay_or_event_control ),
+                           node( token.Expression ),
+                           blocking = True )
+
+@Action(grammar.procedural_continuous_assignments)
+def proceduralContinuousAssignmentAction(_s,l,token):
+    if token.variable_assignment:
+        return (token.keyword, node(token.variable_assignment))
+    elif token.net_assignment:
+        return (token.keyword, node(token.net_assignment))
+    elif token.variable_lvalue:
+        return (token.keyword, node(token.variable_lvalue))
+    elif token.net_lvalue:
+        return (token.keyword, node(token.net_lvalue))
+         
+# A.6.3 Parallel and sequential blocks (1/4)
+@Action(grammar.variable_assignment)
+def variableAssignmentAction(_s,l,token):
+    return ast.Assignment( node( token.variable_lvalue ),
+                           None,
+                           node( token.expression ) )
+
+@Action(grammar.seq_block)
+def sequencialBlockAction(_s,l,token):
+    pass
+
+
+# A.6.4 Statements (1/3)
+
+@Action(grammar.statement)
+def statementAction(_s,l,token):
+    if (token.nonblocking_assignment or 
+        token.blocking_assignment or
+        token.case_statement or 
+        token.conditional_statement or
+        token.loop_statement or
+        token.event_trigger or
+        token.wait_statement or
+        token.procedural_continuous_assignments or
+        token.procedural_timing_control_statement or
+        token.seq_block ):
+        return token
+    else:
+        raise Exception("Not implemented completely statementAction")
+
+# A.6.5 Timing control statements (0/8)
+@Action(grammar.event_trigger)
+def eventTriggerAction(_s,l,token):
+    pass
+
+@Action(grammar.procedural_timing_control_statement)
+def proceduralTimingControlStatementAction(_s,l,token):
+    pass
+    
+
+# A.6.6 Conditional statements (0/4)
+@Action(grammar.conditional_statement)
+def conditionalStatementAction(_s,l,token):
+    pass
+
+# A.6.7 Case statements  (0/4)
+@Action(grammar.case_statement)
+def caseStatementAction(_s,l,token):
+    pass
+
+# A.6.8 Loop statements (0/2)
+@Action(grammar.loop_statement)
+def loopStatementAction(_s,l,token):
+    pass
+
+# A.6.9 Task enable statements (0/2)
+
+
+
+# A.8.1 Concatenations (0/10)
+# A.8.2 Function calls (0/3)
+
+# A.8.3 Expressions (0/16)
 
 @Action(grammar.expression)
 def expressionAction(_s,l,token):
     if token.unary_operator:
-        return UnaryExpression(token.unary_operator, token.primary)
+        return ast.UnaryExpression(token.unary_operator, token.primary)
     elif token.binary_operator:
-        return BinaryExpression(token.binary_operator, token[0], token[2])
+        return ast.BinaryExpression(token.binary_operator, token[0], token[2])
     elif token.primary:
         return token
     else:
         raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
     
-# A.8.4 Primaries
+# A.8.4 Primaries (1/3)
 
 @Action(grammar.primary)
 def primaryAction(_s,l,token):
     if token.number:
-        return Primary(token.number[0])
+        return ast.Primary(token.number[0])
     elif token.hierarchical_identifier:
         exp  = token.expression[0] if token.expression else None
         rexp = token.range_expression[0] if token.range_expression else None
-        return Primary((token.hierarchical_identifier[0], exp, rexp))
+        return ast.Primary((token.hierarchical_identifier[0], exp, rexp))
     elif token.function_call:
         pass
     else:
         raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
 
 
+# A.8.5 Expression left-side value (0/2)
 
+@Action(grammar.net_lvalue)
+def netLvalueAction(s,l,token):
+    if token.net_concatenation:
+        raise Exception("Not Implemented. net_concatenation")
+    else:
+        return ast.LeftSideValue( node(token.hierarchical_identifier),
+                                  [ node(e.constant_expression) for e in token.exps ],
+                                  node(token.constant_range_expression) )
+        
+@Action(grammar.variable_lvalue)
+def variableLvalueAction(s,l,token):
+    if token.variable_concatenation:
+        raise Exception("Not Implemented. variable_concatenation")
+    else:
+        return ast.LeftSideValue( node(token.hierarchical_identifier),
+                                  [ node(e.expression) for e in token.exps ],
+                                  node(token.range_expression) )
 
 # A.8.7 Numbers
 

@@ -132,3 +132,79 @@ class Range(AstNode):
     def longName(self):
         return "[{l}:{r}]".format(l=self.left, r=self.right)
 
+class Statement(AstNode):
+    pass
+
+class Assignment(Statement):
+    def __init__(self, left, delay_event, exp, blocking=True):
+        self.left        = left
+        self.blocking    = blocking
+        self.delay_event = delay_event
+        self.exp         = exp
+
+class Conditional(Statement):
+    pass
+
+class Case(Statement):
+    pass
+
+class Loop(Statement):
+    pass
+
+class SequencialBlock(Statement):
+    pass
+
+class ProceduralContinuousAssignment(Assignment): #assign
+    pass
+
+class ProceduralTimingControl(Statement): # #, @
+    pass
+
+class WaitEvent(Statement):
+    pass
+
+class EventTrigger(Statement):
+    pass
+
+class Expression(AstNode):
+    def __init__(self):
+        pass
+    
+class Primary(Expression):
+    def __init__(self, obj):
+        self.obj = obj
+    def longName(self):
+        data = None
+        if isinstance(self.obj,tuple):
+            head = self.obj[0]
+            data = str(head[0])
+        elif isinstance(self.obj, ast.Numeric):
+            data = str(self.obj)
+        else:
+            print(type(self.obj))
+            assert False
+        return "({0} {1})".format(self.__class__.__name__,data)
+
+class UnaryExpression(Expression):
+    def __init__(self, op, exp):
+        self.op = op
+        self.exp = exp
+    def longName(self):
+        return "({0} {1})".format(self.op, self.exp)
+
+class BinaryExpression(Expression):
+    def __init__(self,op,left,right):
+        self.op   =op
+        self.lexp = left
+        self.rexp = right
+    def longName(self):
+        return "({0} {1} {2})".format(self.op, self.lexp[0], self.rexp[0])
+
+class LeftSideValue(Expression):
+    def __init__(self, id, indexes, range):
+        self.id      = id
+        self.indexes = indexes
+        self.range   = range
+
+class Concatenation(Expression):
+    pass
