@@ -75,16 +75,15 @@ class HierarchicalId(BasicId):
     def __repr__(self):
         tailStr =".".join(str(id) for id in self.tailIds) 
         if tailStr: tailStr = "."+tailStr
-        return "{cls}({head}[{index}]{tail})".format(cls=self.__class__.__name__,
-                                                     head=self.headId,
-                                                     index=self.headIndex,
-                                                     tail=tailStr)
+        return "{cls}({head}{index}{tail})".format(cls=self.__class__.__name__,
+                                                   head=self.headId,
+                                                   index="[{0}]".format(self.headIndex) if self.headIndex else "",
+                                                   tail=tailStr)
     def addId(self,id):
         self.tailIds.append(id)
     
 class Range(object):
-    def __init__(self,s,left,right):
-        self.string = s
+    def __init__(self,left,right):
         self.left   = left
         self.right  = right
     def __repr__(self):
