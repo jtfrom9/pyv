@@ -12,7 +12,7 @@ class GrammarTestCase(unittest.TestCase):
             result = (self.grammar() + stringEnd).parseString(text)
         except (ParseException, ParseSyntaxException) as e:
             if success:
-                self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e.msg))
+                self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e))
             else:
                 self.assertTrue(True)
             return

@@ -131,13 +131,13 @@ def sequencialBlockAction(_s,l,token):
 
 @Action(grammar.statement)
 def statementAction(_s,l,token):
-    if (token.nonblocking_assignment or 
-        token.blocking_assignment or
-        token.case_statement or 
-        token.conditional_statement or
-        token.loop_statement or
-        token.event_trigger or
-        token.wait_statement or
+    if (token.nonblocking_assignment              or 
+        token.blocking_assignment                 or
+        token.case_statement                      or 
+        token.conditional_statement               or
+        token.loop_statement                      or
+        token.event_trigger                       or
+        token.wait_statement                      or
         token.procedural_casontinuous_assignments or
         token.procedural_timing_control_statement or
         token.seq_block ):
@@ -162,9 +162,18 @@ def proceduralTimingControlStatementAction(_s,l,token):
 # A.6.6 Conditional statements (0/4)
 @Action(grammar.conditional_statement)
 def conditionalStatementAction(_s,l,token):
-    #if token.statement
-    pass
-
+    print(type(token.expression))
+    return
+    if not token.if_else_if_statement:
+        return Conditional( [(node(token.condition), node(token.statement_if))], node(token.statement_else) )
+    else:
+        return node( token )
+                        
+@Action(grammar.if_else_if_statement)
+def ifElseIfStatementAction(_s,l,token):
+    return Conditional( [ (node(token.condition), node(statement_if)) ] +
+                        [ (node(block.condition_elseif), node(block.statement_elseif)) for block in elseif_blocks ],
+                        node(token.statement_else) )
 
 # A.6.7 Case statements  (0/4)
 @Action(grammar.case_statement)
