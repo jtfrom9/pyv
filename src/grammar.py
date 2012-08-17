@@ -264,8 +264,9 @@ variable_assignment << Group( variable_lvalue - EQUAL + expression )
 par_block           << Group( FORK + Optional( COLON + block_identifier  + ZeroOrMore( block_item_declaration ) ) +
                               ZeroOrMore( statement ) -
                               JOIN )
-seq_block           << Group( BEGIN + Optional( COLON + block_identifier + ZeroOrMore( block_item_declaration ) ) +
-                              ZeroOrMore( statement ) -
+seq_block           << Group( BEGIN + 
+                              Optional( COLON + block_identifier + Group(ZeroOrMore( block_item_declaration ))("item_decls") ) +
+                              Group(ZeroOrMore( statement ))("statements") -
                               END )
 
 # A.6.4 Statements
@@ -318,7 +319,7 @@ wait_statement                      << Group( WAIT - LP + expression - RP + stat
 
 # A.6.6 Conditional statements
 conditional_statement << Group( 
-    IF + LP + expression - RP + statement_or_null + Optional( ELSE + statement_or_null ) 
+    IF + LP + expression("condition") - RP + statement_or_null("statement") + Optional( ELSE + statement_or_null("else") ) 
     ^
     if_else_if_statement )
 

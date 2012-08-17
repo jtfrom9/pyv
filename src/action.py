@@ -1,42 +1,32 @@
-
 # -*- coding: utf-8 -*-
-from __future__ import print_function
-
-from pyparsing import ParseFatalException
 import unittest
 import pprint
 import math
+import inspect
 
+from pyparsing import ParseFatalException, traceParseAction, ParseResults
 import grammar
 import ast
 from test_common import *
 
 def GroupedAction(action):
-    # def _decorator_(*args):
-    #     string=None
-    #     loc=None
-    #     tokens=None
-    #     print("GroupedAction: # of args={0}".format(len(args)))
-    #     for i,arg in enumerate(args):
-    #         print(" arg[{0}]={1}".format(i, arg))
-    #     if len(args)==3:
-    #         string = args[0]
-    #         loc    = args[1]
-    #         tokens = args[2]
-    #     elif (len(args)==2):
-    #         loc    = args[0]
-    #         tokens = args[1]
-    #     elif len(args)==1:
-    #         tokens = args[0]
-    #     action(string, loc, tokens[0])
+    frame    = inspect.currentframe(2)
+    filename = frame.f_code.co_filename
+    lineno   = frame.f_lineno
+
     def _decorator(_s,loc,tokens):
         result = None
+        
         #print(">> enter {0}: l={1}, token={2}".format(action.__name__, loc, tokens[0]))
         try:
             result = action(_s, loc, tokens[0])
         except Exception as e:
             raise ParseFatalException(_s, loc, 
-                                      "parse action \'{0}\' throw an exception: {1}".format(action.__name__, e))
+                                      "\n  File \"{filename}\", line {lineno}\n    {reason}".
+                                      format(action   = action.__name__,
+                                             filename = filename,
+                                             lineno   = lineno,
+                                             reason   = e))
         #print("<< exit  {0}: ret={1}".format(action.__name__, result))
         return result
     return _decorator
@@ -50,7 +40,10 @@ def Action(grammar):
 
 def node(token, fail_ret=None):
     if token:
-        return token[0]
+        if isinstance(token,ParseResults):
+            return token[0]
+        else:
+            return token
     else:
         return fail_ret
 
@@ -96,7 +89,6 @@ def netAssignmentAction(_s,l,token):
 
                            
 # A.6.2 Procedural blocks and assignments (3/7)
-
 @Action(grammar.nonblocking_assignment)
 def nonBlockingAssignmentAction(_s,l,token):
     return ast.Assignment( node( token.variable_lvalue ),
@@ -114,13 +106,13 @@ def blockingAssignmentAction(_s,l,token):
 @Action(grammar.procedural_continuous_assignments)
 def proceduralContinuousAssignmentAction(_s,l,token):
     if token.variable_assignment:
-        return (token.keyword, node(token.variable_assignment))
+        return ContinuousAssignment(token.keyword, node(token.variable_assignment))
     elif token.net_assignment:
-        return (token.keyword, node(token.net_assignment))
+        return ContinuousAssignment(token.keyword, node(token.net_assignment))
     elif token.variable_lvalue:
-        return (token.keyword, node(token.variable_lvalue))
+        return ContinuousAssignment(token.keyword, node(token.variable_lvalue))
     elif token.net_lvalue:
-        return (token.keyword, node(token.net_lvalue))
+        return ContinuousAssignment(token.keyword, node(token.net_lvalue))
          
 # A.6.3 Parallel and sequential blocks (1/4)
 @Action(grammar.variable_assignment)
@@ -131,10 +123,11 @@ def variableAssignmentAction(_s,l,token):
 
 @Action(grammar.seq_block)
 def sequencialBlockAction(_s,l,token):
-    pass
+    return ast.SequencialBlock( node(token.item_decls, []),
+                                node(token.statements, []) )
 
 
-# A.6.4 Statements (1/3)
+# A.6.4 Statements (2/3)
 
 @Action(grammar.statement)
 def statementAction(_s,l,token):
@@ -145,14 +138,18 @@ def statementAction(_s,l,token):
         token.loop_statement or
         token.event_trigger or
         token.wait_statement or
-        token.procedural_continuous_assignments or
+        token.procedural_casontinuous_assignments or
         token.procedural_timing_control_statement or
         token.seq_block ):
-        return token
+        return node(token)
     else:
         raise Exception("Not implemented completely statementAction")
 
-# A.6.5 Timing control statements (0/8)
+@Action(grammar.statement_or_null)
+def statementOrNullAction(_s,l,token):
+    return node(token.statement)
+
+# A.6.5 Timing control statements (2/8)
 @Action(grammar.event_trigger)
 def eventTriggerAction(_s,l,token):
     pass
@@ -165,7 +162,9 @@ def proceduralTimingControlStatementAction(_s,l,token):
 # A.6.6 Conditional statements (0/4)
 @Action(grammar.conditional_statement)
 def conditionalStatementAction(_s,l,token):
+    #if token.statement
     pass
+
 
 # A.6.7 Case statements  (0/4)
 @Action(grammar.case_statement)
@@ -213,7 +212,7 @@ def primaryAction(_s,l,token):
         raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
 
 
-# A.8.5 Expression left-side value (0/2)
+# A.8.5 Expression left-side value (2/2)
 
 @Action(grammar.net_lvalue)
 def netLvalueAction(s,l,token):
@@ -307,7 +306,6 @@ def identifierAction(_s,loc,token):
 
 @Action(grammar.simple_arrayed_identifier)
 def simpleArrayedIdentifierAction(_s,loc,token):
-    print(__name__)
     print(token.simple_identifier)
     if token._range:
         return ast.RangedId(token.simple_identifier.shortName(), token._range)

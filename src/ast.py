@@ -138,9 +138,14 @@ class Statement(AstNode):
 class Assignment(Statement):
     def __init__(self, left, delay_event, exp, blocking=True):
         self.left        = left
-        self.blocking    = blocking
         self.delay_event = delay_event
         self.exp         = exp
+        self.blocking    = blocking
+
+class ContinuousAssignment(Assignment):
+    def __init__(self, prefix, assignmentStatement):
+        self.prefix              = prefix
+        self.assignmentStatement = assignmentStatement
 
 class Conditional(Statement):
     pass
@@ -152,7 +157,9 @@ class Loop(Statement):
     pass
 
 class SequencialBlock(Statement):
-    pass
+    def __init__(self, item_decls, statements):
+        self.item_decls = item_decls
+        self.statements = statements
 
 class ProceduralContinuousAssignment(Assignment): #assign
     pass
@@ -178,7 +185,7 @@ class Primary(Expression):
         if isinstance(self.obj,tuple):
             head = self.obj[0]
             data = str(head[0])
-        elif isinstance(self.obj, ast.Numeric):
+        elif isinstance(self.obj, Numeric):
             data = str(self.obj)
         else:
             print(type(self.obj))
