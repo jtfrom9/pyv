@@ -212,9 +212,9 @@ def primaryAction(_s,l,token):
     if token.number:
         return ast.Primary(token.number[0])
     elif token.hierarchical_identifier:
-        exp  = token.expression[0] if token.expression else None
-        rexp = token.range_expression[0] if token.range_expression else None
-        return ast.Primary((token.hierarchical_identifier[0], exp, rexp))
+        return ast.Primary(( node(token.hierarchical_identifier), 
+                             node(token.expression), 
+                             node(token.range_expression) ))
     elif token.function_call:
         pass
     else:
