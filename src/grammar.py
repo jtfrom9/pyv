@@ -604,9 +604,9 @@ escaped_hierarchical_identifier << Group(
     
 _simple_hierarchical_branch_part = Group( PERIOD + simple_identifier("name") + Optional( LB + unsigned_number("index") + RB ) )
 simple_hierarchical_branch  << Group(
-    simple_identifier 
+    simple_identifier
     + Optional( LB + unsigned_number("index") + RB )
-    + Group( Optional( ZeroOrMore( _simple_hierarchical_branch_part ) ) ) ("nodes")
+    + Group( Optional( ZeroOrMore( _simple_hierarchical_branch_part ) ) ) ("ids")
     )
 
 escaped_hierarchical_branch << Group(

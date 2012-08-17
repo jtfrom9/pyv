@@ -106,13 +106,13 @@ def blockingAssignmentAction(_s,l,token):
 @Action(grammar.procedural_continuous_assignments)
 def proceduralContinuousAssignmentAction(_s,l,token):
     if token.variable_assignment:
-        return ContinuousAssignment(token.keyword, node(token.variable_assignment))
+        return ast.ContinuousAssignment(token.keyword, node(token.variable_assignment))
     elif token.net_assignment:
-        return ContinuousAssignment(token.keyword, node(token.net_assignment))
+        return ast.ContinuousAssignment(token.keyword, node(token.net_assignment))
     elif token.variable_lvalue:
-        return ContinuousAssignment(token.keyword, node(token.variable_lvalue))
+        return ast.ContinuousAssignment(token.keyword, node(token.variable_lvalue))
     elif token.net_lvalue:
-        return ContinuousAssignment(token.keyword, node(token.net_lvalue))
+        return ast.ContinuousAssignment(token.keyword, node(token.net_lvalue))
          
 # A.6.3 Parallel and sequential blocks (1/4)
 @Action(grammar.variable_assignment)
@@ -327,12 +327,13 @@ def simpleHierarchicalBranchAction(_s,loc,token):
     if token.index:
         index = int(token.index)
     ids=[]
-    for node in token.nodes:
-        if node.index:
-            ids.append(ast.IndexedId(node.name[0], int(node.index)))
+    for id in token.ids:
+        if id.index:
+            ids.append(ast.IndexedId( node(id.name), int(id.index) ))
         else:
-            ids.append(ast.BasicId(node.name[0]))
+            ids.append(ast.BasicId( node(id.name) ))
     return ast.HierarchicalId(token.simple_identifier, index, ids)
+    #return ast.HierarchicalId(token.name, index, ids)
 
 @Action(grammar.simple_hierarchical_identifier)
 def simpleHierarchicalIdnetifierAction(_s,loc,token):

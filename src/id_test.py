@@ -66,6 +66,14 @@ def test_simple_hierarchical_identifier(self):
     print(self.check_pass("hoge[5].foo[1].bar[10]").asXML())
     
 
+@TestCase(grammar)
+def test_hierarchical_identifier(self):
+    print(self.check_pass("hoge[5]").asXML())
+    print(self.check_pass("hoge[5].a").asXML())
+    print(self.check_pass("hoge[5].foo[1].bar").asXML())
+    print(self.check_pass("hoge[5].foo[1].bar[10]").asXML())
+    
+
 # import pyparsing as pp
 # hoge = pp.Group( pp.ZeroOrMore( grammar.ID )("id_list") )
 # class X(object):
@@ -86,3 +94,4 @@ def test_simple_hierarchical_identifier(self):
 
 if __name__=='__main__':
     unittest.main()
+
