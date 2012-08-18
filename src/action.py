@@ -38,7 +38,7 @@ def Action(grammar):
         return func
     return _decorator
 
-def node(token, fail_ret=None):
+def node(token, fail_ret=ast.null):
     if token:
         if isinstance(token,ParseResults):
             return token[0]
@@ -46,7 +46,7 @@ def node(token, fail_ret=None):
             return token
     else:
         return fail_ret
-
+ 
 # A.2.1.2 Port declarations (0/3)
 # A.2.1.3 Type declarations (0/7)
 # A.2.2.1 Net and variable types (0/4)
@@ -147,6 +147,7 @@ def statementAction(_s,l,token):
 
 @Action(grammar.statement_or_null)
 def statementOrNullAction(_s,l,token):
+    #print("Action: statement_or_null token={0}".format(token))
     return node(token.statement)
 
 # A.6.5 Timing control statements (2/8)
@@ -162,18 +163,23 @@ def proceduralTimingControlStatementAction(_s,l,token):
 # A.6.6 Conditional statements (0/4)
 @Action(grammar.conditional_statement)
 def conditionalStatementAction(_s,l,token):
-    print(type(token.expression))
-    return
     if not token.if_else_if_statement:
-        return Conditional( [(node(token.condition), node(token.statement_if))], node(token.statement_else) )
+        return ast.Conditional( [(node(token.condition), node(token.statement_if))], node(token.statement_else) )
     else:
         return node( token )
                         
 @Action(grammar.if_else_if_statement)
 def ifElseIfStatementAction(_s,l,token):
-    return Conditional( [ (node(token.condition), node(statement_if)) ] +
-                        [ (node(block.condition_elseif), node(block.statement_elseif)) for block in elseif_blocks ],
-                        node(token.statement_else) )
+#     print("token={0}".format(token))
+#     print("token.elseif_blocks={0}".format(token.elseif_blocks))
+#     print("token.elseif_blocks={0}".format(dir(token.elseif_blocks)))
+#     for block in token.elseif_blocks:
+#         print("block={0}".format(block))
+#         print("block.cond_elseif={0}".format(block.condition_elseif))
+#         print("block.cond_elseif={0}".format(block.condition_elseif))
+    return ast.Conditional( [ (node(token.condition), node(token.statement_if)) ] +
+                            [ (node(block.condition_elseif), node(block.statement_elseif)) for block in token.elseif_blocks ],
+                            node(token.statement_else) )
 
 # A.6.7 Case statements  (0/4)
 @Action(grammar.case_statement)
@@ -210,7 +216,7 @@ def expressionAction(_s,l,token):
 @Action(grammar.primary)
 def primaryAction(_s,l,token):
     if token.number:
-        return ast.Primary(token.number[0])
+        return ast.Primary( node(token.number) )
     elif token.hierarchical_identifier:
         return ast.Primary(( node(token.hierarchical_identifier), 
                              node(token.expression), 

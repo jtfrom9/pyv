@@ -318,24 +318,19 @@ procedural_timing_control_statement << Group( delay_or_event_control + statement
 wait_statement                      << Group( WAIT - LP + expression - RP + statement_or_null )
 
 # A.6.6 Conditional statements
-# conditional_statement << Group(
-#     IF + LP + expression + RP + statement_or_null )
-
 conditional_statement << Group( 
-    IF + LP + expression + RP + statement_or_null
+    if_else_if_statement
+    |
+    IF + LP + Group(expression)("condition") + RP + Group(statement_or_null)("statement_if")
+    + Optional( ELSE + Group(statement_or_null)("statement_else") )
     )
-
-
-# conditional_statement << Group( 
-#     IF + LP + expression("condition") + RP + statement_or_null("statement_if") 
-#     #+ Optional( ELSE + statement_or_null("statement_else") ) 
-#     )
-# #if_else_if_statement )
+    
+_else_if_stmt = Group( ELSE + IF + LP + Group(expression)("condition_elseif") - RP + Group(statement_or_null)("statement_elseif") )
 
 if_else_if_statement << Group( 
-    IF + LP + expression("condition") - RP + statement_or_null("statement_if") + 
-    Group(ZeroOrMore( ELSE - IF - LP + expression("condition_elseif") - RP + statement_or_null("statement_elseif") ))("elseif_blocks") +
-    Optional( ELSE + statement_or_null("statement_else") ) )
+    IF + LP + Group(expression)("condition") + RP + Group(statement_or_null)("statement_if") + 
+    Group( ZeroOrMore( _else_if_stmt ) )("elseif_blocks") +
+    Optional( ELSE + Group(statement_or_null)("statement_else") ) )
 
 function_conditional_statement << Group(
     IF + LP + expression - RP + function_statement_or_null +

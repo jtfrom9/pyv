@@ -8,6 +8,10 @@ class AstNode(object):
     def __repr__(self):
         return self.longName()
 
+class Null(AstNode):
+    pass
+null = Null()
+
 class Numeric(AstNode):
     def __init__(self, string):
         self.string = string
@@ -110,16 +114,16 @@ class HierarchicalId(BasicId):
     def shortName(self):
         tailStr =".".join(id.shortName() for id in self.tailIds) 
         if tailStr: tailStr = "." + tailStr
-        return "(i:{head}{index}{tail})".format(head = self.string,
+        return "(i:{head}{index}{tail})".format(head  = self.string,
                                                 index = "[{0}]".format(self.headIndex) if self.headIndex else "",
-                                                tail = tailStr)
+                                                tail  = tailStr)
     def longName(self):
         tailStr =".".join(str(id) for id in self.tailIds) 
         if tailStr: tailStr = "."+tailStr
-        return "({cls} {head}{index}{tail})".format(cls=self.__class__.__name__,
-                                                   head=self.string,
-                                                   index="[{0}]".format(self.headIndex) if self.headIndex else "",
-                                                   tail=tailStr)
+        return "({cls} {head}{index}{tail})".format(cls   = self.__class__.__name__,
+                                                    head  = self.string,
+                                                    index = "[{0}]".format(self.headIndex) if self.headIndex else "",
+                                                    tail  = tailStr)
     def addId(self,id):
         self.tailIds.append(id)
     
@@ -148,7 +152,19 @@ class ContinuousAssignment(Assignment):
         self.assignmentStatement = assignmentStatement
 
 class Conditional(Statement):
-    pass
+    def __init__(self, cs_list, else_s):
+        assert len(cs_list) > 0
+        self.cs_list = cs_list
+        self.else_s  = else_s
+    def longName(self):
+        first_exp, first_s = self.cs_list[0]
+        rest_if_ccs = ""
+        # for statements longName() method no longer makes no sense.
+        # Statement classes should has multi-line pretty print functionality
+        return "({cls} {if_cs}{rest_if_cs}{else_s})".format(cls=self.__class__.__name__,
+                                                            if_cs = "cond:{0}, then:{1}".format(first_exp, first_s.longName()),
+                                                            rest_if_cs = "...",
+                                                            else_s  = "else:{0}".format(self.else_s.longName() if self.else_s else ""))
 
 class Case(Statement):
     pass
