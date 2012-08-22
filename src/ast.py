@@ -140,7 +140,8 @@ class Range(AstNode):
         return "[{l}:{r}]".format(l=self.left, r=self.right)
 
 class Statement(AstNode):
-    pass
+    def dump(self):
+        pass
 
 class Assignment(Statement):
     def __init__(self, left, delay_event, exp, blocking=True):
@@ -168,6 +169,7 @@ class Conditional(Statement):
                                                             if_cs = "cond:{0}, then:{1}".format(first_exp, first_s.longName()),
                                                             rest_if_cs = "...",
                                                             else_s  = "else:{0}".format(self.else_s.longName() if self.else_s else ""))
+    
 
 class Case(Statement):
     pass

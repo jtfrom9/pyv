@@ -27,7 +27,7 @@ import action
 
 @TestCase(grammar)
 def test_conditional_statement(self):
-    print(self.check_pass(" if ( ABC < 0) ;").asXML())
+    print(self.check_pass("if(ABC < 0) ;").asXML())
     print(self.check_pass(" if ( ABC < 0) A=B;").asXML())
     print(self.check_pass('''
 if ( -1 < X )
@@ -58,32 +58,43 @@ else
      A = 2;
 ''').asXML())
 
-
+@TestCase(grammar)
+def test_loop_statement(self):
+    print(self.check_pass('''forever A=1;''').asXML())
+    print(self.check_pass('''for( i=1; i<10; i=i+1) A=A+1;''').asXML())
     
 
-#@TestCase(grammar)
-# def test_expression(self):
-#     print(self.check_pass("hoge < 2").asXML())
+@TestCase(grammar)
+def test_expression(self):
+    print(self.check_pass("hoge < 2").asXML())
 
-# @TestCase(grammar)
-# def test_statement_or_null(self):
-#     print(self.check_pass(";").asXML())
+@TestCase(grammar)
+def test_statement_or_null(self):
+    print(self.check_pass(";").asXML())
 
 if __name__=='__main__':
     unittest.main()
 
-    g = pp.Group(
-        grammar.IF + grammar.LP + grammar.expression + grammar.RP + grammar.statement_or_null("name") 
-        ) + pp.stringEnd
+    # g = pp.Group(
+    #     grammar.IF + grammar.LP + grammar.expression + grammar.RP + grammar.statement_or_null("name") 
+    #     ) + pp.stringEnd
 
-    def action():
-        print("action")
+    # def action():
+    #     print("action")
+    # g.setParseAction(action)
+
+    # #result = g.parseString("if ;")
+    # result = g.parseString("if (A <2) ;")
+
+    # if result:
+    #     print(result)
+    # else:
+    #     print("NG")
+
+    g = pp.Group(grammar.statement_or_null("stmt") + pp.stringEnd)
+    def action(t):
+        print(t.stmt)
     g.setParseAction(action)
+    r = g.parseString(";")
+    print(r)
 
-    #result = g.parseString("if ;")
-    result = g.parseString("if (A <2) ;")
-
-    if result:
-        print(result)
-    else:
-        print("NG")

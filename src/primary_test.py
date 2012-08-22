@@ -7,28 +7,16 @@ import grammar
 import action
 
     
-# @TestCase(grammar)
-# def test_primary(self):
-#     print(self.check_pass("10").asXML())
-#     print(self.check_pass("hoge").asXML())
-#     print(self.check_pass("hoge(a)").asXML())
-#     print(self.check_pass("foo.bar").asXML())
-
+@TestCase(grammar)
+def test_constant_primary(self):
+    pass
 
 @TestCase(grammar)
-def test_expression(self):
-    print(self.check_pass("A+10").asXML())
-    print(self.check_pass("-X").asXML())
-    print(self.check_pass("-X+10+A").asXML())
+def test_primary(self):
+    print(self.check_pass("10").asXML())
+    print(self.check_pass("foo.bar.hoge[5].A[1]").asXML())
+    print(self.check_pass("foo.bar.hoge[5].A[1][X][y]").asXML())
 
-# @TestCase(grammar)
-# def test_function_call(self):
-#     print(self.check_pass("hoge(a)").asXML())
-    # result = self.check_pass("hoge(a)")
-    # for p in dir(result):
-    #     prop = getattr(result,p)
-    #     #print(prop)
-    #     print("prop={0}, value={1}".format(p,str(prop)))
 
 
 

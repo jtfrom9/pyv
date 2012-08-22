@@ -27,6 +27,9 @@ with open("non_terminal_symbols.txt","r") as f:
         result_name = sym
         setattr(self, sym, Forward()(result_name))
 
+def alias(grammar, name):
+    return Group(grammar)(name)
+
 # A.1 Source text2
 # A.1.1 Library source text
 # A.1.2 Configuration source text
@@ -266,7 +269,7 @@ par_block           << Group( FORK + Optional( COLON + block_identifier  + ZeroO
                               JOIN )
 seq_block           << Group( BEGIN + 
                               Optional( COLON + block_identifier + Group(ZeroOrMore( block_item_declaration ))("item_decls") ) +
-                              Group(ZeroOrMore( statement ))("statements") -
+                              alias(ZeroOrMore( statement ),"statements") -
                               END )
 
 # A.6.4 Statements
@@ -321,16 +324,14 @@ wait_statement                      << Group( WAIT - LP + expression - RP + stat
 conditional_statement << Group( 
     if_else_if_statement
     |
-    IF + LP + Group(expression)("condition") + RP + Group(statement_or_null)("statement_if")
-    + Optional( ELSE + Group(statement_or_null)("statement_else") )
-    )
-    
-_else_if_stmt = Group( ELSE + IF + LP + Group(expression)("condition_elseif") - RP + Group(statement_or_null)("statement_elseif") )
+    IF + LP + alias(expression, "condition") + RP + alias(statement_or_null, "statement_if") + 
+    Optional( ELSE + alias(statement_or_null,"statement_else") ) )
 
+_else_if_part = Group( ELSE + IF + LP + alias(expression,"condition_elseif") - RP + alias(statement_or_null,"statement_elseif") )
 if_else_if_statement << Group( 
-    IF + LP + Group(expression)("condition") + RP + Group(statement_or_null)("statement_if") + 
-    Group( ZeroOrMore( _else_if_stmt ) )("elseif_blocks") +
-    Optional( ELSE + Group(statement_or_null)("statement_else") ) )
+    IF + LP + alias(expression,"condition") + RP + alias(statement_or_null,"statement_if") + 
+    alias(ZeroOrMore( _else_if_part ), "elseif_blocks") +
+    Optional( ELSE + alias(statement_or_null,"statement_else") ) )
 
 function_conditional_statement << Group(
     IF + LP + expression - RP + function_statement_or_null +
@@ -371,7 +372,7 @@ loop_statement << Group(
     REPEAT - LP + expression - RP + statement |
     WHILE  - LP + expression - RP + statement 
     |
-    FOR - LP + variable_assignment - SEMICOLON + expression - SEMICOLON + variable_assignment - RP +
+    FOR - LP + alias(variable_assignment,"init") - SEMICOLON + expression - SEMICOLON + alias(variable_assignment,"next") - RP +
     statement )
 
 # A.6.9 Task enable statements
@@ -438,10 +439,10 @@ constant_mintypmax_expression << Group(
     constant_expression |
     constant_expression + COLON + constant_expression + COLON + constant_expression )
 
-constant_range_expression     << Group( constant_expression                                                  |
+constant_range_expression     << Group( constant_base_expression + PLUS  + COLON + width_constant_expression |
+                                        constant_base_expression + MINUS + COLON + width_constant_expression |
                                         msb_constant_expression + COLON + lsb_constant_expression            |
-                                        constant_base_expression + PLUS  + COLON + width_constant_expression |
-                                        constant_base_expression + MINUS + COLON + width_constant_expression )
+                                        constant_expression                                                  )
 
 dimension_constant_expression << constant_expression
 _expression                    = Group( primary                                   |
@@ -488,27 +489,27 @@ module_path_primary << Group( number                                     |
                               constant_function_call                     |
                               LP + module_path_mintypmax_expression - RP )
 
-primary << Group( number                                                                                   ^
-                  hierarchical_identifier                                                                  ^
-                  hierarchical_identifier + OneOrMore( LB + expression - RB )                              ^
-                  hierarchical_identifier + OneOrMore( LB + expression - RB ) + LB + range_expression - LB ^
-                  hierarchical_identifier + LB + range_expression - RB                                     ^
-                  concatenation                                                                            ^
-                  multiple_concatenation                                                                   ^
-                  function_call                                                                            ^
-                  system_function_call                                                                     ^
-                  constant_function_call                                                                   ^
-                  LP + mintypmax_expression - RP                                                           )
+primary << Group( number                                                                                           ^
+                  hierarchical_identifier                                                                          ^
+                  hierarchical_identifier + OneOrMore( LB + expression + RB )("exps")                              ^
+                  hierarchical_identifier + OneOrMore( LB + expression + RB )("exps") + LB + range_expression + LB ^
+                  hierarchical_identifier + LB + range_expression - RB                                             ^
+                  concatenation                                                                                    ^
+                  multiple_concatenation                                                                           ^
+                  function_call                                                                                    ^
+                  system_function_call                                                                             ^
+                  constant_function_call                                                                           ^
+                  LP + mintypmax_expression - RP                                                                   )
 
 # A.8.5 Expression left-side value
-net_lvalue << Group( hierarchical_net_identifier + Group(OneOrMore( LB + constant_expression - RB ))("exps") + LB + constant_range_expression - RB |
-                     hierarchical_net_identifier + Group(OneOrMore( LB + constant_expression - RB ))("exps")                                       |
-                     hierarchical_net_identifier                                                             + LB + constant_range_expression - RB |
+net_lvalue << Group( hierarchical_net_identifier + alias(OneOrMore( LB + constant_expression + RB ),"exps") + LB + constant_range_expression + RB  |
+                     hierarchical_net_identifier + alias(OneOrMore( LB + constant_expression + RB ),"exps")                                        |
+                     hierarchical_net_identifier                                                            + LB + constant_range_expression + RB  |
                      net_concatenation                                                                                                             |
                      hierarchical_net_identifier                                                                                                   )
 
-variable_lvalue << Group( hierarchical_variable_identifier + Group(OneOrMore( LB + expression - RB ))("exps") + LB + range_expression - RB |
-                          hierarchical_variable_identifier + Group(OneOrMore( LB + expression - RB ))("exps")                              |
+variable_lvalue << Group( hierarchical_variable_identifier + alias(OneOrMore( LB + expression - RB ),"exps") + LB + range_expression - RB  |
+                          hierarchical_variable_identifier + alias(OneOrMore( LB + expression - RB ),"exps")                               |
                           hierarchical_variable_identifier                                                    + LB + range_expression - RB |
                           variable_concatenation                                                                                           |
                           hierarchical_variable_identifier                                                                                 )

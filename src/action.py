@@ -46,6 +46,11 @@ def node(token, fail_ret=ast.null):
             return token
     else:
         return fail_ret
+
+def NotImplemented(func):
+    def _decorator(s,l,t):
+        raise "Not Implemented: " + func.__name__
+    return _decorator
  
 # A.2.1.2 Port declarations (0/3)
 # A.2.1.3 Type declarations (0/7)
@@ -160,23 +165,21 @@ def proceduralTimingControlStatementAction(_s,l,token):
     pass
     
 
-# A.6.6 Conditional statements (0/4)
+# A.6.6 Conditional statements (2/4)
 @Action(grammar.conditional_statement)
 def conditionalStatementAction(_s,l,token):
     if not token.if_else_if_statement:
+        print("<1>")
+        print(token.statement_if)
         return ast.Conditional( [(node(token.condition), node(token.statement_if))], node(token.statement_else) )
     else:
+        print("<2>")
         return node( token )
                         
 @Action(grammar.if_else_if_statement)
 def ifElseIfStatementAction(_s,l,token):
-#     print("token={0}".format(token))
-#     print("token.elseif_blocks={0}".format(token.elseif_blocks))
-#     print("token.elseif_blocks={0}".format(dir(token.elseif_blocks)))
-#     for block in token.elseif_blocks:
-#         print("block={0}".format(block))
-#         print("block.cond_elseif={0}".format(block.condition_elseif))
-#         print("block.cond_elseif={0}".format(block.condition_elseif))
+    # print("condi:{0}".format(dir(token)))
+    # print("condi:{0}".format(token.condition))
     return ast.Conditional( [ (node(token.condition), node(token.statement_if)) ] +
                             [ (node(block.condition_elseif), node(block.statement_elseif)) for block in token.elseif_blocks ],
                             node(token.statement_else) )
@@ -189,7 +192,17 @@ def caseStatementAction(_s,l,token):
 # A.6.8 Loop statements (0/2)
 @Action(grammar.loop_statement)
 def loopStatementAction(_s,l,token):
-    pass
+    print("loopStatementAction: {0}".format(token.keyword))
+    if token.keyword != 'for':
+        #return ast.Loop( node(token.expression),node(token.statement) )
+        pass
+    else:
+        print("init={0}".format(token.init))
+        print("exp={0}".format(token.expression))
+        print("next={0}".format(token.next))
+        #return ast.ForLoop( node(token.init), node(token.expression), node(token.next) )
+                            
+        
 
 # A.6.9 Task enable statements (0/2)
 
@@ -202,6 +215,7 @@ def loopStatementAction(_s,l,token):
 
 @Action(grammar.expression)
 def expressionAction(_s,l,token):
+    #print("expressionAction: {0}".format(token))
     if token.unary_operator:
         return ast.UnaryExpression(token.unary_operator, token.primary)
     elif token.binary_operator:
@@ -218,8 +232,9 @@ def primaryAction(_s,l,token):
     if token.number:
         return ast.Primary( node(token.number) )
     elif token.hierarchical_identifier:
+        print("id={0}".format(token.hierarchical_identifier))
         return ast.Primary(( node(token.hierarchical_identifier), 
-                             node(token.expression), 
+                             [ expression for expression in token.exps ],
                              node(token.range_expression) ))
     elif token.function_call:
         pass
@@ -234,6 +249,12 @@ def netLvalueAction(s,l,token):
     if token.net_concatenation:
         raise Exception("Not Implemented. net_concatenation")
     else:
+        print("netLvalueAction:")
+        print("id={0}".format(token.hierarchical_identifier))
+        print("exps={0}".format(token.exps))
+        print("range={0}".format(token.constant_range_expression))
+        for i,e in enumerate(token.exps):
+            print("{0}={1}".format(i,e))
         return ast.LeftSideValue( node(token.hierarchical_identifier),
                                   [ node(e.constant_expression) for e in token.exps ],
                                   node(token.constant_range_expression) )
@@ -308,10 +329,29 @@ grammar.octal_value.setParseAction             (lambda t: t[0])
 grammar.hex_value.setParseAction               (lambda t: t[0])
 
 
-# A.9.3 Identifiers
+# A.9.3 Identifiers(0/26)
 @Action(grammar.simple_identifier)
 def simpleIdentifierAction(_s,loc,token):
     return ast.BasicId(token)
+
+@Action(grammar.simple_arrayed_identifier)
+def simpleArrayedIdentifierAction(_s,loc,token):
+    print(token.simple_identifier)
+    if token._range:
+        return ast.RangedId(token.simple_identifier.shortName(), token._range)
+    else:
+        return ast.BasicId(token.simple_identifier.shortName())
+
+
+@Action(grammar.escaped_identifier)
+@NotImplemented
+def escapedIdentifierAction(_s,loc,token):
+    pass
+
+@Action(grammar.escaped_arrayed_identifier)
+@NotImplemented
+def escapedArrayedIdentifierAction(_s,loc,token):
+    pass
 
 @Action(grammar.identifier)
 def identifierAction(_s,loc,token):
@@ -322,14 +362,6 @@ def identifierAction(_s,loc,token):
     else:
         assert False
 
-@Action(grammar.simple_arrayed_identifier)
-def simpleArrayedIdentifierAction(_s,loc,token):
-    print(token.simple_identifier)
-    if token._range:
-        return ast.RangedId(token.simple_identifier.shortName(), token._range)
-    else:
-        return ast.BasicId(token.simple_identifier.shortName())
-
 @Action(grammar.arrayed_identifier)
 def arrayedIdentifierAction(_s,loc,token):
     if token.simple_arrayed_identifier:
@@ -338,6 +370,16 @@ def arrayedIdentifierAction(_s,loc,token):
         return token.escaped_arrayed_identifier
     else:
         assert False
+
+grammar.event_identifier.setParseAction           (lambda t: node(t))
+grammar.function_identifier.setParseAction        (lambda t: node(t))
+grammar.module_identifier.setParseAction          (lambda t: node(t))
+grammar.module_instance_identifier.setParseAction (lambda t: node(t))
+grammar.net_identifier.setParseAction             (lambda t: node(t))
+grammar.port_identifier.setParseAction            (lambda t: node(t))
+grammar.real_identifier.setParseAction            (lambda t: node(t))
+grammar.task_identifier.setParseAction            (lambda t: node(t))
+grammar.variable_identifier.setParseAction        (lambda t: node(t))
     
 @Action(grammar.simple_hierarchical_branch)
 def simpleHierarchicalBranchAction(_s,loc,token):
