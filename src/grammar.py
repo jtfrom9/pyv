@@ -526,9 +526,12 @@ number         << Group( decimal_number ^
                          hex_number     ^ 
                          real_number    )
 
+_integral_part = Group(unsigned_number)("integral_part")
+_decimal_part  = Group(unsigned_number)("decimal_part")
+_expornential_part = Group(unsigned_number)("expornential_part")
 real_number    << Group( 
-    unsigned_number + Optional( PERIOD + unsigned_number ) + exp + Optional( sign ) + unsigned_number |
-    unsigned_number + PERIOD + unsigned_number                                                        )
+    _integral_part + Optional( PERIOD + _decimal_part ) + exp + Optional( sign ) + _expornential_part |
+    _integral_part +           PERIOD + _decimal_part )
 
 exp            << oneOf("e E")
 decimal_number << Group( Optional( size ) + decimal_base + x_digit + ZeroOrMore( USC ) |

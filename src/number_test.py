@@ -8,8 +8,8 @@ import action
 
 @TestCase(grammar)
 def test_number(self):
-    print(self.check_pass("1.0e+1").asXML())
     print(self.check_pass("23.5").asXML())
+    print(self.check_pass("1.0e+1").asXML())
     print(self.check_pass("0.0E-30").asXML())
     print(self.check_pass("0.0").asXML())
     print(self.check_pass("123").asXML())

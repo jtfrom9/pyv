@@ -255,7 +255,10 @@ def numberAction(_s,l,token):
 
 @Action(grammar.real_number)
 def realNumberAction(_s,l,token):
-    return ast.Float(token)    # TODO: fixme
+    if not token.exp:
+        return ast.Float( node(token.integral_part) + "." + node(token.decimal_part))
+    else:
+        return ast.Float( node(token.integral_part) + "." + node(token.decimal_part) + token.exp + node(token.sign,"") + node(token.expornential_part) )
 
 @Action(grammar.decimal_number)
 def decimalNumberAction(_s, loc, token):

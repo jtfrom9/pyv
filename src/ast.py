@@ -17,6 +17,8 @@ class Numeric(AstNode):
         self.string = string
     def longName(self):
         return self.__class__.__name__ + "(" + self.string + ")"
+    def value(self):
+        pass
 
 class FixedWidthValue(Numeric):
     Binary = 2
@@ -36,6 +38,7 @@ class FixedWidthValue(Numeric):
                 FixedWidthValue.Hex : "h", 
                 FixedWidthValue.Decimal : "d" }
         return tab[vtype]
+
 
 class State2Value(FixedWidthValue):
     def __init__(self, string, width, vtype, value):
