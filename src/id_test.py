@@ -116,6 +116,9 @@ def test12(self):
     print(self.check_pass("hoge[5].foo[1].bar").asXML())
     print(self.check_pass("hoge[5].foo[1].bar[10]").asXML())
     
+@TestCase2(grammar.escaped_hierarchical_branch)
+def test196(self):
+    pass
 
 if __name__=='__main__':
     unittest.main()
