@@ -69,9 +69,9 @@ def TestCase2(grammar):
     def _decolator(test_func):
         class _TestCase(GrammarTestCase):
             def setUp(self):
-                print("\n{0}: Test Start:".format(grammar.resultsName))
+                print("\n{0}: Test({1}) Start:".format(grammar.resultsName, test_func.__name__))
             def tearDown(self):
-                print("\n{0}: Test End".format(grammar.resultsName))
+                print("\n{0}: Test({1}) End".format(grammar.resultsName,test_func.__name__))
             def grammar(self):
                 return grammar
             def runTest(self):

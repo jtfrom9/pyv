@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from collections import Iterable
 
 class AstNode(object):
     def shortName(self):
@@ -78,7 +79,12 @@ class Float(Numeric):
 
 
 class Id(AstNode):
-    pass
+    def hasTail(self): 
+        return False
+    def hasRange(self):
+        return False
+    def hasIndex(self):
+        return False
 
 class BasicId(Id):
     def __init__(self,string):
@@ -97,6 +103,8 @@ class RangedId(BasicId):
         return "(i:{0}{1})".format(self.string, str(self.range))
     def longName(self):
         return "({cls} {s}{r})".format(cls=self.__class__.__name__, s=self.string, r=str(self.range))
+    def hasRange(self):
+        return True
 
 class IndexedId(BasicId):
     def __init__(self,string,index):
@@ -106,29 +114,51 @@ class IndexedId(BasicId):
         return "(i:{0}[{1}])".format(self.string, self.index)
     def longName(self):
         return "({cls} {s}[{i}])".format(cls=self.__class__.__name__, s=self.string, i=self.index)
+    def hasIndex(self):
+        return True
         
-class HierarchicalId(BasicId):
-    def __init__(self, headId, headIndex, tailIds):
-        super(HierarchicalId,self).__init__(headId.string)
-        self.headId    = headId
-        self.headIndex = headIndex
-        self.tailIds   = tailIds
+class HierarchicalId(Id):
+    def __init__(self, ids):
+        self.ids = []
+        if isinstance(ids, Iterable):
+            self.ids = [x for x in ids]
+        elif isinstance(ids, list):
+            self.ids = ids
+        else:
+            raise Exception("Invalid ids")
+
+    def addId(self,id):
+        self.ids.append(id)
 
     def shortName(self):
-        tailStr =".".join(id.shortName() for id in self.tailIds) 
-        if tailStr: tailStr = "." + tailStr
-        return "(i:{head}{index}{tail})".format(head  = self.string,
-                                                index = "[{0}]".format(self.headIndex) if self.headIndex else "",
-                                                tail  = tailStr)
+        return "(i:{0})".format(".".join(id.shortName() for id in self.ids))
+
     def longName(self):
-        tailStr =".".join(str(id) for id in self.tailIds) 
-        if tailStr: tailStr = "."+tailStr
-        return "({cls} {head}{index}{tail})".format(cls   = self.__class__.__name__,
-                                                    head  = self.string,
-                                                    index = "[{0}]".format(self.headIndex) if self.headIndex else "",
-                                                    tail  = tailStr)
-    def addId(self,id):
-        self.tailIds.append(id)
+        return "({cls} {str})".format(cls = self.__class__.__name__,
+                                      str = "".join(id.longName() for id in self.ids))
+
+# class HierarchicalId(BasicId):
+#     def __init__(self, headId, headIndex, tailIds):
+#         super(HierarchicalId,self).__init__(headId.string)
+#         self.headId    = headId
+#         self.headIndex = headIndex
+#         self.tailIds   = tailIds
+
+#     def shortName(self):
+#         tailStr =".".join(id.shortName() for id in self.tailIds) 
+#         if tailStr: tailStr = "." + tailStr
+#         return "(i:{head}{index}{tail})".format(head  = self.string,
+#                                                 index = "[{0}]".format(self.headIndex) if self.headIndex else "",
+#                                                 tail  = tailStr)
+#     def longName(self):
+#         tailStr =".".join(str(id) for id in self.tailIds) 
+#         if tailStr: tailStr = "."+tailStr
+#         return "({cls} {head}{index}{tail})".format(cls   = self.__class__.__name__,
+#                                                     head  = self.string,
+#                                                     index = "[{0}]".format(self.headIndex) if self.headIndex else "",
+#                                                     tail  = tailStr)
+#     def addId(self,id):
+#         self.tailIds.append(id)
     
 class Range(AstNode):
     def __init__(self,left,right):

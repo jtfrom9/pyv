@@ -49,7 +49,7 @@ def node(token, fail_ret=ast.null):
 
 def NotImplemented(func):
     def _decorator(s,l,t):
-        raise "Not Implemented: " + func.__name__
+        raise Exception("Not Implemented: " + func.__name__)
     return _decorator
  
 # A.2.1.2 Port declarations (0/3)
@@ -355,21 +355,11 @@ def escapedArrayedIdentifierAction(_s,loc,token):
 
 @Action(grammar.identifier)
 def identifierAction(_s,loc,token):
-    if token.simple_identifier:
-        return token.simple_identifier
-    elif token.escaped_identifier:
-        return token.escaped_identifier
-    else:
-        assert False
+    return(node(token))
 
 @Action(grammar.arrayed_identifier)
 def arrayedIdentifierAction(_s,loc,token):
-    if token.simple_arrayed_identifier:
-        return token.simple_arrayed_identifier
-    elif token.escaped_arrayed_identifier:
-        return token.escaped_arrayed_identifier
-    else:
-        assert False
+    return(node(token))
 
 grammar.event_identifier.setParseAction           (lambda t: node(t))
 grammar.function_identifier.setParseAction        (lambda t: node(t))
@@ -380,26 +370,64 @@ grammar.port_identifier.setParseAction            (lambda t: node(t))
 grammar.real_identifier.setParseAction            (lambda t: node(t))
 grammar.task_identifier.setParseAction            (lambda t: node(t))
 grammar.variable_identifier.setParseAction        (lambda t: node(t))
-    
-@Action(grammar.simple_hierarchical_branch)
-def simpleHierarchicalBranchAction(_s,loc,token):
-    index = None
-    if token.index:
-        index = int(token.index)
-    ids=[]
-    for id in token.ids:
-        if id.index:
-            ids.append(ast.IndexedId( node(id.name), int(id.index) ))
-        else:
-            ids.append(ast.BasicId( node(id.name) ))
-    return ast.HierarchicalId(token.simple_identifier, index, ids)
-    #return ast.HierarchicalId(token.name, index, ids)
+
+@Action(grammar.hierarchical_identifier)
+def hierarchicalIdentifier(_s,l,token):
+    return node(token)
 
 @Action(grammar.simple_hierarchical_identifier)
 def simpleHierarchicalIdnetifierAction(_s,loc,token):
-    if not token.escaped_identifier:
-        return token
-    else:
-        assert isinstance(token, HierarchicalId)
-        token.addId(ast.BasicId(token.escaped_identifier))
+    ret = token.simple_hierarchical_branch
+    if token.escaped_identifier:
+        assert isinstance(ret, HierarchicalId)
+        ret.addId(ast.BasicId(token.escaped_identifier))
+    return ret
         
+@Action(grammar.escaped_hierarchical_identifier)
+@NotImplemented
+def escapedHierarchicalIdentifier(_s,loc,token):
+    pass
+
+@Action(grammar.simple_hierarchical_branch)
+def simpleHierarchicalBranchAction(_s,loc,token):
+    #print("token={0}".format(dir(token)))
+    if token.index:
+        # print("token.index={0}".format(token.index))
+        # print("type={0}".format(type(token.index)))
+        # print("simple={0}".format(token.simple_identifier))
+        headId = ast.IndexedId(token.simple_identifier.string, int(token.index))
+        # print("token.index={0}".format(token.index))
+    else:
+        headId = token.simple_identifier
+    # print("headID={0}".format(headId))
+    ids = [ headId ]
+    for id in token.ids: 
+        if id.index:
+            ids.append(ast.IndexedId(id.simple_identifier.string, int(id.index)))
+        else:
+            ids.append(id.simple_identifier)
+    return ast.HierarchicalId(ids)
+    # index = None
+    # if token.index:
+    #     index = int(token.index)
+    # ids=[]
+    # for id in token.ids:
+    #     if id.index:
+    #         ids.append(ast.IndexedId( node(id.name), int(id.index) ))
+    #     else:
+    #         ids.append(ast.BasicId( node(id.name) ))
+    # return ast.HierarchicalId(token.simple_identifier, index, ids)
+
+
+@Action(grammar.escaped_hierarchical_branch)
+@NotImplemented
+def escapedHierarchicalBranchAction(_s,loc,token):
+    pass
+
+
+grammar.hierarchical_block_identifier.setParseAction    (lambda t: node(t))
+grammar.hierarchical_event_identifier.setParseAction    (lambda t: node(t))
+grammar.hierarchical_function_identifier.setParseAction (lambda t: node(t))
+grammar.hierarchical_net_identifier.setParseAction      (lambda t: node(t))
+grammar.hierarchical_variable_identifier.setParseAction (lambda t: node(t))
+grammar.hierarchical_task_identifier.setParseAction     (lambda t: node(t))

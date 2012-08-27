@@ -605,12 +605,11 @@ variable_identifier        << identifier
 hierarchical_identifier         << Group( simple_hierarchical_identifier | escaped_hierarchical_identifier )
 simple_hierarchical_identifier  << Group( simple_hierarchical_branch + Optional( PERIOD + escaped_identifier ) )
 
-escaped_hierarchical_identifier << Group( 
-    escaped_hierarchical_branch + ZeroOrMore( 
-        PERIOD + simple_hierarchical_branch ^ PERIOD + escaped_hierarchical_branch ) )
+escaped_hierarchical_identifier << Group( escaped_hierarchical_branch + ZeroOrMore( PERIOD + simple_hierarchical_branch |
+                                                                                    PERIOD + escaped_hierarchical_branch ) )
 
     
-_simple_hierarchical_branch_part = Group( PERIOD + simple_identifier("name") + Optional( LB + unsigned_number("index") + RB ) )
+_simple_hierarchical_branch_part = Group( PERIOD + simple_identifier + Optional( LB + unsigned_number("index") + RB ) )
 simple_hierarchical_branch  << Group(
     simple_identifier
     + Optional( LB + unsigned_number("index") + RB )
@@ -628,5 +627,5 @@ hierarchical_net_identifier      << hierarchical_identifier
 hierarchical_variable_identifier << hierarchical_identifier
 hierarchical_task_identifier     << hierarchical_identifier
 
-system_task_identifier << Regex(r"$[a-zA-Z0-9_$][a-zA-Z0-9_$]*")
+system_task_identifier << Regex(r"\$[a-zA-Z0-9_$][a-zA-Z0-9_$]*")
 
