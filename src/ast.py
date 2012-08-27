@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
 from collections import Iterable
+import pyparsing as pp
 
+def nodeInfo(node):
+    if isinstance(node,str):
+        return "str: {0}".format(node)
+    if isinstance(node,pp.ParseResults):
+        return "pr: {0}".format([prop for prop in dir(node) if not prop.startswith("__")])
+    if isinstance(node,ast.AstNode):
+        return "ast: {0}".format(str(node))
+    
 class AstNode(object):
     def shortName(self):
         return self.__class__.__name__
@@ -77,13 +86,12 @@ class Float(Numeric):
         super(Float,self).__init__(string)
         self.value = float(string)
 
-
 class Id(AstNode):
-    def hasTail(self): 
-        return False
     def hasRange(self):
-        return False
+        return getattr(self,'range',False)
     def hasIndex(self):
+        return getattr(self,'index',False)
+    def isHierachical(self): 
         return False
 
 class BasicId(Id):
@@ -100,11 +108,9 @@ class RangedId(BasicId):
         super(RangedId,self).__init__(string)
         self.range = _range
     def shortName(self):
-        return "(i:{0}{1})".format(self.string, str(self.range))
+        return "(i:{0}{1})".format(self.string, self.range.shortName())
     def longName(self):
         return "({cls} {s}{r})".format(cls=self.__class__.__name__, s=self.string, r=str(self.range))
-    def hasRange(self):
-        return True
 
 class IndexedId(BasicId):
     def __init__(self,string,index):
@@ -114,8 +120,6 @@ class IndexedId(BasicId):
         return "(i:{0}[{1}])".format(self.string, self.index)
     def longName(self):
         return "({cls} {s}[{i}])".format(cls=self.__class__.__name__, s=self.string, i=self.index)
-    def hasIndex(self):
-        return True
         
 class HierarchicalId(Id):
     def __init__(self, ids):
@@ -126,6 +130,9 @@ class HierarchicalId(Id):
             self.ids = ids
         else:
             raise Exception("Invalid ids")
+
+    def isHierachical(self): 
+        return True
 
     def addId(self,id):
         self.ids.append(id)
@@ -162,10 +169,11 @@ class HierarchicalId(Id):
     
 class Range(AstNode):
     def __init__(self,left,right):
+        print("left={0}, right={0}".format(nodeInfo(left),nodeInfo(right)))
         self.left   = left
         self.right  = right
     def shortName(self):
-        return "{l}:{r}".format(l=self.left.shortName(), r=self.right.shortName())
+        return "{l}:{r}".format(l=self.left, r=self.right)
     def longName(self):
         return "[{l}:{r}]".format(l=self.left, r=self.right)
 

@@ -9,6 +9,16 @@ import grammar
 import ast
 from test_common import *
 
+
+def node(token, fail_ret=ast.null):
+    if token:
+        if isinstance(token,ParseResults):
+            return token[0]
+        else:
+            return token
+    else:
+        return fail_ret
+
 def GroupedAction(action):
     frame    = inspect.currentframe(2)
     filename = frame.f_code.co_filename
@@ -19,7 +29,7 @@ def GroupedAction(action):
         
         #print(">> enter {0}: l={1}, token={2}".format(action.__name__, loc, tokens[0]))
         try:
-            result = action(_s, loc, tokens[0])
+            result = action(_s, loc, node(tokens))
         except Exception as e:
             raise ParseFatalException(_s, loc, 
                                       "\n  File \"{filename}\", line {lineno}\n    {reason}".
@@ -38,14 +48,9 @@ def Action(grammar):
         return func
     return _decorator
 
-def node(token, fail_ret=ast.null):
-    if token:
-        if isinstance(token,ParseResults):
-            return token[0]
-        else:
-            return token
-    else:
-        return fail_ret
+@GroupedAction
+def OneOfAction(s,l,token):
+    return node(token)
 
 def NotImplemented(func):
     def _decorator(s,l,t):
@@ -270,9 +275,7 @@ def variableLvalueAction(s,l,token):
 
 # A.8.7 Numbers
 
-@Action(grammar.number)
-def numberAction(_s,l,token): 
-    return token
+grammar.number.setParseAction(OneOfAction)
 
 @Action(grammar.real_number)
 def realNumberAction(_s,l,token):
@@ -353,13 +356,8 @@ def escapedIdentifierAction(_s,loc,token):
 def escapedArrayedIdentifierAction(_s,loc,token):
     pass
 
-@Action(grammar.identifier)
-def identifierAction(_s,loc,token):
-    return(node(token))
-
-@Action(grammar.arrayed_identifier)
-def arrayedIdentifierAction(_s,loc,token):
-    return(node(token))
+grammar.identifier.setParseAction         (OneOfAction)
+grammar.arrayed_identifier.setParseAction (OneOfAction)
 
 grammar.event_identifier.setParseAction           (lambda t: node(t))
 grammar.function_identifier.setParseAction        (lambda t: node(t))
@@ -371,9 +369,7 @@ grammar.real_identifier.setParseAction            (lambda t: node(t))
 grammar.task_identifier.setParseAction            (lambda t: node(t))
 grammar.variable_identifier.setParseAction        (lambda t: node(t))
 
-@Action(grammar.hierarchical_identifier)
-def hierarchicalIdentifier(_s,l,token):
-    return node(token)
+grammar.hierarchical_identifier.setParseAction(OneOfAction)
 
 @Action(grammar.simple_hierarchical_identifier)
 def simpleHierarchicalIdnetifierAction(_s,loc,token):
@@ -431,3 +427,8 @@ grammar.hierarchical_function_identifier.setParseAction (lambda t: node(t))
 grammar.hierarchical_net_identifier.setParseAction      (lambda t: node(t))
 grammar.hierarchical_variable_identifier.setParseAction (lambda t: node(t))
 grammar.hierarchical_task_identifier.setParseAction     (lambda t: node(t))
+
+@Action(grammar.system_task_identifier)
+def systemTaskIdentifierAction(s,l,token):
+    return ast.BasicId(token)
+

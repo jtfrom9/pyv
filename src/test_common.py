@@ -3,6 +3,8 @@ import sys
 import unittest
 from pyparsing import stringEnd, ParseException, ParseSyntaxException
 
+import ast
+
 class GrammarTestCase(unittest.TestCase):
     def grammar(self):
         pass
@@ -80,5 +82,22 @@ def TestCase2(grammar):
         _TestCase.__module__ = test_func.__module__
         return _TestCase
     return _decolator
+
+def _print(result):
+    print(result.asXML())
+    print(ast.nodeInfo(result))
+
+def _id_print(result):
+    print(result.asXML())
+    idAst = result[0]
+    print("shortName={0}".format(idAst.shortName()))
+    print("longName={0}".format(idAst.longName()))
+    if idAst.hasIndex(): print("Index={0}".format(idAst.index))
+    if idAst.hasRange(): print("Range={0}".format(idAst.range))
+    if idAst.isHierachical():
+        for index,id in enumerate(idAst.ids):
+            print("  name[{0}] short={1}, long={2}".format(index,id.shortName(),id.longName()))
+
+
 
 
