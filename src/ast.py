@@ -2,14 +2,6 @@
 from collections import Iterable
 import pyparsing as pp
 
-def nodeInfo(node):
-    if isinstance(node,str):
-        return "str: {0}".format(node)
-    if isinstance(node,pp.ParseResults):
-        return "pr: {0}".format([prop for prop in dir(node) if not prop.startswith("__")])
-    if isinstance(node,ast.AstNode):
-        return "ast: {0}".format(str(node))
-    
 class AstNode(object):
     def shortName(self):
         return self.__class__.__name__
@@ -18,6 +10,14 @@ class AstNode(object):
     def __repr__(self):
         return self.longName()
 
+def nodeInfo(node):
+    if isinstance(node,str):
+        return "str: {0}".format(node)
+    if isinstance(node,pp.ParseResults):
+        return "pr: {0}".format([prop for prop in dir(node) if not prop.startswith("__")])
+    if isinstance(node,AstNode):
+        return "ast: {0}".format(str(node))
+    
 class Null(AstNode):
     pass
 null = Null()
