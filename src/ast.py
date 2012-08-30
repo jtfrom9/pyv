@@ -26,7 +26,7 @@ class Numeric(AstNode):
     def __init__(self, string):
         self.string = string
     def longName(self):
-        return self.__class__.__name__ + "(" + self.string + ")"
+        return "(" + self.__class__.__name__ + ":" + self.string + ")"
     def value(self):
         pass
 
@@ -50,14 +50,14 @@ class FixedWidthValue(Numeric):
         return tab[vtype]
 
 
-class State2Value(FixedWidthValue):
+class Int2(FixedWidthValue):
     def __init__(self, string, width, vtype, value):
-        super(State2Value,self).__init__(string, width, vtype)
+        super(Int2,self).__init__(string, width, vtype)
         self.value = value
     def shortName(self):
-        return "(S2:{0}:{1})".format(FixedWidthValue.type2str(self.vtype), str(int(self.value,vtype)))
+        return "(I2:{0}:{1})".format(FixedWidthValue.type2str(self.vtype), str(int(self.value,vtype)))
     def longName(self):
-        return "({clsname} {value}({vtype}:{string} [{left}:{right}]))".format(
+        return "(I2:{value}({vtype}:{string} [{left}:{right}]))".format(
             clsname = self.__class__.__name__,
             vtype   = FixedWidthValue.type2str(self.vtype),
             left    = self.width-1,
@@ -65,16 +65,16 @@ class State2Value(FixedWidthValue):
             value   = self.value,
             string  = self.string)
 
-class State4Value(FixedWidthValue):
+class Int4(FixedWidthValue):
     def __init__(self, string, width, vtype, bits):
-        super(State4Value,self).__init__(string,width,vtype)
+        super(Int4,self).__init__(string,width,vtype)
         self.bits = bits
     def shortName(self):
-        return "(S4 {vtype}:{string})".format(
+        return "(S4V:{vtype}:{string})".format(
             vtype   = FixedWidthValue.type2str(self.vtype),
             string  = self.string)
     def longName(self):
-        return "({clsname} {vtype}:{string} [{left}:{right}])".format(
+        return "(S4V:{vtype}:{string} [{left}:{right}])".format(
             clsname = self.__class__.__name__,
             vtype   = FixedWidthValue.type2str(self.vtype),
             left    = self.width-1,
@@ -85,6 +85,10 @@ class Float(Numeric):
     def __init__(self, string):
         super(Float,self).__init__(string)
         self.value = float(string)
+    def shortName(self):
+        return "(F:{0})".format(self.string)
+    def longName(self):
+        return self.shortName()
 
 class Id(AstNode):
     def hasRange(self):
@@ -237,19 +241,40 @@ class Expression(AstNode):
         pass
     
 class Primary(Expression):
-    def __init__(self, obj):
-        self.obj = obj
+    def primaryLongInfo():
+        return ""
+    def primaryShortInfo():
+        return ""
     def longName(self):
-        data = None
-        if isinstance(self.obj,tuple):
-            head = self.obj[0]
-            data = str(head[0])
-        elif isinstance(self.obj, Numeric):
-            data = str(self.obj)
-        else:
-            print(type(self.obj))
-            assert False
-        return "({0} {1})".format(self.__class__.__name__,data)
+        return "(Primary {0})".format(self.primaryLongInfo())
+    def shortName(self):
+        return "(Primary {0})".format(self.primaryShortInfo())
+
+class NumberPrimary(Primary):
+    def __init__(self, number):
+        self.number = number
+    def primaryLongInfo(self):
+        return self.number.longName()
+    def primaryShortInfo(self):
+        return self.number.shortName()
+
+class IdPrimary(Primary):
+    def __init__(self, id, exps, range):
+        self.id    = id
+        self.exps  = exps
+        print("IdPrimary: exps={0}".format(exps))
+        self.range = range
+
+
+    def primaryLongInfo(self):
+        return self.id.longName() \
+            + "".join("[" + e.longName() + "]" for e in self.exps ) \
+            + (("[" + self.range.longName() + "]") if self.range else "")
+    def primaryShortInfo(self):
+        return self.id.longName() \
+            + "".join("[" + e.shortName() + "]" for e in self.exps ) \
+            + (("[" + self.range.shortName() + "]") if self.range else "")
+    
 
 class UnaryExpression(Expression):
     def __init__(self, op, exp):

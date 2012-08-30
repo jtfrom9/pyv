@@ -489,17 +489,17 @@ module_path_primary << Group( number                                     |
                               constant_function_call                     |
                               LP + module_path_mintypmax_expression - RP )
 
-primary << Group( number                                                                                           ^
-                  hierarchical_identifier                                                                          ^
-                  hierarchical_identifier + OneOrMore( LB + expression + RB )("exps")                              ^
-                  hierarchical_identifier + OneOrMore( LB + expression + RB )("exps") + LB + range_expression + LB ^
-                  hierarchical_identifier + LB + range_expression - RB                                             ^
-                  concatenation                                                                                    ^
-                  multiple_concatenation                                                                           ^
-                  function_call                                                                                    ^
-                  system_function_call                                                                             ^
-                  constant_function_call                                                                           ^
-                  LP + mintypmax_expression - RP                                                                   )
+primary << Group( number                                                                                                 ^
+                  hierarchical_identifier                                                                                ^
+                  hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              ^
+                  hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + LB ^
+                  hierarchical_identifier                                                   + LB + range_expression + RB ^
+                  concatenation                                                                                          ^
+                  multiple_concatenation                                                                                 ^
+                  function_call                                                                                          ^
+                  system_function_call                                                                                   ^
+                  constant_function_call                                                                                 ^
+                  LP + mintypmax_expression - RP                                                                         )
 
 # A.8.5 Expression left-side value
 net_lvalue << Group( hierarchical_net_identifier + alias(OneOrMore( LB + constant_expression + RB ),"exps") + LB + constant_range_expression + RB  |

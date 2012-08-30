@@ -234,15 +234,14 @@ def expressionAction(_s,l,token):
 
 @Action(grammar.primary)
 def primaryAction(_s,l,token):
+    print("token={0}".format(ast.nodeInfo(token)))
     if token.number:
-        return ast.Primary( node(token.number) )
+        return ast.NumberPrimary( token.number )
     elif token.hierarchical_identifier:
         print("id={0}".format(token.hierarchical_identifier))
-        return ast.Primary(( node(token.hierarchical_identifier), 
-                             [ expression for expression in token.exps ],
-                             node(token.range_expression) ))
-    elif token.function_call:
-        pass
+        return ast.IdPrimary( token.hierarchical_identifier,
+                              [ node(exp) for exp in token.exps ],
+                              node(token.range_expression) if token.range_expression else None )
     else:
         raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
 
@@ -288,25 +287,25 @@ def realNumberAction(_s,l,token):
 def decimalNumberAction(_s, loc, token):
     def dval(vstr): 
         return int(vstr, ast.FixedWidthValue.Decimal)
-    def s2val(width):
+    def i2val(width):
         val = int(token.unsigned_number)
         if val >= pow(2,width):
             print("Warning: constant {0} is truncate to {1} bit value: {2}".format(
                     token.unsigned_number, width, pow(2,width)-1))
-        return ast.State2Value(token.unsigned_number,width,ast.FixedWidthValue.Decimal, val)
-    def s4val(width,v):
-        return ast.State4Value(v,width,ast.FixedWidthValue.Decimal, v*width)
+        return ast.Int2(token.unsigned_number,width,ast.FixedWidthValue.Decimal, val)
+    def i4val(width,v):
+        return ast.Int4(v,width,ast.FixedWidthValue.Decimal, v*width)
 
     if len(token)==1:
-        return s2val(32)
+        return i2val(32)
     else:
         width = token.size if token.size else 32
         if token.x_digit:
-            return s4val(width,token.x_digit)
+            return i4val(width,token.x_digit)
         if token.z_digit:
-             return s4val(width,token.z_digit)
+             return i4val(width,token.z_digit)
         if token.unsigned_number:
-            return s2val(width)
+            return i2val(width)
 
 def valueActions(name,vtype):
     @GroupedAction
@@ -315,9 +314,9 @@ def valueActions(name,vtype):
         vstr = getattr(token,name)
         trans = vstr.translate(None,'xXzZ?')
         if trans==vstr:
-            return ast.State2Value(vstr,width,vtype,int(vstr,vtype))
+            return ast.Int2(vstr,width,vtype,int(vstr,vtype))
         else:
-            return ast.State4Value(vstr,width,vtype,vstr)
+            return ast.Int4(vstr,width,vtype,vstr)
     return _action
 
 grammar.binary_number.setParseAction (valueActions('binary_value' , ast.FixedWidthValue.Binary))
@@ -386,33 +385,20 @@ def escapedHierarchicalIdentifier(_s,loc,token):
 
 @Action(grammar.simple_hierarchical_branch)
 def simpleHierarchicalBranchAction(_s,loc,token):
-    #print("token={0}".format(dir(token)))
     if token.index:
-        # print("token.index={0}".format(token.index))
-        # print("type={0}".format(type(token.index)))
-        # print("simple={0}".format(token.simple_identifier))
         headId = ast.IndexedId(token.simple_identifier.string, int(token.index))
-        # print("token.index={0}".format(token.index))
     else:
         headId = token.simple_identifier
-    # print("headID={0}".format(headId))
     ids = [ headId ]
     for id in token.ids: 
         if id.index:
             ids.append(ast.IndexedId(id.simple_identifier.string, int(id.index)))
         else:
             ids.append(id.simple_identifier)
-    return ast.HierarchicalId(ids)
-    # index = None
-    # if token.index:
-    #     index = int(token.index)
-    # ids=[]
-    # for id in token.ids:
-    #     if id.index:
-    #         ids.append(ast.IndexedId( node(id.name), int(id.index) ))
-    #     else:
-    #         ids.append(ast.BasicId( node(id.name) ))
-    # return ast.HierarchicalId(token.simple_identifier, index, ids)
+    if len(ids)==1:
+        return ids[0]
+    else:
+        return ast.HierarchicalId(ids)
 
 
 @Action(grammar.escaped_hierarchical_branch)
