@@ -6,6 +6,7 @@ from test_common import GrammarTestCase, TestCase2, _print
 import grammar
 import action
 
+
 @TestCase2(grammar.number)
 def test(self):
     _print(self.check_pass("23.5"))

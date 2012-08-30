@@ -16,7 +16,7 @@ def nodeInfo(node):
     if isinstance(node,pp.ParseResults):
         return "pr: {0}".format([prop for prop in dir(node) if not prop.startswith("__")])
     if isinstance(node,AstNode):
-        return "ast: {0}".format(str(node))
+        return "ast: {0}({1})".format(node.longName(), node.shortName())
     
 class Null(AstNode):
     pass
@@ -55,7 +55,7 @@ class Int2(FixedWidthValue):
         super(Int2,self).__init__(string, width, vtype)
         self.value = value
     def shortName(self):
-        return "(I2:{0}:{1})".format(FixedWidthValue.type2str(self.vtype), str(int(self.value,vtype)))
+        return "(I2:{0}:{1})".format(FixedWidthValue.type2str(self.vtype), self.value)
     def longName(self):
         return "(I2:{value}({vtype}:{string} [{left}:{right}]))".format(
             clsname = self.__class__.__name__,
@@ -297,5 +297,15 @@ class LeftSideValue(Expression):
         self.indexes = indexes
         self.range   = range
 
-class Concatenation(Expression):
-    pass
+class ConditionalExpression(Expression):
+    def __init__(self,exp_cond,exp_if,exp_else):
+        self.exp_cond = exp_cond
+        self.exp_if   = exp_if
+        self.exp_else = exp_else
+    def shortName(self):
+        return "(ConditionalExp:({cond}?{eif}:{eelse}))".format(
+            cond=self.exp_cond.shortName(),
+            eif =self.exp_if.shortName(),
+            eelse=self.exp_else.shortName())
+    def longName(self):
+        return self.shortName()

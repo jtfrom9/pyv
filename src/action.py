@@ -218,6 +218,14 @@ def loopStatementAction(_s,l,token):
 
 # A.8.3 Expressions (0/16)
 
+grammar.base_expression.setParseAction(lambda t: t)
+
+@Action(grammar.conditional_expression)
+def conditionalExpressionAction(s,l,token):
+    return ast.ConditionalExpression( node(token.exp_cond),
+                                      node(token.exp_if),
+                                      node(token.exp_else) )
+
 @Action(grammar.expression)
 def expressionAction(_s,l,token):
     #print("expressionAction: {0}".format(token))
@@ -246,7 +254,7 @@ def primaryAction(_s,l,token):
         raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
 
 
-# A.8.5 Expression left-side value (2/2)
+# A.8.5 Expression left-side value (0/2)
 
 @Action(grammar.net_lvalue)
 def netLvalueAction(s,l,token):

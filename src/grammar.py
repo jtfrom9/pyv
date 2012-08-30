@@ -427,7 +427,7 @@ system_function_call   << Group( system_task_identifier + Optional( LP + delimit
 
 # A.8.3 Expressions
 base_expression          << expression
-conditional_expression   << Group( expression + Q + expression - COLON + expression )
+conditional_expression   << Group( alias(expression,"exp_cond") + Q + alias(expression,"exp_if") - COLON + alias(expression,"exp_else") )
 constant_base_expression << constant_expression
 constant_expression      << Group( constant_primary                                                            |
                                    unary_operator + constant_primary                                           |
@@ -449,7 +449,6 @@ _expression                    = Group( primary                                 
                                         string                                    |
                                         unary_operator + primary                  |
                                         conditional_expression                    )
-#                                        expression + binary_operator + expression )
 expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.RIGHT) ])
 
 lsb_constant_expression            << constant_expression
