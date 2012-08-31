@@ -429,11 +429,15 @@ system_function_call   << Group( system_task_identifier + Optional( LP + delimit
 base_expression          << expression
 conditional_expression   << Group( alias(expression,"exp_cond") + Q + alias(expression,"exp_if") - COLON + alias(expression,"exp_else") )
 constant_base_expression << constant_expression
-constant_expression      << Group( constant_primary                                                            |
-                                   unary_operator + constant_primary                                           |
-                                   constant_expression + binary_operator + constant_expression                 |
-                                   constant_expression + Q + constant_expression - COLON + constant_expression |
-                                   string )
+
+_constant_expression  = Group( constant_primary                                                                                                                |
+                               string                                                                                                                          |
+                               unary_operator + constant_primary                                                                                               |
+                               alias(constant_expression,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") )
+#                     constant_expression + binary_operator + constant_expression                 |
+constant_expression << operatorPrecedence( _constant_expression, [ (binary_operator, 2, opAssoc.RIGHT) ] )
+
+
 
 constant_mintypmax_expression << Group( 
     constant_expression |
@@ -473,11 +477,11 @@ range_expression << Group( expression                                           
 width_constant_expression << constant_expression
 
 # A.8.4 Primaries
-constant_primary << Group( constant_concatenation                  |
+constant_primary << Group( number                                  |
+                           constant_concatenation                  |
                            constant_function_call                  |
                            LP - constant_mintypmax_expression - RP |
-                           constant_multiple_concatenation         |
-                           number )
+                           constant_multiple_concatenation         )
 
 module_path_primary << Group( number                                     |
                               identifier                                 |

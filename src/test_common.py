@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import unittest
-from pyparsing import stringEnd, ParseException, ParseSyntaxException
+from pyparsing import stringEnd, ParseException, ParseSyntaxException, ParseResults
 
 import ast
 
@@ -21,14 +21,21 @@ class GrammarTestCase(unittest.TestCase):
                 print("line={0}, lineno={1}, loc={2}".format(e.line, e.lineno, e.loc))
                 print("parserElement={0}".format(e.parserElement))
                 print("pstr={0}".format(e.pstr))
-                self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e))
-                sys.exit()
+                # self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e))
+                # sys.exit()
+                print(e)
+                e.msg = "input = \"{0}\": ".format(text) + e.msg
+                if isinstance(e, ParseException):
+                    raise ParseException(e)
+                else:
+                    raise ParseSyntaxException(e)
             else:
                 self.assertTrue(True)
             return
         except Exception as e:
             if success:
-                self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e))
+                #self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e))
+                raise e
             else:
                 self.assertTrue(True)
             return
@@ -84,7 +91,8 @@ def TestCase2(grammar):
     return _decolator
 
 def _print(result):
-    print(result.asXML())
+    if isinstance(result,ParseResults):
+        print(result.asXML())
     print(ast.nodeInfo(result))
 
 def _id_print(result):

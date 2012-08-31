@@ -31,8 +31,8 @@ def test117(self):
 
 @TestCase2(grammar.constant_expression)
 def test118(self):
-#    _print(self.check_pass("func()").asXML())
-    _print(self.check_pass("A").asXML())
+#    _print(self.check_pass("func()"))
+    _print(self.check_pass("A"))
 
 
 @TestCase2(grammar.constant_mintypmax_expression)
@@ -42,7 +42,7 @@ def test119(self):
 
 @TestCase2(grammar.constant_range_expression)
 def test120(self):
-    _print(self.check_pass("1:0").asXML())
+    _print(self.check_pass("1:0"))
 
 
 @TestCase2(grammar.dimension_constant_expression)
@@ -52,10 +52,10 @@ def test121(self):
 
 @TestCase2(grammar.expression)
 def test122(self):
-    _print(self.check_pass("A+10").asXML())
-    _print(self.check_pass("-X").asXML())
-    _print(self.check_pass("-X+10+A").asXML())
-
+    _print(self.check_pass("0"))
+    _print(self.check_pass("A+10"))
+    _print(self.check_pass("-X"))
+    _print(self.check_pass("-X+10+A"))
 
 @TestCase2(grammar.lsb_constant_expression)
 def test123(self):

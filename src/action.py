@@ -20,9 +20,13 @@ def node(token, fail_ret=ast.null):
         return fail_ret
 
 def GroupedAction(action):
-    frame    = inspect.currentframe(2)
-    filename = frame.f_code.co_filename
-    lineno   = frame.f_lineno
+    try:
+        frame = inspect.currentframe(2)
+    except ValueError as e:
+        return None
+    else:
+        filename = frame.f_code.co_filename
+        lineno   = frame.f_lineno
 
     def _decorator(_s,loc,tokens):
         result = None
@@ -214,7 +218,83 @@ def loopStatementAction(_s,l,token):
 
 
 # A.8.1 Concatenations (0/10)
+@Action(grammar.concatenation)
+@NotImplemented
+def concatenationAction(s,l,token):
+    pass
+
+
+@Action(grammar.constant_concatenation)
+@NotImplemented
+def constantConcatenationAction(s,l,token):
+    pass
+
+
+@Action(grammar.constant_multiple_concatenation)
+@NotImplemented
+def constantMultipleConcatenationAction(s,l,token):
+    pass
+
+
+@Action(grammar.module_path_concatenation)
+@NotImplemented
+def modulePathConcatenationAction(s,l,token):
+    pass
+
+
+@Action(grammar.module_path_multiple_concatenation)
+@NotImplemented
+def modulePathMultipleConcatenationAction(s,l,token):
+    pass
+
+
+@Action(grammar.multiple_concatenation)
+@NotImplemented
+def multipleConcatenationAction(s,l,token):
+    pass
+
+
+@Action(grammar.net_concatenation)
+@NotImplemented
+def netConcatenationAction(s,l,token):
+    pass
+
+
+@Action(grammar.net_concatenation_value)
+@NotImplemented
+def netConcatenationValueAction(s,l,token):
+    pass
+
+
+@Action(grammar.variable_concatenation)
+@NotImplemented
+def variableConcatenationAction(s,l,token):
+    pass
+
+
+@Action(grammar.variable_concatenation_value)
+@NotImplemented
+def variableConcatenationValueAction(s,l,token):
+    pass
+
 # A.8.2 Function calls (0/3)
+@Action(grammar.constant_function_call)
+@NotImplemented
+def constantFunctionCallAction(s,l,token):
+    pass
+
+
+@Action(grammar.function_call)
+@NotImplemented
+def functionCallAction(s,l,token):
+    pass
+
+
+@Action(grammar.system_function_call)
+@NotImplemented
+def systemFunctionCallAction(s,l,token):
+    pass
+
 
 # A.8.3 Expressions (0/16)
 
@@ -226,6 +306,35 @@ def conditionalExpressionAction(s,l,token):
                                       node(token.exp_if),
                                       node(token.exp_else) )
 
+@Action(grammar.constant_base_expression)
+@NotImplemented
+def constantBaseExpressionAction(s,l,token):
+    pass
+
+
+@Action(grammar.constant_expression)
+@NotImplemented
+def constantExpressionAction(s,l,token):
+    pass
+
+
+@Action(grammar.constant_mintypmax_expression)
+@NotImplemented
+def constantMintypmaxExpressionAction(s,l,token):
+    pass
+
+
+@Action(grammar.constant_range_expression)
+@NotImplemented
+def constantRangeExpressionAction(s,l,token):
+    pass
+
+
+@Action(grammar.dimension_constant_expression)
+@NotImplemented
+def dimensionConstantExpressionAction(s,l,token):
+    pass
+
 @Action(grammar.expression)
 def expressionAction(_s,l,token):
     #print("expressionAction: {0}".format(token))
@@ -234,11 +343,74 @@ def expressionAction(_s,l,token):
     elif token.binary_operator:
         return ast.BinaryExpression(token.binary_operator, token[0], token[2])
     elif token.primary:
+        print(ast.nodeInfo(token))
         return token
     else:
         raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
+
+
+@Action(grammar.lsb_constant_expression)
+@NotImplemented
+def lsbConstantExpressionAction(s,l,token):
+    pass
+
+
+@Action(grammar.mintypmax_expression)
+@NotImplemented
+def mintypmaxExpressionAction(s,l,token):
+    pass
+
+
+@Action(grammar.module_path_conditional_expression)
+@NotImplemented
+def modulePathConditionalExpressionAction(s,l,token):
+    pass
+
+
+@Action(grammar.module_path_expression)
+@NotImplemented
+def modulePathExpressionAction(s,l,token):
+    pass
+
+
+@Action(grammar.module_path_mintypmax_expression)
+@NotImplemented
+def modulePathMintypmaxExpressionAction(s,l,token):
+    pass
+
+
+@Action(grammar.msb_constant_expression)
+@NotImplemented
+def msbConstantExpressionAction(s,l,token):
+    pass
+
+
+@Action(grammar.range_expression)
+@NotImplemented
+def rangeExpressionAction(s,l,token):
+    pass
+
+
+@Action(grammar.width_constant_expression)
+@NotImplemented
+def widthConstantExpressionAction(s,l,token):
+    pass
+
     
 # A.8.4 Primaries (1/3)
+
+@Action(grammar.constant_primary)
+def constantPrimaryAction(s,l,token):
+    if token.number:
+        return ast.NumberPrimary( token.number )
+    else:
+        raise Exception("Not Implemented completely constantPrimaryAction: token={0}".format(token))
+
+@Action(grammar.module_path_primary)
+@NotImplemented
+def modulePathPrimaryAction(s,l,token):
+    pass
+
 
 @Action(grammar.primary)
 def primaryAction(_s,l,token):
@@ -252,6 +424,10 @@ def primaryAction(_s,l,token):
                               node(token.range_expression) if token.range_expression else None )
     else:
         raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
+
+
+
+
 
 
 # A.8.5 Expression left-side value (0/2)
