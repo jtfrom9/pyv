@@ -7,14 +7,10 @@ import grammar
 import action
 
     
-@TestCase2(grammar.event_expression)
-def test87(self):
-    pass
-
-
 @TestCase2(grammar.base_expression)
 def test115(self):
-    pass
+    _print(self.check_pass("1+2"))
+    _print(self.check_pass("X+2"))
 
 
 @TestCase2(grammar.conditional_expression)
@@ -26,19 +22,18 @@ def test116(self):
 
 @TestCase2(grammar.constant_base_expression)
 def test117(self):
-    pass
-
+    _print(self.check_pass("1+2"))
+    _print(self.check_fail("X+2"))
 
 @TestCase2(grammar.constant_expression)
 def test118(self):
-#    _print(self.check_pass("func()"))
-    _print(self.check_pass("A"))
-
+    _print(self.check_fail("A"))
+    _print(self.check_pass("1"))
+    _print(self.check_pass("1 + 2"))
 
 @TestCase2(grammar.constant_mintypmax_expression)
 def test119(self):
     pass
-
 
 @TestCase2(grammar.constant_range_expression)
 def test120(self):
@@ -47,7 +42,8 @@ def test120(self):
 
 @TestCase2(grammar.dimension_constant_expression)
 def test121(self):
-    pass
+    _print(self.check_fail("1:0"))
+    _print(self.check_pass("20"))
 
 
 @TestCase2(grammar.expression)
@@ -55,11 +51,15 @@ def test122(self):
     _print(self.check_pass("0"))
     _print(self.check_pass("A+10"))
     _print(self.check_pass("-X"))
-    _print(self.check_pass("-X+10+A"))
+    _print(self.check_pass("1+2+3"))
+    _print(self.check_pass("-X+1"))
+    _print(self.check_pass("-X+1+A"))
+    _print(self.check_pass("-X+1*A"))
 
 @TestCase2(grammar.lsb_constant_expression)
 def test123(self):
-    pass
+    _print(self.check_fail("1:0"))
+    _print(self.check_pass("20"))
 
 
 @TestCase2(grammar.mintypmax_expression)
@@ -84,12 +84,15 @@ def test127(self):
 
 @TestCase2(grammar.msb_constant_expression)
 def test128(self):
-    pass
+    _print(self.check_fail("1:0"))
+    _print(self.check_pass("20"))
 
 
 @TestCase2(grammar.range_expression)
 def test129(self):
-    pass
+    _print(self.check_fail("1+2+3"))
+    _print(self.check_fail("1:0"))
+
 
 
 @TestCase2(grammar.width_constant_expression)

@@ -100,6 +100,8 @@ def test185(self):
     _id_print(self.check_pass("hoge[5].foo.bar"))
     _id_print(self.check_pass("hoge[5].foo.bar.A[10]"))
     _id_print(self.check_pass("foo.bar.hoge[5].A[1]"))
+    _id_print(self.check_pass("-X"))
+    
 
 @TestCase2(grammar.escaped_hierarchical_identifier)
 def test186(self):

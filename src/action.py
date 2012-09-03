@@ -60,6 +60,11 @@ def NotImplemented(func):
     def _decorator(s,l,t):
         raise Exception("Not Implemented: " + func.__name__)
     return _decorator
+
+# class NotImplementedCompletelyActionException(Exception):
+#     def __init__(self, token):
+#         self.
+        
  
 # A.2.1.2 Port declarations (0/3)
 # A.2.1.3 Type declarations (0/7)
@@ -298,7 +303,7 @@ def systemFunctionCallAction(s,l,token):
 
 # A.8.3 Expressions (0/16)
 
-grammar.base_expression.setParseAction(lambda t: t)
+grammar.base_expression.setParseAction(lambda t: node(t))
 
 @Action(grammar.conditional_expression)
 def conditionalExpressionAction(s,l,token):
@@ -306,90 +311,94 @@ def conditionalExpressionAction(s,l,token):
                                       node(token.exp_if),
                                       node(token.exp_else) )
 
-@Action(grammar.constant_base_expression)
-@NotImplemented
-def constantBaseExpressionAction(s,l,token):
-    pass
-
+grammar.constant_base_expression.setParseAction(lambda t: node(t))
 
 @Action(grammar.constant_expression)
-@NotImplemented
 def constantExpressionAction(s,l,token):
-    pass
-
+    if token.unary_operator:
+        return ast.UnaryExpression(token.unary_operator, token.constant_primary)
+    elif token.binary_operator:
+        return ast.BinaryExpression(token.binary_operator, token[0], token[2])
+    elif token.constant_primary:
+        return token.constant_primary
+    elif token.exp_cond:
+        return ast.ConditionalExpression( node(token.exp_cond),
+                                          node(token.exp_if),
+                                          node(token.exp_else) )
+    else:
+        raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
 
 @Action(grammar.constant_mintypmax_expression)
 @NotImplemented
 def constantMintypmaxExpressionAction(s,l,token):
     pass
 
-
 @Action(grammar.constant_range_expression)
 @NotImplemented
 def constantRangeExpressionAction(s,l,token):
     pass
+        
+grammar.dimension_constant_expression.setParseAction(lambda t: node(t))
 
-
-@Action(grammar.dimension_constant_expression)
-@NotImplemented
-def dimensionConstantExpressionAction(s,l,token):
-    pass
+@Action(grammar._expression)
+def _expressionAction(_s,l,token):
+    if token.unary_operator:
+        print("Unary")
+        return ast.UnaryExpression(token.unary_operator, token.primary)
+    elif token.primary:
+        print("primary::{0}".format(token))
+        return token.primary
+    else:
+        raise Exception("Not Implemented completely _expressionAction: token={0}".format(token))
 
 @Action(grammar.expression)
 def expressionAction(_s,l,token):
-    #print("expressionAction: {0}".format(token))
-    if token.unary_operator:
-        return ast.UnaryExpression(token.unary_operator, token.primary)
-    elif token.binary_operator:
-        return ast.BinaryExpression(token.binary_operator, token[0], token[2])
-    elif token.primary:
-        print(ast.nodeInfo(token))
+    print("expressionAction: {0}".format(token))
+    if isinstance(token, ast.Expression):
         return token
+    elif token.binary_operator:
+        return ast.BinaryExpression(token.binary_operator, 
+                                    [node(t) for t in token[0::2]])
     else:
         raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
 
 
-@Action(grammar.lsb_constant_expression)
-@NotImplemented
-def lsbConstantExpressionAction(s,l,token):
-    pass
-
+grammar.lsb_constant_expression.setParseAction(lambda t: node(t))
+grammar.msb_constant_expression.setParseAction(lambda t: node(t))
 
 @Action(grammar.mintypmax_expression)
 @NotImplemented
 def mintypmaxExpressionAction(s,l,token):
     pass
 
-
 @Action(grammar.module_path_conditional_expression)
 @NotImplemented
 def modulePathConditionalExpressionAction(s,l,token):
     pass
-
 
 @Action(grammar.module_path_expression)
 @NotImplemented
 def modulePathExpressionAction(s,l,token):
     pass
 
-
 @Action(grammar.module_path_mintypmax_expression)
 @NotImplemented
 def modulePathMintypmaxExpressionAction(s,l,token):
     pass
 
-
-@Action(grammar.msb_constant_expression)
-@NotImplemented
-def msbConstantExpressionAction(s,l,token):
-    pass
-
-
 @Action(grammar.range_expression)
-@NotImplemented
 def rangeExpressionAction(s,l,token):
-    pass
-
+    if token.expression:
+        return node(token.expression)
+    elif token.base_expression:
+        if token.sign=="+":
+            return ast.Range(node(token.base_expression),
+                             ndoe(token.width_constant_expression))
+        else:
+            raise Exception("Not Implemented completely rangeExpressionAction: token={0}".format(token))
+    else:
+        return ast.Range(node(token.msb_constant_expression),
+                         node(token.lsb_constant_expression))
 
 @Action(grammar.width_constant_expression)
 @NotImplemented
@@ -414,11 +423,11 @@ def modulePathPrimaryAction(s,l,token):
 
 @Action(grammar.primary)
 def primaryAction(_s,l,token):
-    print("token={0}".format(ast.nodeInfo(token)))
+    print("primaryAction: token={0}".format(ast.nodeInfo(token)))
     if token.number:
         return ast.NumberPrimary( token.number )
     elif token.hierarchical_identifier:
-        print("id={0}".format(token.hierarchical_identifier))
+        print("primaryAction: id={0}".format(token.hierarchical_identifier))
         return ast.IdPrimary( token.hierarchical_identifier,
                               [ node(exp) for exp in token.exps ],
                               node(token.range_expression) if token.range_expression else None )

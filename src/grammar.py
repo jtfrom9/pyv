@@ -396,9 +396,9 @@ task_enable << Group(
 
 # A.8 Expressions
 # A.8.1 Concatenations
-concatenation                   << Group( LC + delimitedList( expression )                  - RC )
-constant_concatenation          << Group( LC + delimitedList( constant_expression )         - RC )
-constant_multiple_concatenation << Group( LC + constant_expression + constant_concatenation - RC )
+concatenation                   << Group( LC + delimitedList( expression )                  + RC )
+constant_concatenation          << Group( LC + delimitedList( constant_expression )         + RC )
+constant_multiple_concatenation << Group( LC + constant_expression + constant_concatenation + RC )
 
 module_path_concatenation          << Group( LC + delimitedList( module_path_expression )         - RC )
 module_path_multiple_concatenation << Group( LC + constant_expression + module_path_concatenation - RC )
@@ -421,9 +421,9 @@ variable_concatenation_value << Group(
     variable_concatenation )
 
 # A.8.2 Function calls
-constant_function_call << Group( function_identifier - LP + delimitedList( constant_expression )     - RP )
-function_call          << Group( hierarchical_function_identifier - LP + delimitedList( expression ) - RP )
-system_function_call   << Group( system_task_identifier + Optional( LP + delimitedList( expression ) - RP ) )
+constant_function_call << Group( function_identifier + LP + delimitedList( constant_expression )     + RP )
+function_call          << Group( hierarchical_function_identifier + LP + delimitedList( expression ) + RP )
+system_function_call   << Group( system_task_identifier + Optional( LP + delimitedList( expression ) + RP ) )
 
 # A.8.3 Expressions
 base_expression          << expression
@@ -437,23 +437,22 @@ _constant_expression  = Group( constant_primary                                 
 #                     constant_expression + binary_operator + constant_expression                 |
 constant_expression << operatorPrecedence( _constant_expression, [ (binary_operator, 2, opAssoc.RIGHT) ] )
 
-
-
 constant_mintypmax_expression << Group( 
-    constant_expression |
-    constant_expression + COLON + constant_expression + COLON + constant_expression )
+    constant_expression + COLON + constant_expression + COLON + constant_expression |
+    constant_expression                                                             )
 
-constant_range_expression     << Group( constant_base_expression + PLUS  + COLON + width_constant_expression |
-                                        constant_base_expression + MINUS + COLON + width_constant_expression |
-                                        msb_constant_expression + COLON + lsb_constant_expression            |
-                                        constant_expression                                                  )
+constant_range_expression     << Group( constant_base_expression + alias(PLUS, "sign") + COLON + width_constant_expression |
+                                        constant_base_expression + alias(MINUS,"sign") + COLON + width_constant_expression |
+                                        msb_constant_expression                        + COLON + lsb_constant_expression   |
+                                        constant_expression                                                                )
 
 dimension_constant_expression << constant_expression
-_expression                    = Group( primary                                   |
+_expression                    = Group( unary_operator + primary                  |
+                                        primary                                   |
                                         string                                    |
-                                        unary_operator + primary                  |
                                         conditional_expression                    )
-expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.RIGHT) ])
+
+expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.LEFT) ])
 
 lsb_constant_expression            << constant_expression
 msb_constant_expression            << constant_expression
@@ -469,19 +468,19 @@ module_path_mintypmax_expression << Group(
     module_path_expression | 
     module_path_expression + COLON + module_path_expression + COLON + module_path_expression )
 
-range_expression << Group( expression                                                  |
-                           msb_constant_expression + COLON + lsb_constant_expression   |
-                           base_expression + PLUS  + COLON + width_constant_expression |
-                           base_expression + MINUS + COLON + width_constant_expression )
+range_expression << Group( expression                                                                |
+                           msb_constant_expression + COLON + lsb_constant_expression                 |
+                           base_expression + alias(PLUS, "sign") + COLON + width_constant_expression |
+                           base_expression + alias(MINUS,"sign") + COLON + width_constant_expression )
 
 width_constant_expression << constant_expression
 
 # A.8.4 Primaries
-constant_primary << Group( number                                  |
-                           constant_concatenation                  |
+constant_primary << Group( constant_concatenation                  |
+                           constant_multiple_concatenation         |
+                           LP + constant_mintypmax_expression + RP |
                            constant_function_call                  |
-                           LP - constant_mintypmax_expression - RP |
-                           constant_multiple_concatenation         )
+                           number                                  )
 
 module_path_primary << Group( number                                     |
                               identifier                                 |
@@ -492,16 +491,16 @@ module_path_primary << Group( number                                     |
                               constant_function_call                     |
                               LP + module_path_mintypmax_expression - RP )
 
-primary << Group( number                                                                                                 ^
-                  hierarchical_identifier                                                                                ^
-                  hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              ^
-                  hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + LB ^
-                  hierarchical_identifier                                                   + LB + range_expression + RB ^
-                  concatenation                                                                                          ^
-                  multiple_concatenation                                                                                 ^
-                  function_call                                                                                          ^
-                  system_function_call                                                                                   ^
-                  constant_function_call                                                                                 ^
+primary << Group( number                                                                                                 |
+                  hierarchical_identifier                                                                                |
+                  hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
+                  hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + LB |
+                  hierarchical_identifier                                                   + LB + range_expression + RB |
+                  concatenation                                                                                          |
+                  multiple_concatenation                                                                                 |
+                  function_call                                                                                          |
+                  system_function_call                                                                                   |
+                  constant_function_call                                                                                 |
                   LP + mintypmax_expression - RP                                                                         )
 
 # A.8.5 Expression left-side value

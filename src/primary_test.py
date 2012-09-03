@@ -8,8 +8,9 @@ import action
 
 @TestCase2(grammar.constant_primary)
 def test131(self):
-    pass
-
+    _print(self.check_fail("A"))
+    _print(self.check_pass("1"))
+    
 
 @TestCase2(grammar.module_path_primary)
 def test132(self):

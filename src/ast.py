@@ -17,6 +17,7 @@ def nodeInfo(node):
         return "pr: {0}".format([prop for prop in dir(node) if not prop.startswith("__")])
     if isinstance(node,AstNode):
         return "ast: {0}({1})".format(node.longName(), node.shortName())
+    return type(node)
     
 class Null(AstNode):
     pass
@@ -171,16 +172,6 @@ class HierarchicalId(Id):
 #     def addId(self,id):
 #         self.tailIds.append(id)
     
-class Range(AstNode):
-    def __init__(self,left,right):
-        print("left={0}, right={0}".format(nodeInfo(left),nodeInfo(right)))
-        self.left   = left
-        self.right  = right
-    def shortName(self):
-        return "{l}:{r}".format(l=self.left, r=self.right)
-    def longName(self):
-        return "[{l}:{r}]".format(l=self.left, r=self.right)
-
 class Statement(AstNode):
     def dump(self):
         pass
@@ -264,8 +255,6 @@ class IdPrimary(Primary):
         self.exps  = exps
         print("IdPrimary: exps={0}".format(exps))
         self.range = range
-
-
     def primaryLongInfo(self):
         return self.id.longName() \
             + "".join("[" + e.longName() + "]" for e in self.exps ) \
@@ -275,7 +264,6 @@ class IdPrimary(Primary):
             + "".join("[" + e.shortName() + "]" for e in self.exps ) \
             + (("[" + self.range.shortName() + "]") if self.range else "")
     
-
 class UnaryExpression(Expression):
     def __init__(self, op, exp):
         self.op = op
@@ -284,12 +272,13 @@ class UnaryExpression(Expression):
         return "({0} {1})".format(self.op, self.exp)
 
 class BinaryExpression(Expression):
-    def __init__(self,op,left,right):
+    def __init__(self,op,exps):
+        print("Bin: {0}".format(nodeInfo(exps)))
         self.op   =op
-        self.lexp = left
-        self.rexp = right
+        self.exps = exps
     def longName(self):
-        return "({0} {1} {2})".format(self.op, self.lexp[0], self.rexp[0])
+        return "({0} {1})".format(self.op, 
+                                  "".join(exp.longName() for exp in self.exps))
 
 class LeftSideValue(Expression):
     def __init__(self, id, indexes, range):
@@ -309,3 +298,14 @@ class ConditionalExpression(Expression):
             eelse=self.exp_else.shortName())
     def longName(self):
         return self.shortName()
+
+class Range(Expression):
+    def __init__(self,left,right):
+        print("left={0}, right={0}".format(nodeInfo(left),nodeInfo(right)))
+        self.left   = left
+        self.right  = right
+    def shortName(self):
+        return "{l}:{r}".format(l=self.left, r=self.right)
+    def longName(self):
+        return "[{l}:{r}]".format(l=self.left, r=self.right)
+
