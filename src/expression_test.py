@@ -3,6 +3,7 @@ import sys
 import unittest
 
 from test_common import GrammarTestCase, TestCase2, _print
+from pyparsing import stringEnd
 import grammar
 import action
 
@@ -11,6 +12,13 @@ import action
 def test115(self):
     _print(self.check_pass("1+2"))
     _print(self.check_pass("X+2"))
+    _print(self.check_pass("0"))
+    _print(self.check_pass("A+10"))
+    _print(self.check_pass("-X"))
+    _print(self.check_pass("1+2+3"))
+    _print(self.check_pass("-X+1"))
+    _print(self.check_pass("-X+1+A"))
+    _print(self.check_pass("-X+1*A"))
 
 
 @TestCase2(grammar.conditional_expression)
@@ -22,6 +30,7 @@ def test116(self):
 
 @TestCase2(grammar.constant_base_expression)
 def test117(self):
+    _print(self.check_pass("1"))
     _print(self.check_pass("1+2"))
     _print(self.check_fail("X+2"))
 
@@ -90,10 +99,9 @@ def test128(self):
 
 @TestCase2(grammar.range_expression)
 def test129(self):
-    _print(self.check_fail("1+2+3"))
-    _print(self.check_fail("1:0"))
-
-
+    _print(self.check_pass("1+2+3"))
+    _print(self.check_pass("1:0"))
+    _print(self.check_fail("1+:0"))
 
 @TestCase2(grammar.width_constant_expression)
 def test130(self):
@@ -101,3 +109,4 @@ def test130(self):
 
 if __name__=='__main__':
     unittest.main()
+

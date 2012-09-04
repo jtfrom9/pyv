@@ -430,9 +430,9 @@ base_expression          << expression
 conditional_expression   << Group( alias(expression,"exp_cond") + Q + alias(expression,"exp_if") - COLON + alias(expression,"exp_else") )
 constant_base_expression << constant_expression
 
-_constant_expression  = Group( constant_primary                                                                                                                |
+_constant_expression  = Group( unary_operator + constant_primary                                                                                               |
+                               constant_primary                                                                                                                |
                                string                                                                                                                          |
-                               unary_operator + constant_primary                                                                                               |
                                alias(constant_expression,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") )
 #                     constant_expression + binary_operator + constant_expression                 |
 constant_expression << operatorPrecedence( _constant_expression, [ (binary_operator, 2, opAssoc.RIGHT) ] )
@@ -468,10 +468,10 @@ module_path_mintypmax_expression << Group(
     module_path_expression | 
     module_path_expression + COLON + module_path_expression + COLON + module_path_expression )
 
-range_expression << Group( expression                                                                |
-                           msb_constant_expression + COLON + lsb_constant_expression                 |
-                           base_expression + alias(PLUS, "sign") + COLON + width_constant_expression |
-                           base_expression + alias(MINUS,"sign") + COLON + width_constant_expression )
+range_expression << Group( msb_constant_expression + COLON + lsb_constant_expression |
+                           expression                                                )
+#                           base_expression + alias(PLUS, "sign") + COLON + width_constant_expression ^
+#                           base_expression + alias(MINUS,"sign") + COLON + width_constant_expression |
 
 width_constant_expression << constant_expression
 

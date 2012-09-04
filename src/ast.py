@@ -301,11 +301,11 @@ class ConditionalExpression(Expression):
 
 class Range(Expression):
     def __init__(self,left,right):
-        print("left={0}, right={0}".format(nodeInfo(left),nodeInfo(right)))
+        #print("left={0}, right={0}".format(nodeInfo(left),nodeInfo(right)))
         self.left   = left
         self.right  = right
     def shortName(self):
         return "{l}:{r}".format(l=self.left, r=self.right)
     def longName(self):
-        return "[{l}:{r}]".format(l=self.left, r=self.right)
+        return "(Range {l}:{r})".format(l=self.left, r=self.right)
 

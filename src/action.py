@@ -313,18 +313,27 @@ def conditionalExpressionAction(s,l,token):
 
 grammar.constant_base_expression.setParseAction(lambda t: node(t))
 
-@Action(grammar.constant_expression)
-def constantExpressionAction(s,l,token):
+@Action(grammar._constant_expression)
+def _constantExpressionAction(s,l,token):
     if token.unary_operator:
         return ast.UnaryExpression(token.unary_operator, token.constant_primary)
-    elif token.binary_operator:
-        return ast.BinaryExpression(token.binary_operator, token[0], token[2])
     elif token.constant_primary:
         return token.constant_primary
     elif token.exp_cond:
         return ast.ConditionalExpression( node(token.exp_cond),
                                           node(token.exp_if),
                                           node(token.exp_else) )
+    else:
+        raise Exception("Not Implemented completely _constantExpressionAction: token={0}".format(token))
+
+
+@Action(grammar.constant_expression)
+def constantExpressionAction(s,l,token):
+    if isinstance(token, ast.Expression):
+        return token
+    elif token.binary_operator:
+        return ast.BinaryExpression(token.binary_operator, 
+                                    [node(t) for t in token[0::2]])
     else:
         raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
 
@@ -343,10 +352,8 @@ grammar.dimension_constant_expression.setParseAction(lambda t: node(t))
 @Action(grammar._expression)
 def _expressionAction(_s,l,token):
     if token.unary_operator:
-        print("Unary")
         return ast.UnaryExpression(token.unary_operator, token.primary)
     elif token.primary:
-        print("primary::{0}".format(token))
         return token.primary
     else:
         raise Exception("Not Implemented completely _expressionAction: token={0}".format(token))
