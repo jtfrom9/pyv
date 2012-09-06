@@ -47,6 +47,8 @@ def test119(self):
 @TestCase2(grammar.constant_range_expression)
 def test120(self):
     _print(self.check_pass("1:0"))
+    _print(self.check_pass("1:0+10"))
+    _print(self.check_fail("1:X"))
 
 
 @TestCase2(grammar.dimension_constant_expression)

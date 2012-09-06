@@ -343,9 +343,12 @@ def constantMintypmaxExpressionAction(s,l,token):
     pass
 
 @Action(grammar.constant_range_expression)
-@NotImplemented
 def constantRangeExpressionAction(s,l,token):
-    pass
+    if token.constant_expression:
+        return node(token.constant_expression)
+    else:
+        return ast.Range(node(token.msb_constant_expression),
+                         node(token.lsb_constant_expression))
         
 grammar.dimension_constant_expression.setParseAction(lambda t: node(t))
 

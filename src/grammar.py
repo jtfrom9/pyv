@@ -441,10 +441,10 @@ constant_mintypmax_expression << Group(
     constant_expression + COLON + constant_expression + COLON + constant_expression |
     constant_expression                                                             )
 
-constant_range_expression     << Group( constant_base_expression + alias(PLUS, "sign") + COLON + width_constant_expression |
-                                        constant_base_expression + alias(MINUS,"sign") + COLON + width_constant_expression |
-                                        msb_constant_expression                        + COLON + lsb_constant_expression   |
-                                        constant_expression                                                                )
+constant_range_expression << Group( msb_constant_expression + COLON + lsb_constant_expression   |
+                                    constant_expression                                         )
+# constant_base_expression + alias(PLUS, "sign") + COLON + width_constant_expression |
+# constant_base_expression + alias(MINUS,"sign") + COLON + width_constant_expression |
 
 dimension_constant_expression << constant_expression
 _expression                    = Group( unary_operator + primary                  |
@@ -491,11 +491,11 @@ module_path_primary << Group( number                                     |
                               constant_function_call                     |
                               LP + module_path_mintypmax_expression - RP )
 
-primary << Group( number                                                                                                 |
-                  hierarchical_identifier                                                                                |
+primary << Group( hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB |
                   hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
-                  hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + LB |
                   hierarchical_identifier                                                   + LB + range_expression + RB |
+                  hierarchical_identifier                                                                                |
+                  number                                                                                                 |
                   concatenation                                                                                          |
                   multiple_concatenation                                                                                 |
                   function_call                                                                                          |

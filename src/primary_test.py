@@ -21,8 +21,10 @@ def test132(self):
 def test133(self):
     _print(self.check_pass("10"))
     _print(self.check_pass("foo.bar.hoge[5].A[1]"))
+    _print(self.check_pass("foo.bar.hoge[5].A[1][1]"))
+    _print(self.check_pass("foo.bar.hoge[5].A[1][X]"))
     _print(self.check_pass("foo.bar.hoge[5].A[1][X][y]"))
-    _print(self.check_pass("foo.bar.hoge[5].A[1][X][3:1]")) # now fail
+    _print(self.check_pass("foo.bar.hoge[5].A[1][X][3:1]"))
 
 
 @TestCase2(grammar.net_lvalue)
