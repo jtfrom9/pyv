@@ -396,23 +396,23 @@ task_enable << Group(
 
 # A.8 Expressions
 # A.8.1 Concatenations
-concatenation                   << Group( LC + delimitedList( expression )                  + RC )
-constant_concatenation          << Group( LC + delimitedList( constant_expression )         + RC )
+concatenation                   << Group( LC + alias(delimitedList( expression ),"exps")          + RC )
+constant_concatenation          << Group( LC + alias(delimitedList( constant_expression ),"exps") + RC )
 constant_multiple_concatenation << Group( LC + constant_expression + constant_concatenation + RC )
 
-module_path_concatenation          << Group( LC + delimitedList( module_path_expression )         - RC )
-module_path_multiple_concatenation << Group( LC + constant_expression + module_path_concatenation - RC )
-multiple_concatenation             << Group( LC + constant_expression + concatenation             - RC )
+module_path_concatenation          << Group( LC + delimitedList( module_path_expression )         + RC )
+module_path_multiple_concatenation << Group( LC + constant_expression + module_path_concatenation + RC )
+multiple_concatenation             << Group( LC + constant_expression + concatenation             + RC )
 
-net_concatenation << Group( LC + delimitedList( net_concatenation_value ) - RC )
+net_concatenation << Group( LC + alias(delimitedList( net_concatenation_value ),"exps") + RC )
 net_concatenation_value << Group( 
-    hierarchical_net_identifier                                                                  |
-    hierarchical_net_identifier + OneOrMore( LB + expression - RB )                              |
-    hierarchical_net_identifier + OneOrMore( LB + expression - RB ) + LB + range_expression - RB |
-    hierarchical_net_identifier + LB + range_expression - RB                                     |
+    hierarchical_net_identifier                                                                                |
+    hierarchical_net_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
+    hierarchical_net_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB |
+    hierarchical_net_identifier + LB + range_expression + RB                                                   |
     net_concatenation )
 
-variable_concatenation << Group( LC + delimitedList( variable_concatenation_value ) - RC )
+variable_concatenation << Group( LC + delimitedList( variable_concatenation_value ) + RC )
 variable_concatenation_value << Group(
     hierarchical_variable_identifier                                                                  |
     hierarchical_variable_identifier + OneOrMore( LB + expression - RB )                              |

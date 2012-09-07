@@ -309,3 +309,10 @@ class Range(Expression):
     def longName(self):
         return "(Range {l}:{r})".format(l=self.left, r=self.right)
 
+class Concatenation(Expression):
+    def __init__(self, exps):
+        self.exps = exps
+    def shortName(self):
+        return "{" + ",".join(exp.shortName() for exp in self.exps) + "}"
+    def longName(self):
+        return "{" + ",".join(exp.longName() for exp in self.exps) + "}"

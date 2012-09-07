@@ -224,16 +224,12 @@ def loopStatementAction(_s,l,token):
 
 # A.8.1 Concatenations (0/10)
 @Action(grammar.concatenation)
-@NotImplemented
 def concatenationAction(s,l,token):
-    pass
-
+    return ast.Concatenation([e for e in token.exps])
 
 @Action(grammar.constant_concatenation)
-@NotImplemented
 def constantConcatenationAction(s,l,token):
-    pass
-
+    return ast.Concatenation([e for e in token.exps])
 
 @Action(grammar.constant_multiple_concatenation)
 @NotImplemented
@@ -262,14 +258,16 @@ def multipleConcatenationAction(s,l,token):
 @Action(grammar.net_concatenation)
 @NotImplemented
 def netConcatenationAction(s,l,token):
-    pass
-
+    return ast.Concatenation([e for e in token.exps])
 
 @Action(grammar.net_concatenation_value)
-@NotImplemented
 def netConcatenationValueAction(s,l,token):
-    pass
-
+    if token.net_concatenation:
+        return node(token.net_concatenation)
+    else:
+        return ast.IdPrimary(token.hierarchical_net_identifier,
+                             [ node(e) for e in token.exps ],
+                             node(token.range_expression) if token.range_expression else None )
 
 @Action(grammar.variable_concatenation)
 @NotImplemented
