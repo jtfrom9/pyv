@@ -30,6 +30,11 @@ with open("non_terminal_symbols.txt","r") as f:
 def alias(grammar, name):
     return Group(grammar)(name)
 
+def emsg(msg):
+    sym = NoMatch()
+    sym.setName(msg)
+    return sym
+
 # A.1 Source text2
 # A.1.1 Library source text
 # A.1.2 Configuration source text
@@ -39,34 +44,34 @@ source_text << ZeroOrMore( description )
 description << Group ( module_declaration )
 
 module_declaration << Group (  
-    (MODULE - ID + Optional( module_parameter_port_list ) + Optional( list_of_ports ) - SEMICOLON +
-    ZeroOrMore( module_item ) -
+    (MODULE + ID + Optional( module_parameter_port_list ) + Optional( list_of_ports ) + SEMICOLON +
+    ZeroOrMore( module_item ) +
     ENDMODULE)
     ^
-    (MODULE - ID + Optional( module_parameter_port_list ) + Optional( list_of_port_declarations ) - SEMICOLON + 
-    ZeroOrMore( non_port_module_item ) -
+    (MODULE + ID + Optional( module_parameter_port_list ) + Optional( list_of_port_declarations ) + SEMICOLON + 
+    ZeroOrMore( non_port_module_item ) +
     ENDMODULE ))
     
 # A.1.4 Module parametersand ports
 #module_parameter_port_list << SHARP + LP parameter
-list_of_ports              << LP + delimitedList( port ) - RP
+list_of_ports              << LP + delimitedList( port ) + RP
 list_of_port_declarations  << Group( LP + delimitedList( port_declaration ) + RP | 
-                                     LP - RP  )
+                                     LP + RP  )
                                      
 port             << Group( Optional( port_expression ) | 
-                           PERIOD - ID - LP - Optional( port_expression ) - RP )
+                           PERIOD + ID + LP + Optional( port_expression ) + RP )
 port_expression  << Group( port_reference                            | 
-                           LC + delimitedList( port_reference ) - RC )
+                           LC + delimitedList( port_reference ) + RC )
 port_reference   << Group( port_identifier                    |
-                           ID + LB + constant_expression - RB |
-                           ID + LB + range_expression    - RB )
+                           ID + LB + constant_expression + RB |
+                           ID + LB + range_expression    + RB )
 port_declaration << Group ( inout_declaration | 
                             input_declaration | 
                             output_declaration )
 
 # A.1.5 Module items
 module_item                         << Group( module_or_generate_item | 
-                                              port_declaration - SEMICOLON )
+                                              port_declaration + SEMICOLON )
 
 module_or_generate_item             << Group( module_or_generate_item_declaration |
                                               continuous_assign                   |
@@ -106,16 +111,16 @@ output_declaration << Group(
     OUTPUT + output_variable_type                                     + list_of_variable_port_identifers )
 
 # A.2.1.3 Type declarations
-event_declaration   << Group(EVENT   + list_of_event_identifiers    - SEMICOLON)
-integer_declaration << Group(INTEGER + list_of_variable_identifiers - SEMICOLON)
+event_declaration   << Group(EVENT   + list_of_event_identifiers    + SEMICOLON)
+integer_declaration << Group(INTEGER + list_of_variable_identifiers + SEMICOLON)
 net_declaration     << Group(
-    net_type + Optional(SIGNED)                            + Optional(delay3) + list_of_net_identifiers      - SEMICOLON |
-    net_type + Optional(drive_strength) + Optional(SIGNED) + Optional(delay3) + list_of_net_decl_assignments - SEMICOLON )
+    net_type + Optional(SIGNED)                            + Optional(delay3) + list_of_net_identifiers      + SEMICOLON |
+    net_type + Optional(drive_strength) + Optional(SIGNED) + Optional(delay3) + list_of_net_decl_assignments + SEMICOLON )
 
-real_declaration     << Group(REAL                                      + list_of_real_identifiers     - SEMICOLON)
-realtime_declaration << Group(REALTIME                                  + list_of_real_identifiers     - SEMICOLON)
-reg_declaration      << Group(REG + Optional(SIGNED) + Optional(_range) + list_of_variable_identifiers - SEMICOLON)
-time_declaration     << Group(TIME                                      + list_of_variable_identifiers - SEMICOLON)
+real_declaration     << Group(REAL                                      + list_of_real_identifiers     + SEMICOLON)
+realtime_declaration << Group(REALTIME                                  + list_of_real_identifiers     + SEMICOLON)
+reg_declaration      << Group(REG + Optional(SIGNED) + Optional(_range) + list_of_variable_identifiers + SEMICOLON)
+time_declaration     << Group(TIME                                      + list_of_variable_identifiers + SEMICOLON)
 
 # A.2.2 Declaration data types
 # A.2.2.1 Net and variable types
@@ -145,11 +150,11 @@ list_of_variable_identifiers     << Group(delimitedList( variable_type          
 list_of_variable_port_identifers << Group(delimitedList( port_identifier + Optional( EQUAL + constant_expression )        ))
 
 # A.2.4 Declaration assignments
-net_decl_assignment << Group( net_identifier - EQUAL + expression )
+net_decl_assignment << Group( net_identifier + EQUAL + expression )
 
 # A.2.5 Declaration ranges
-dimension << Group( LB + dimension_constant_expression - COLON + dimension_constant_expression - RB )
-_range    << Group( LB + msb_constant_expression       - COLON + lsb_constant_expression       - RB )
+dimension << Group( LB + dimension_constant_expression + COLON + dimension_constant_expression + RB )
+_range    << Group( LB + msb_constant_expression       + COLON + lsb_constant_expression       + RB )
 
 # A.2.6 Function declarations
 function_declaration << Group( 
@@ -183,9 +188,9 @@ task_declaration << Group(
     ENDTASK )
 
 task_item_declaration << Group( block_item_declaration            | 
-                                tf_input_declaration  - SEMICOLON | 
-                                tf_output_declaration - SEMICOLON | 
-                                tf_inout_declaration  - SEMICOLON )
+                                tf_input_declaration  + SEMICOLON | 
+                                tf_output_declaration + SEMICOLON | 
+                                tf_inout_declaration  + SEMICOLON )
 
 task_port_list        << Group( delimitedList( task_port_item ) )
 task_port_item        << Group( tf_inout_declaration | tf_output_declaration | tf_inout_declaration )
@@ -221,13 +226,13 @@ block_variable_type                << Group( variable_identifier | variable_iden
 
 # A.4 Module and generated instantiation
 # A.4.1 Module instantiation
-module_instantiation     << Group( module_identifier + Optional( parameter_value_assignment ) + delimitedList( module_instance ) - SEMICOLON )
-module_instance          << Group( name_of_instance - LP + Optional( list_of_port_connections ) - RP )
+module_instantiation     << Group( module_identifier + Optional( parameter_value_assignment ) + delimitedList( module_instance ) + SEMICOLON )
+module_instance          << Group( name_of_instance + LP + Optional( list_of_port_connections ) + RP )
 name_of_instance         << Group( module_instance_identifier + Optional( _range ) )
 list_of_port_connections << Group( delimitedList ( ordered_port_connection ) |
                                    delimitedList ( named_port_connection   ) )
 ordered_port_connection  << Group( Optional( expression ) )
-named_port_connection    << Group( PERIOD - port_identifier - LP + Optional( expression ) - RP )
+named_port_connection    << Group( PERIOD + port_identifier + LP + Optional( expression ) + RP )
 
 # A.4.2 Generated instantiation
 
@@ -241,7 +246,7 @@ named_port_connection    << Group( PERIOD - port_identifier - LP + Optional( exp
 # A.6.1 Continuous assignment statements
 continuous_assign      << Group( ASSIGN + Optional( delay3 ) + list_of_net_assignment )
 list_of_net_assignment << Group( delimitedList( net_assignment ) )
-net_assignment         << Group( net_lvalue - EQUAL + expression )
+net_assignment         << Group( net_lvalue + EQUAL + expression )
 
 # A.6.2 Procedural blocks and assigments
 initial_construct      << Group( INITIAL + statement )
@@ -256,20 +261,20 @@ procedural_continuous_assignments << Group( ASSIGN   + variable_assignment |
                                             RELEASE  + variable_lvalue     |
                                             RELEASE  + net_lvalue          )
 
-function_blocking_assignment << Group( variable_lvalue - EQUAL + expression )
+function_blocking_assignment << Group( variable_lvalue + EQUAL + expression )
 function_statement_or_null   << Group( function_statement | SEMICOLON )
 
 # A.6.3 Parallel and sequential blocks
 function_seq_block  << Group( BEGIN + Optional( COLON + block_identifier + ZeroOrMore( block_item_declaration ) ) +
-                              ZeroOrMore( function_statement ) -
+                              ZeroOrMore( function_statement ) +
                               END )
-variable_assignment << Group( variable_lvalue - EQUAL + expression )
+variable_assignment << Group( variable_lvalue + EQUAL + expression )
 par_block           << Group( FORK + Optional( COLON + block_identifier  + ZeroOrMore( block_item_declaration ) ) +
-                              ZeroOrMore( statement ) -
+                              ZeroOrMore( statement ) +
                               JOIN )
 seq_block           << Group( BEGIN + 
                               Optional( COLON + block_identifier + Group(ZeroOrMore( block_item_declaration ))("item_decls") ) +
-                              alias(ZeroOrMore( statement ),"statements") -
+                              alias(ZeroOrMore( statement ),"statements") +
                               END )
 
 # A.6.4 Statements
@@ -281,7 +286,7 @@ statement << Group( nonblocking_assignment            + SEMICOLON |
                     event_trigger                                 |
                     loop_statement                                |
                     par_block                                     |
-                    procedural_continuous_assignments - SEMICOLON |
+                    procedural_continuous_assignments + SEMICOLON |
                     procedural_timing_control_statement           |
                     seq_block                                     |
                     system_task_enable                            |
@@ -289,7 +294,7 @@ statement << Group( nonblocking_assignment            + SEMICOLON |
                     wait_statement                                )
 
 statement_or_null  << Group(  SEMICOLON | statement  )
-function_statement << Group( function_blocking_assignment - SEMICOLON |
+function_statement << Group( function_blocking_assignment + SEMICOLON |
                              function_case_statement                  |
                              function_conditional_statement           |
                              function_loop_statement                  |
@@ -299,17 +304,17 @@ function_statement << Group( function_blocking_assignment - SEMICOLON |
 
 # A.6.5 Timing control statements
 delay_control          << Group( SHARP + delay_value | 
-                                 SHARP - LP + mintypmax_expression - RP )
+                                 SHARP + LP + mintypmax_expression + RP )
 delay_or_event_control << Group( delay_control | 
                                  event_control |
-                                 REPEAT - LP + expression - RP + event_control )
-disable_statement      << Group( DISABLE + hierarchical_task_identifier  - SEMICOLON |
-                                 DISABLE + hierarchical_block_identifier - SEMICOLON )
+                                 REPEAT + LP + expression + RP + event_control )
+disable_statement      << Group( DISABLE + hierarchical_task_identifier  + SEMICOLON |
+                                 DISABLE + hierarchical_block_identifier + SEMICOLON )
 event_control          << Group( AT + event_identifier           |
-                                 AT + LP + event_expression - RP |
+                                 AT + LP + event_expression + RP |
                                  AT + ASTA                       |
-                                 AT + LP - ASTA - RP             )
-event_trigger          << Group( TRIG + hierarchical_event_identifier - SEMICOLON )
+                                 AT + LP + ASTA + RP             )
+event_trigger          << Group( TRIG + hierarchical_event_identifier + SEMICOLON )
 event_expression       << Group( expression                               |
                                  hierarchical_identifier                  |
                                  POSEDGE + expression                     |
@@ -318,7 +323,7 @@ event_expression       << Group( expression                               |
                                  event_expression + CAMMA + event_expression )
 
 procedural_timing_control_statement << Group( delay_or_event_control + statement_or_null      )
-wait_statement                      << Group( WAIT - LP + expression - RP + statement_or_null )
+wait_statement                      << Group( WAIT + LP + expression + RP + statement_or_null )
 
 # A.6.6 Conditional statements
 conditional_statement << Group( 
@@ -327,60 +332,60 @@ conditional_statement << Group(
     IF + LP + alias(expression, "condition") + RP + alias(statement_or_null, "statement_if") + 
     Optional( ELSE + alias(statement_or_null,"statement_else") ) )
 
-_else_if_part = Group( ELSE + IF + LP + alias(expression,"condition_elseif") - RP + alias(statement_or_null,"statement_elseif") )
+_else_if_part = Group( ELSE + IF + LP + alias(expression,"condition_elseif") + RP + alias(statement_or_null,"statement_elseif") )
 if_else_if_statement << Group( 
     IF + LP + alias(expression,"condition") + RP + alias(statement_or_null,"statement_if") + 
     alias(ZeroOrMore( _else_if_part ), "elseif_blocks") +
     Optional( ELSE + alias(statement_or_null,"statement_else") ) )
 
 function_conditional_statement << Group(
-    IF + LP + expression - RP + function_statement_or_null +
+    IF + LP + expression + RP + function_statement_or_null +
     Optional( ELSE + function_statement_or_null )
     |
     function_if_else_if_statement )
 
 function_if_else_if_statement << Group(
-    IF + LP + expression - RP + function_statement_or_null +
-    ZeroOrMore ( ELSE - IF - LP + expression - RP + function_statement_or_null ) +
+    IF + LP + expression + RP + function_statement_or_null +
+    ZeroOrMore ( ELSE + IF + LP + expression + RP + function_statement_or_null ) +
     Optional   ( ELSE + function_statement_or_null ) )
 
 # A.6.7 Case statements
-case_statement << Group( CASE  - LP + expression - RP + OneOrMore( case_item ) + ENDCASE |
-                         CASEZ - LP + expression - RP + OneOrMore( case_item ) + ENDCASE |
-                         CASEX - LP + expression - RP + OneOrMore( case_item ) + ENDCASE )
-case_item      << Group( delimitedList( expression ) - COLON + statement_or_null |
+case_statement << Group( CASE  + LP + expression + RP + OneOrMore( case_item ) + ENDCASE |
+                         CASEZ + LP + expression + RP + OneOrMore( case_item ) + ENDCASE |
+                         CASEX + LP + expression + RP + OneOrMore( case_item ) + ENDCASE )
+case_item      << Group( delimitedList( expression ) + COLON + statement_or_null |
                          DEFAULT + Optional( COLON ) + statement_or_null         )
 
-function_case_statement << Group( CASE  - LP + expression - RP + OneOrMore (function_case_item ) + ENDCASE |
-                                  CASEZ - LP + expression - RP + OneOrMore (function_case_item ) + ENDCASE |
-                                  CASEX - LP + expression - RP + OneOrMore (function_case_item ) + ENDCASE )
-function_case_item      << Group( delimitedList( expression ) - COLON + function_statement_or_null |
+function_case_statement << Group( CASE  + LP + expression + RP + OneOrMore (function_case_item ) + ENDCASE |
+                                  CASEZ + LP + expression + RP + OneOrMore (function_case_item ) + ENDCASE |
+                                  CASEX + LP + expression + RP + OneOrMore (function_case_item ) + ENDCASE )
+function_case_item      << Group( delimitedList( expression ) + COLON + function_statement_or_null |
                                   DEFAULT + Optional( COLON ) + function_statement_or_null         )
 
 
 # A.6.8 Loop statements
 function_loop_statement << Group( 
     FOREVER + function_statement                       |
-    REPEAT - LP + expression - RP + function_statement |
-    WHILE  - LP + expression - RP + function_statement 
+    REPEAT + LP + expression + RP + function_statement |
+    WHILE  + LP + expression + RP + function_statement 
     |
-    FOR - LP + variable_assignment - SEMICOLON + expression - SEMICOLON + variable_assignment - RP +
+    FOR + LP + variable_assignment + SEMICOLON + expression + SEMICOLON + variable_assignment + RP +
     function_statement )
 
 loop_statement << Group(
     FOREVER + statement                       |
-    REPEAT - LP + expression - RP + statement |
-    WHILE  - LP + expression - RP + statement 
+    REPEAT + LP + expression + RP + statement |
+    WHILE  + LP + expression + RP + statement 
     |
-    FOR - LP + alias(variable_assignment,"init") - SEMICOLON + expression - SEMICOLON + alias(variable_assignment,"next") - RP +
+    FOR + LP + alias(variable_assignment,"init") + SEMICOLON + expression + SEMICOLON + alias(variable_assignment,"next") + RP +
     statement )
 
 # A.6.9 Task enable statements
 system_task_enable << Group( 
-    system_task_identifier + Optional( LP + delimitedList( expression ) - LP ) - SEMICOLON )
+    system_task_identifier + Optional( LP + delimitedList( expression ) + LP ) + SEMICOLON )
 
 task_enable << Group(
-    hierarchical_identifier + Optional( LP + delimitedList( expression ) - LP ) - SEMICOLON )
+    hierarchical_identifier + Optional( LP + delimitedList( expression ) + LP ) + SEMICOLON )
 
 # A.7 Specify section
 # A.7.1 Specify block declaration
@@ -406,18 +411,18 @@ multiple_concatenation             << Group( LC + constant_expression + concaten
 
 net_concatenation << Group( LC + alias(delimitedList( net_concatenation_value ),"exps") + RC )
 net_concatenation_value << Group( 
-    hierarchical_net_identifier                                                                                |
-    hierarchical_net_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
     hierarchical_net_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB |
-    hierarchical_net_identifier + LB + range_expression + RB                                                   |
+    hierarchical_net_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
+    hierarchical_net_identifier +                                                   LB + range_expression + RB |
+    hierarchical_net_identifier                                                                                |
     net_concatenation )
 
-variable_concatenation << Group( LC + delimitedList( variable_concatenation_value ) + RC )
+variable_concatenation << Group( LC + alias(delimitedList( variable_concatenation_value ),"exps") + RC )
 variable_concatenation_value << Group(
-    hierarchical_variable_identifier                                                                  |
-    hierarchical_variable_identifier + OneOrMore( LB + expression - RB )                              |
-    hierarchical_variable_identifier + OneOrMore( LB + expression - RB ) + LB + range_expression - RB |
-    hierarchical_variable_identifier + LB + range_expression - RB                                     |
+    hierarchical_variable_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB |
+    hierarchical_variable_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
+    hierarchical_variable_identifier +                                                   LB + range_expression + RB |
+    hierarchical_variable_identifier                                                                                |
     variable_concatenation )
 
 # A.8.2 Function calls
@@ -427,7 +432,7 @@ system_function_call   << Group( system_task_identifier + Optional( LP + delimit
 
 # A.8.3 Expressions
 base_expression          << expression
-conditional_expression   << Group( alias(expression,"exp_cond") + Q + alias(expression,"exp_if") - COLON + alias(expression,"exp_else") )
+conditional_expression   << Group( alias(expression,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else") )
 constant_base_expression << constant_expression
 
 _constant_expression  = Group( unary_operator + constant_primary                                                                                               |
@@ -476,11 +481,12 @@ range_expression << Group( msb_constant_expression + COLON + lsb_constant_expres
 width_constant_expression << constant_expression
 
 # A.8.4 Primaries
-constant_primary << Group( constant_concatenation                  |
-                           constant_multiple_concatenation         |
+constant_primary << Group( emsg("constant_primary")                |
                            LP + constant_mintypmax_expression + RP |
-                           constant_function_call                  |
-                           number                                  )
+                           constant_concatenation                  |
+                           constant_multiple_concatenation         |
+                           number                                  |
+                           constant_function_call                  )
 
 module_path_primary << Group( number                                     |
                               identifier                                 |
@@ -489,7 +495,7 @@ module_path_primary << Group( number                                     |
                               function_call                              |
                               system_function_call                       |
                               constant_function_call                     |
-                              LP + module_path_mintypmax_expression - RP )
+                              LP + module_path_mintypmax_expression + RP )
 
 primary << Group( hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB |
                   hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
@@ -501,7 +507,7 @@ primary << Group( hierarchical_identifier + alias(OneOrMore( LB + expression + R
                   function_call                                                                                          |
                   system_function_call                                                                                   |
                   constant_function_call                                                                                 |
-                  LP + mintypmax_expression - RP                                                                         )
+                  LP + mintypmax_expression + RP                                                                         )
 
 # A.8.5 Expression left-side value
 net_lvalue << Group( hierarchical_net_identifier + alias(OneOrMore( LB + constant_expression + RB ),"exps") + LB + constant_range_expression + RB  |
@@ -510,9 +516,9 @@ net_lvalue << Group( hierarchical_net_identifier + alias(OneOrMore( LB + constan
                      net_concatenation                                                                                                             |
                      hierarchical_net_identifier                                                                                                   )
 
-variable_lvalue << Group( hierarchical_variable_identifier + alias(OneOrMore( LB + expression - RB ),"exps") + LB + range_expression - RB  |
-                          hierarchical_variable_identifier + alias(OneOrMore( LB + expression - RB ),"exps")                               |
-                          hierarchical_variable_identifier                                                    + LB + range_expression - RB |
+variable_lvalue << Group( hierarchical_variable_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB  |
+                          hierarchical_variable_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                               |
+                          hierarchical_variable_identifier                                                    + LB + range_expression + RB |
                           variable_concatenation                                                                                           |
                           hierarchical_variable_identifier                                                                                 )
 

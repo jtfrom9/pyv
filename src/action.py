@@ -256,9 +256,9 @@ def multipleConcatenationAction(s,l,token):
 
 
 @Action(grammar.net_concatenation)
-@NotImplemented
 def netConcatenationAction(s,l,token):
-    return ast.Concatenation([e for e in token.exps])
+    el = [e for e in token.exps]
+    return el[0] if len(el)==1 else ast.Concatenation(el)
 
 @Action(grammar.net_concatenation_value)
 def netConcatenationValueAction(s,l,token):
@@ -270,15 +270,18 @@ def netConcatenationValueAction(s,l,token):
                              node(token.range_expression) if token.range_expression else None )
 
 @Action(grammar.variable_concatenation)
-@NotImplemented
 def variableConcatenationAction(s,l,token):
-    pass
-
+    el = [e for e in token.exps]
+    return el[0] if len(el)==1 else ast.Concatenation(el)
 
 @Action(grammar.variable_concatenation_value)
-@NotImplemented
 def variableConcatenationValueAction(s,l,token):
-    pass
+    if token.variable_concatenation:
+        return node(token.variable_concatenation)
+    else:
+        return ast.IdPrimary(token.hierarchical_variable_identifier,
+                             [ node(e) for e in token.exps ],
+                             node(token.range_expression) if token.range_expression else None )
 
 # A.8.2 Function calls (0/3)
 @Action(grammar.constant_function_call)
@@ -361,7 +364,6 @@ def _expressionAction(_s,l,token):
 
 @Action(grammar.expression)
 def expressionAction(_s,l,token):
-    print("expressionAction: {0}".format(token))
     if isinstance(token, ast.Expression):
         return token
     elif token.binary_operator:
@@ -418,8 +420,12 @@ def widthConstantExpressionAction(s,l,token):
 
 @Action(grammar.constant_primary)
 def constantPrimaryAction(s,l,token):
-    if token.number:
+    if isinstance(token,ast.Expression):
+        return token
+    elif token.number:
         return ast.NumberPrimary( token.number )
+    elif token.constant_concatenation:
+        return node(token.constant_concatenation)
     else:
         raise Exception("Not Implemented completely constantPrimaryAction: token={0}".format(token))
 
@@ -431,14 +437,16 @@ def modulePathPrimaryAction(s,l,token):
 
 @Action(grammar.primary)
 def primaryAction(_s,l,token):
-    print("primaryAction: token={0}".format(ast.nodeInfo(token)))
+    #print("primaryAction: token={0}".format(ast.nodeInfo(token)))
     if token.number:
         return ast.NumberPrimary( token.number )
     elif token.hierarchical_identifier:
-        print("primaryAction: id={0}".format(token.hierarchical_identifier))
+        #print("primaryAction: id={0}".format(token.hierarchical_identifier))
         return ast.IdPrimary( token.hierarchical_identifier,
                               [ node(exp) for exp in token.exps ],
                               node(token.range_expression) if token.range_expression else None )
+    elif token.concatenation:
+        return token.concatenation
     else:
         raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
 

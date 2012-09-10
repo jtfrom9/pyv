@@ -253,7 +253,6 @@ class IdPrimary(Primary):
     def __init__(self, id, exps, range):
         self.id    = id
         self.exps  = exps
-        print("IdPrimary: exps={0}".format(exps))
         self.range = range
     def primaryLongInfo(self):
         return self.id.longName() \

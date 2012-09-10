@@ -9,6 +9,7 @@ import action
 @TestCase2(grammar.constant_primary)
 def test131(self):
     _print(self.check_fail("A"))
+    _print(self.check_pass("A"))
     _print(self.check_pass("1"))
     
 

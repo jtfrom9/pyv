@@ -14,10 +14,19 @@ def test102(self):
     _print(self.check_pass("{1+2,3,X}"))
     _print(self.check_pass("{1+2,3,X,A[1]}"))
     _print(self.check_fail("{1,1,}")) 
-
+    _print(self.check_pass("{ {1}, 1}")) 
+    _print(self.check_pass("{ {1,2}, {3,4,5}, {6,7, {8,9}} }")) 
+    _print(self.check_pass("{ A+B, X + 2, 3'hff }"))
+ 
 @TestCase2(grammar.constant_concatenation)
 def test103(self):
-    pass
+    _print(self.check_pass("{1,1}"))
+    _print(self.check_pass("{1+2,3}"))
+    _print(self.check_pass("{1+2,3,4}"))
+    _print(self.check_fail("{1,1,}")) 
+    _print(self.check_pass("{ {1}, 1}")) 
+    _print(self.check_pass("{ {1,2}, {3,4,5}, {6,7, {8,9}} }")) 
+    _print(self.check_fail("{ A+B, X + 2, 3'hff }"))
 
 
 @TestCase2(grammar.constant_multiple_concatenation)
@@ -42,7 +51,20 @@ def test107(self):
 
 @TestCase2(grammar.net_concatenation)
 def test108(self):
-    pass
+    _print(self.check_pass("{foo.bar.hoge[5].A[1] }"))
+    _print(self.check_pass("{foo.bar.hoge[5].A[1][1]}"))
+    _print(self.check_pass("{foo.bar.hoge[5].A[1][X]}"))
+    _print(self.check_pass("{foo.bar.hoge[5].A[1][X][y]}"))
+    _print(self.check_pass("{foo.bar.hoge[5].A[1][X][3:1]}"))
+    _print(self.check_fail("{foo.bar.hoge[5].A[1], 4'b10 }"))
+    _print(self.check_fail("{foo.bar.hoge[5].A[1][1], 8'hff }"))
+    _print(self.check_fail("{foo.bar.hoge[5].A[1][X]}, 1"))
+    _print(self.check_fail("{foo.bar.hoge[5].A[1][X][y]}, 10.1"))
+    _print(self.check_pass("{X,Y}"))
+    _print(self.check_pass("{X,Y.foo,Z[1]}"))
+    _print(self.check_pass("{X[1:0],Y.foo,Z[1][2]}"))
+    _print(self.check_pass("{ a, { b, c }, { d, e } }"))
+    _print(self.check_pass("{ { { { { { { X } } } } } } }"))
 
 
 @TestCase2(grammar.net_concatenation_value)
@@ -52,13 +74,43 @@ def test109(self):
     _print(self.check_pass("foo.bar.hoge[5].A[1][X]"))
     _print(self.check_pass("foo.bar.hoge[5].A[1][X][y]"))
     _print(self.check_pass("foo.bar.hoge[5].A[1][X][3:1]"))
+    _print(self.check_fail(" 4'b10 "))
+    _print(self.check_pass("{X,Y}"))
+    _print(self.check_pass("{X,Y.foo,Z[1]}"))
+    _print(self.check_pass("{ a, { b, c }, { d, e } }"))
     #_print(self.check_pass("10"))
 
 
 
 @TestCase2(grammar.variable_concatenation)
 def test110(self):
-    pass
+    _print(self.check_pass("{foo.bar.hoge[5].A[1] }"))
+    _print(self.check_pass("{foo.bar.hoge[5].A[1][1]}"))
+    _print(self.check_pass("{foo.bar.hoge[5].A[1][X]}"))
+    _print(self.check_pass("{foo.bar.hoge[5].A[1][X][y]}"))
+    _print(self.check_pass("{foo.bar.hoge[5].A[1][X][3:1]}"))
+    _print(self.check_fail("{foo.bar.hoge[5].A[1], 4'b10 }"))
+    _print(self.check_fail("{foo.bar.hoge[5].A[1][1], 8'hff }"))
+    _print(self.check_fail("{foo.bar.hoge[5].A[1][X]}, 1"))
+    _print(self.check_fail("{foo.bar.hoge[5].A[1][X][y]}, 10.1"))
+    _print(self.check_pass("{X,Y}"))
+    _print(self.check_pass("{X,Y.foo,Z[1]}"))
+    _print(self.check_pass("{X[1:0],Y.foo,Z[1][2]}"))
+    _print(self.check_pass("{ a, { b, c }, { d, e } }"))
+    _print(self.check_pass("{ { { { { { { X } } } } } } }"))
+
+@TestCase2(grammar.variable_concatenation_value)
+def test111(self):
+    _print(self.check_pass("foo.bar.hoge[5].A[1]"))
+    _print(self.check_pass("foo.bar.hoge[5].A[1][1]"))
+    _print(self.check_pass("foo.bar.hoge[5].A[1][X]"))
+    _print(self.check_pass("foo.bar.hoge[5].A[1][X][y]"))
+    _print(self.check_pass("foo.bar.hoge[5].A[1][X][3:1]"))
+    _print(self.check_fail(" 4'b10 "))
+    _print(self.check_pass("{X,Y}"))
+    _print(self.check_pass("{X,Y.foo,Z[1]}"))
+    _print(self.check_pass("{ a, { b, c }, { d, e } }"))
+
 
 if __name__=='__main__':
     unittest.main()
