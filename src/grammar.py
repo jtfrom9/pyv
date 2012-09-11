@@ -35,6 +35,19 @@ def emsg(msg):
     sym.setName(msg)
     return sym
 
+def group(expr, err):
+    class WrapGroup(Group):
+        def __init__(self, expr):
+            super(WrapGroup,self).__init__(expr)
+        def parseImpl(*args):
+            self = args[0]
+            try:
+                return super(WrapGroup,self).parseImpl(*(args[1:]))
+            except ParseBaseException,pbe:
+                pbe.msg = "Syntax Error: " + err
+                raise            
+    return WrapGroup(expr)
+    
 # A.1 Source text2
 # A.1.1 Library source text
 # A.1.2 Configuration source text
@@ -452,11 +465,10 @@ constant_range_expression << Group( msb_constant_expression + COLON + lsb_consta
 # constant_base_expression + alias(MINUS,"sign") + COLON + width_constant_expression |
 
 dimension_constant_expression << constant_expression
-_expression                    = Group( unary_operator + primary                  |
-                                        primary                                   |
-                                        string                                    |
-                                        conditional_expression                    )
-
+_expression = Group( unary_operator + primary |
+                     primary                  |
+                     string                   |
+                     conditional_expression   )
 expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.LEFT) ])
 
 lsb_constant_expression            << constant_expression
@@ -481,12 +493,12 @@ range_expression << Group( msb_constant_expression + COLON + lsb_constant_expres
 width_constant_expression << constant_expression
 
 # A.8.4 Primaries
-constant_primary << Group( emsg("constant_primary")                |
-                           LP + constant_mintypmax_expression + RP |
+constant_primary << group( LP + constant_mintypmax_expression + RP |
                            constant_concatenation                  |
                            constant_multiple_concatenation         |
                            number                                  |
-                           constant_function_call                  )
+                           constant_function_call                  , 
+                           err = "constant_primary" )
 
 module_path_primary << Group( number                                     |
                               identifier                                 |
