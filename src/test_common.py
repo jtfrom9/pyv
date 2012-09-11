@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import unittest
-from pyparsing import stringEnd, ParseException, ParseSyntaxException, ParseResults
+from pyparsing import stringEnd, ParseBaseException, ParseException, ParseSyntaxException, ParseFatalException, ParseResults
 
 import ast
 
@@ -9,38 +9,25 @@ class GrammarTestCase(unittest.TestCase):
     def grammar(self):
         pass
 
-    def _check(self, text, success, expect):
+    def do_parse(self, text):
         result = None
         try:
             result = (self.grammar() + stringEnd).parseString(text)
-        except (ParseException, ParseSyntaxException) as e:
-            if success:
-                print(dir(e))
-                print(type(e))
-                print("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e))
-                print("line={0}, lineno={1}, loc={2}".format(e.line, e.lineno, e.loc))
-                print("parserElement={0}".format(e.parserElement))
-                print("pstr={0}".format(e.pstr))
-                # self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e))
-                # sys.exit()
-                print(e)
-                e.msg = "input = \"{0}\": ".format(text) + e.msg
-                if isinstance(e, ParseException):
-                    raise ParseException(e)
-                else:
-                    raise ParseSyntaxException(e)
-            else:
-                self.assertTrue(True)
-            return
+        except (ParseException, ParseSyntaxException, ParseFatalException) as e:
+            e.msg = "input = \"{0}\": ".format(text) + e.msg
+            raise e
         except Exception as e:
-            if success:
-                #self.fail("input = \"{0}\", expect = {1}, msg = {2}".format(text, expect, e))
-                raise e
-            else:
-                self.assertTrue(True)
-            return
+            # print(dir(e))
+            # msgattr = getattr(e, "msg", None)
+            # if msgattr:
+            #     e.msg = "Caught unknown exception! " + e.msg
+            # else:
+            #     print(e)
+            #e.args = "Caught unknown exception! " + e.args
+            #print(e.args)
+            raise e
+        return result
 
-        self.assertTrue(success,"input = \"{0}\", expect = {1}, result = {2}".format(text, expect, result))
         if expect:
             self.assertEqual(result, expect, "input = \"{0}\", expect = {1}".format(text,expect))
         else:
@@ -49,12 +36,30 @@ class GrammarTestCase(unittest.TestCase):
 
     def check_pass(self, text, expect=None):
         print("\ncheck_pass: \"{0}\"".format(text))
-        return self._check(text, True, expect)
+        try:
+            result = self.do_parse(text)
+        except Exception as e:
+            msg = "{0}: {1}".format(e.__class__.__name__, str(e))
+            if isinstance(e,ParseBaseException):
+                e.msg = msg + e.msg
+                print(msg)
+                raise e
+            else:
+                print(msg)
+                raise e
+            
+        print("parse OK.")
+        if expect:
+            self.assertEqual(result, expect, 
+                             "input = \"{0}\", expect = {1}, result = {2}".format(text, expect, result))
+        else:
+            self.assertTrue(result)
+        return result
 
     def check_fail(self, text):
         print("\ncheck_fail: \"{0}\"".format(text))
-        return self._check(text, False, None)
-
+        self.assertRaises(Exception, lambda : self.do_parse(text))
+        return None
 
 def TestCase(grammarSet):
     prefix = "test_"
@@ -89,6 +94,15 @@ def TestCase2(grammar):
         _TestCase.__module__ = test_func.__module__
         return _TestCase
     return _decolator
+
+def run_tests(tests=None):
+    if not tests:
+        unittest.main()
+    else:
+        import inspect
+        modname = inspect.currentframe(1).f_globals["__name__"]
+        suite = unittest.defaultTestLoader.loadTestsFromNames([modname + "." + test for test in tests])
+        unittest.TextTestRunner().run(suite)
 
 def _print(result):
     if isinstance(result,ParseResults):
