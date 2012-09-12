@@ -5,6 +5,11 @@ from pyparsing import stringEnd, ParseBaseException, ParseException, ParseSyntax
 
 import ast
 
+class GrammarException(ParseBaseException):
+    def __init__(self, *args):
+        super(ParseBaseException,self).__init__(self,*args)
+
+
 class GrammarTestCase(unittest.TestCase):
     def grammar(self):
         pass
@@ -13,9 +18,20 @@ class GrammarTestCase(unittest.TestCase):
         result = None
         try:
             result = (self.grammar() + stringEnd).parseString(text)
-        except (ParseException, ParseSyntaxException, ParseFatalException) as e:
-            e.msg = "input = \"{0}\": ".format(text) + e.msg
+        #except (ParseException, ParseSyntaxException, ParseFatalException) as e:
+        except ParseBaseException as e:
+            #e.msg = "input = \"{0}\": Expected: ".format(text) + e.msg
+            #raise e
+            #raise e.__call__("input = \"{0}\": ".format(text) + e.msg)
+            #raise e.__new__(e.__class__, msg = "input = \"{0}\": ".format(text) + e.msg)
+            # for prop in dir(e):
+            #     print("{0} = {1}".format(prop, getattr(e,prop,None)))
+            # #e.msg = "input = \"{0}\" {1}".format(text, e.msg) 
+            #e.msg = "Expected: "
+            #e.msg = "Syntax Error"
             raise e
+            #raise GrammarException(e.pstr, e.loc, "input = \"{0}\": ".format(text) + e.msg)
+
         except Exception as e:
             # print(dir(e))
             # msgattr = getattr(e, "msg", None)
@@ -39,14 +55,8 @@ class GrammarTestCase(unittest.TestCase):
         try:
             result = self.do_parse(text)
         except Exception as e:
-            msg = "{0}: {1}".format(e.__class__.__name__, str(e))
-            if isinstance(e,ParseBaseException):
-                e.msg = msg + e.msg
-                print(msg)
-                raise e
-            else:
-                print(msg)
-                raise e
+            print("{0}: {1}".format(e.__class__.__name__, str(e)))
+            raise e
             
         print("parse OK.")
         if expect:
@@ -58,7 +68,14 @@ class GrammarTestCase(unittest.TestCase):
 
     def check_fail(self, text):
         print("\ncheck_fail: \"{0}\"".format(text))
-        self.assertRaises(Exception, lambda : self.do_parse(text))
+        #self.assertRaises(Exception, lambda : self.do_parse(text))
+        try:
+            self.do_parse(text)
+        except ParseBaseException as e:
+            print("{0}: {1}".format(e.__class__.__name__, str(e)))
+            print("fail expected. OK.")
+        else:
+            self.fail("\"{0}\" expected fail...")
         return None
 
 def TestCase(grammarSet):
