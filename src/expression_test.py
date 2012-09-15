@@ -11,13 +11,12 @@ import action
 @TestCase2(grammar.constant_function_call)
 def test112(self):
     _print(self.check_pass("foo(0,1,2)"))
+    _print(self.check_fail("foo(0,)"))
     _print(self.check_pass("foo(bar(0))"))
     _print(self.check_pass("foo(-10)"))
     _print(self.check_pass("foo( -bar(0) )"))
-    _print(self.check_pass("foo( X+1 )"))
-    _print(self.check_pass("A.b.c( 0, 1, 2)"))
-    _print(self.check_pass("A.b.c( X+1, -Z+1 )"))
-    _print(self.check_pass("A.b.c( foo(0) )"))
+    _print(self.check_fail("foo( X+1 )"))
+    _print(self.check_fail("A.b.c( 0)"))
 
 @TestCase2(grammar.function_call)
 def test113(self):
@@ -78,7 +77,16 @@ def test117(self):
 def test118(self):
     _print(self.check_fail("A"))
     _print(self.check_pass("1"))
+    _print(self.check_pass("(1)"))
+    _print(self.check_pass("func(1)"))
+    _print(self.check_pass("func()"))
     _print(self.check_pass("1 + 2"))
+    _print(self.check_pass("1 + 2 * 3"))
+    _print(self.check_pass("1 + (2 * 3)"))
+    _print(self.check_pass("(1 + 2) * 3"))
+    _print(self.check_pass("0 ? 1 : 2"))
+    _print(self.check_pass("IsOK() ? 1 : 2"))
+    _print(self.check_pass("-0 ? 1 : 2"))
 
 @TestCase2(grammar.constant_mintypmax_expression)
 def test119(self):
@@ -151,6 +159,7 @@ def test130(self):
 
 if __name__=='__main__':
     #run_tests()
-    #run_tests(["test112"])
-    run_tests(["test114", "test113"])
+    run_tests(["test112"])
+    #run_tests(["test114", "test113"])
+    run_tests(["test118"])
 

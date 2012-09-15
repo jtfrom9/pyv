@@ -439,26 +439,25 @@ variable_concatenation_value << Group(
     variable_concatenation )
 
 # A.8.2 Function calls
-constant_function_call << Group( function_identifier              + LP + alias(delimitedList( constant_expression ),"args") + RP )
-function_call          << Group( hierarchical_function_identifier + LP + alias(delimitedList( expression          ),"args") + RP )
-system_function_call   << Group( system_task_identifier + Optional( LP + alias(delimitedList( expression ),         "args") + RP ) )
+constant_function_call << Group( function_identifier              + LP + Optional(alias(delimitedList( constant_expression ),"args")) + RP )
+function_call          << Group( hierarchical_function_identifier + LP + Optional(alias(delimitedList( expression          ),"args")) + RP )
+system_function_call   << Group( system_task_identifier + Optional( LP + Optional(alias(delimitedList( expression ),         "args")) + RP ) )
 
 # A.8.3 Expressions
 base_expression          << expression
-conditional_expression   << Group( alias(primary,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else") )
 constant_base_expression << constant_expression
 
-_constant_expression  = Group( alias(constant_primary,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") 
-                               |
+_constant_conditional_expression = Group( 
+    alias(constant_primary,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") )("_constant_conditional_expression")
+
+_constant_expression  = Group( _constant_conditional_expression  |
                                unary_operator + constant_primary |
                                constant_primary                  |
                                string                            )
-                               
-constant_expression << operatorPrecedence( _constant_expression, [ (binary_operator, 2, opAssoc.RIGHT) ] )
+constant_expression << operatorPrecedence( _constant_expression, [ (binary_operator, 2, opAssoc.LEFT) ] )
 
-constant_mintypmax_expression << Group( 
-    constant_expression + COLON + constant_expression + COLON + constant_expression |
-    constant_expression                                                             )
+constant_mintypmax_expression << Group( alias(constant_expression,"exp") |
+                                        constant_expression + COLON + constant_expression + COLON + constant_expression )
 
 constant_range_expression << Group( msb_constant_expression + COLON + lsb_constant_expression   |
                                     constant_expression                                         )
@@ -467,6 +466,7 @@ constant_range_expression << Group( msb_constant_expression + COLON + lsb_consta
 
 dimension_constant_expression << constant_expression
 
+conditional_expression << Group( alias(primary,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else") )
 _expression = Group( conditional_expression   |
                      unary_operator + primary |
                      primary                  |
@@ -477,6 +477,7 @@ lsb_constant_expression << constant_expression
 msb_constant_expression << constant_expression
 mintypmax_expression    << Group( alias(expression,"exp") | 
                                   expression + COLON + expression + COLON + expression )
+
 module_path_conditional_expression << module_path_expression + Q + module_path_expression + COLON + module_path_expression
 
 module_path_expression << Group( module_path_primary                                                           |

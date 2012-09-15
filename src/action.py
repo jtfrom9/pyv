@@ -303,27 +303,24 @@ def systemFunctionCallAction(s,l,token):
 
 grammar.base_expression.setParseAction(lambda t: node(t))
 
-@Action(grammar.conditional_expression)
-def conditionalExpressionAction(s,l,token):
+grammar.constant_base_expression.setParseAction(lambda t: node(t))
+
+@Action(grammar._constant_conditional_expression)
+def _constantExpressionAction(s,l,token):
     return ast.ConditionalExpression( node(token.exp_cond),
                                       node(token.exp_if),
                                       node(token.exp_else) )
 
-grammar.constant_base_expression.setParseAction(lambda t: node(t))
-
 @Action(grammar._constant_expression)
 def _constantExpressionAction(s,l,token):
-    if token.unary_operator:
+    if token._constant_conditional_expression:
+        return token._constant_conditional_expression
+    elif token.unary_operator:
         return ast.UnaryExpression(token.unary_operator, token.constant_primary)
     elif token.constant_primary:
         return token.constant_primary
-    elif token.exp_cond:
-        return ast.ConditionalExpression( node(token.exp_cond),
-                                          node(token.exp_if),
-                                          node(token.exp_else) )
     else:
-        raise Exception("Not Implemented completely _constantExpressionAction: token={0}".format(token))
-
+        raise Exception("Not Implemented completely _constantExpressionAction: token={0}".format(ast.nodeInfo(token)))
 
 @Action(grammar.constant_expression)
 def constantExpressionAction(s,l,token):
@@ -335,10 +332,13 @@ def constantExpressionAction(s,l,token):
     else:
         raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
 
+
 @Action(grammar.constant_mintypmax_expression)
-@NotImplemented
 def constantMintypmaxExpressionAction(s,l,token):
-    pass
+    if token.exp:
+        return token.exp
+    else:
+        raise Exception("Not Implemented completely constantMintypmaxExpressionAction: token={0}".format(token))
 
 @Action(grammar.constant_range_expression)
 def constantRangeExpressionAction(s,l,token):
@@ -349,6 +349,14 @@ def constantRangeExpressionAction(s,l,token):
                          node(token.lsb_constant_expression))
         
 grammar.dimension_constant_expression.setParseAction(lambda t: node(t))
+
+
+
+@Action(grammar.conditional_expression)
+def conditionalExpressionAction(s,l,token):
+    return ast.ConditionalExpression( node(token.exp_cond),
+                                      node(token.exp_if),
+                                      node(token.exp_else) )
 
 @Action(grammar._expression)
 def _expressionAction(_s,l,token):

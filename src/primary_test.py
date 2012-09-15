@@ -2,15 +2,19 @@
 import sys
 import unittest
 
-from test_common import GrammarTestCase, TestCase2, _print
+from test_common import GrammarTestCase, TestCase2, _print, run_tests
 import grammar
 import action
 
 @TestCase2(grammar.constant_primary)
 def test131(self):
-    _print(self.check_fail("A"))
-    _print(self.check_pass("A"))
     _print(self.check_pass("1"))
+    _print(self.check_fail("A"))
+    _print(self.check_pass("{1,2,3}"))
+    _print(self.check_pass("(1)"))
+    _print(self.check_pass("({1,2,3})"))
+    _print(self.check_pass("func(0,1,2)"))
+    _print(self.check_pass("func(0?1:2)"))
     
 
 @TestCase2(grammar.module_path_primary)
@@ -40,5 +44,5 @@ def test135(self):
 
 
 if __name__=='__main__':
-    unittest.main()
+    run_tests(["test131"])
 
