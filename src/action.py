@@ -355,7 +355,9 @@ grammar.dimension_constant_expression.setParseAction(lambda t: node(t))
 
 @Action(grammar._expression)
 def _expressionAction(_s,l,token):
-    if token.unary_operator:
+    if token.conditional_expression:
+        return token.conditional_expression
+    elif token.unary_operator:
         return ast.UnaryExpression(token.unary_operator, token.primary)
     elif token.primary:
         return token.primary
