@@ -114,6 +114,8 @@ def test122(self):
     _print(self.check_pass("-X+1"))
     _print(self.check_pass("-X+1+A"))
     _print(self.check_pass("-X+1*A"))
+    _print(self.check_pass("1?2:3"))
+    _print(self.check_pass("-1?2:3"))
 
 @TestCase2(grammar.lsb_constant_expression)
 def test123(self):
@@ -159,7 +161,8 @@ def test130(self):
 
 if __name__=='__main__':
     #run_tests()
-    run_tests(["test112"])
+    #run_tests(["test112"])
     #run_tests(["test114", "test113"])
     run_tests(["test118"])
+    #run_tests(["test122"])
 

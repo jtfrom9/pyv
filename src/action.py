@@ -306,19 +306,26 @@ grammar.base_expression.setParseAction(lambda t: node(t))
 grammar.constant_base_expression.setParseAction(lambda t: node(t))
 
 @Action(grammar._constant_conditional_expression)
-def _constantExpressionAction(s,l,token):
+def _constantConditionalExpressionAction(s,l,token):
     return ast.ConditionalExpression( node(token.exp_cond),
                                       node(token.exp_if),
                                       node(token.exp_else) )
 
+@Action(grammar._constant_expr_)
+def _constantExpr_Action(s,l,token):
+    if token.unary_operator:
+        return ast.UnaryExpression(token.unary_operator, token.constant_primary)
+    elif token.constant_primary:
+        return token.constant_primary
+    else:
+        raise Exception("Not Implemented completely _constant_expr_Action: token={0}".format(ast.nodeInfo(token)))
+    
 @Action(grammar._constant_expression)
 def _constantExpressionAction(s,l,token):
     if token._constant_conditional_expression:
         return token._constant_conditional_expression
-    elif token.unary_operator:
-        return ast.UnaryExpression(token.unary_operator, token.constant_primary)
-    elif token.constant_primary:
-        return token.constant_primary
+    elif token._constant_expr_:
+        return token._constant_expr_
     else:
         raise Exception("Not Implemented completely _constantExpressionAction: token={0}".format(ast.nodeInfo(token)))
 
@@ -331,6 +338,7 @@ def constantExpressionAction(s,l,token):
                                     [node(t) for t in token[0::2]])
     else:
         raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
+grammar._constant_expr.setParseAction(constantExpressionAction)
 
 
 @Action(grammar.constant_mintypmax_expression)
@@ -358,14 +366,21 @@ def conditionalExpressionAction(s,l,token):
                                       node(token.exp_if),
                                       node(token.exp_else) )
 
+@Action(grammar._expr_)
+def _expr_Action(_s,l,token):
+    if token.unary_operator:
+        return ast.UnaryExpression(token.unary_operator, token.primary)
+    elif token.primary:
+        return token.primary
+    else:
+        raise Exception("Not Implemented completely _expWithoutCondAction: token={0}".format(token))
+
 @Action(grammar._expression)
 def _expressionAction(_s,l,token):
     if token.conditional_expression:
         return token.conditional_expression
-    elif token.unary_operator:
-        return ast.UnaryExpression(token.unary_operator, token.primary)
-    elif token.primary:
-        return token.primary
+    elif token._expr_:
+        return token._expr_
     else:
         raise Exception("Not Implemented completely _expressionAction: token={0}".format(token))
 
@@ -378,7 +393,8 @@ def expressionAction(_s,l,token):
                                     [node(t) for t in token[0::2]])
     else:
         raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
-
+grammar._expr.setParseAction(expressionAction)
+    
 
 grammar.lsb_constant_expression.setParseAction(lambda t: node(t))
 grammar.msb_constant_expression.setParseAction(lambda t: node(t))

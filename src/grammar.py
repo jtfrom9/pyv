@@ -447,13 +447,17 @@ system_function_call   << Group( system_task_identifier + Optional( LP + Optiona
 base_expression          << expression
 constant_base_expression << constant_expression
 
-_constant_conditional_expression = Group( 
-    alias(constant_primary,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") )("_constant_conditional_expression")
+_constant_expr  = Forward()
+_constant_expr_ = Group( unary_operator + constant_primary |
+                         constant_primary                  |
+                         string                            )("_constant_expr_")
 
-_constant_expression  = Group( _constant_conditional_expression  |
-                               unary_operator + constant_primary |
-                               constant_primary                  |
-                               string                            )
+_constant_conditional_expression = Group( 
+    alias(_constant_expr,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") 
+    )("_constant_conditional_expression")
+_constant_expression  = Group( _constant_conditional_expression | _constant_expr_ )
+
+_constant_expr      << operatorPrecedence( _constant_expr_,      [ (binary_operator, 2, opAssoc.LEFT) ] )
 constant_expression << operatorPrecedence( _constant_expression, [ (binary_operator, 2, opAssoc.LEFT) ] )
 
 constant_mintypmax_expression << Group( alias(constant_expression,"exp") |
@@ -466,11 +470,13 @@ constant_range_expression << Group( msb_constant_expression + COLON + lsb_consta
 
 dimension_constant_expression << constant_expression
 
-conditional_expression << Group( alias(primary,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else") )
-_expression = Group( conditional_expression   |
-                     unary_operator + primary |
-                     primary                  |
-                     string                   )
+_expr  = Forward()
+_expr_ = Group( unary_operator + primary | primary | string )("_expr_")
+
+conditional_expression << Group( alias( _expr, "exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else") )
+_expression = Group( conditional_expression | _expr_ )
+
+_expr      << operatorPrecedence( _expr_,      [ (binary_operator, 2, opAssoc.LEFT) ])
 expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.LEFT) ])
 
 lsb_constant_expression << constant_expression
