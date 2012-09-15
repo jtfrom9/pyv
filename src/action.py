@@ -379,9 +379,9 @@ grammar.lsb_constant_expression.setParseAction(lambda t: node(t))
 grammar.msb_constant_expression.setParseAction(lambda t: node(t))
 
 @Action(grammar.mintypmax_expression)
-@NotImplemented
 def mintypmaxExpressionAction(s,l,token):
-    pass
+    if token.exp: return token.exp
+    else: raise Exception("Not Implemented completely mintypmaxExpressionAction: token={0}".format(token))
 
 @Action(grammar.module_path_conditional_expression)
 @NotImplemented
@@ -449,6 +449,8 @@ def primaryAction(_s,l,token):
                               node(token.range_expression) if token.range_expression else None )
     elif token.concatenation:
         return token.concatenation
+    elif token.mintypmax_expression:
+        return token.mintypmax_expression
     else:
         raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
 

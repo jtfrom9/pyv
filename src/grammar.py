@@ -472,9 +472,10 @@ _expression = Group( conditional_expression   |
 
 expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.LEFT) ])
 
-lsb_constant_expression            << constant_expression
-msb_constant_expression            << constant_expression
-mintypmax_expression               << Group( expression | expression + COLON + expression + COLON + expression )
+lsb_constant_expression << constant_expression
+msb_constant_expression << constant_expression
+mintypmax_expression    << Group( alias(expression,"exp") | 
+                                  expression + COLON + expression + COLON + expression )
 module_path_conditional_expression << module_path_expression + Q + module_path_expression + COLON + module_path_expression
 
 module_path_expression << Group( module_path_primary                                                           |
