@@ -2,12 +2,52 @@
 import sys
 import unittest
 
-from test_common import GrammarTestCase, TestCase2, _print
+from test_common import GrammarTestCase, TestCase2, _print, run_tests
 from pyparsing import stringEnd
 import grammar
 import action
 
-    
+
+@TestCase2(grammar.constant_function_call)
+def test112(self):
+    _print(self.check_pass("foo(0,1,2)"))
+    _print(self.check_pass("foo(bar(0))"))
+    _print(self.check_pass("foo(-10)"))
+    _print(self.check_pass("foo( -bar(0) )"))
+    _print(self.check_pass("foo( X+1 )"))
+    _print(self.check_pass("A.b.c( 0, 1, 2)"))
+    _print(self.check_pass("A.b.c( X+1, -Z+1 )"))
+    _print(self.check_pass("A.b.c( foo(0) )"))
+
+@TestCase2(grammar.function_call)
+def test113(self):
+    _print(self.check_pass("foo(0,1,2)"))
+    _print(self.check_pass("foo(bar(0))"))
+    _print(self.check_pass("foo(-10)"))
+    _print(self.check_pass("foo( -bar(0) )"))
+    _print(self.check_pass("foo( X+1 )"))
+    _print(self.check_pass("A.b.c( 0, 1, 2)"))
+    _print(self.check_pass("A.b.c( X+1, -Z+1 )"))
+    _print(self.check_pass("A.b.c( foo(0) )"))
+
+@TestCase2(grammar.system_function_call)
+def test114(self):
+    _print(self.check_pass("$foo(0,1,2)"))
+    _print(self.check_pass("$foo(bar(0))"))
+    _print(self.check_pass("$foo(-10)"))
+    _print(self.check_pass("$foo( -bar(0) )"))
+    _print(self.check_pass("$foo( X+1 )"))
+    _print(self.check_fail("$A.b.c( X+1, -Z+1 )"))
+
+
+@TestCase2(grammar.expression)
+def test_cond_exp(self):
+    _print(self.check_pass("A ? B : C"))
+    _print(self.check_pass("A ? B : A ? B : C"))
+    _print(self.check_pass("0 ? 1 : 2 ? 1 : 2"))
+    _print(self.check_pass("0 ? 0 ? 1 : 2 : 2"))
+    _print(self.check_pass("(0 ? 1 : 2) ? 3 : 4"))
+
 @TestCase2(grammar.base_expression)
 def test115(self):
     _print(self.check_pass("1+2"))
@@ -110,5 +150,7 @@ def test130(self):
     pass
 
 if __name__=='__main__':
-    unittest.main()
+    #run_tests()
+    #run_tests(["test112"])
+    run_tests(["test114", "test113"])
 

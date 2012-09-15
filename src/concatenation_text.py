@@ -9,6 +9,8 @@ import action
 
 @TestCase2(grammar.concatenation)
 def test102(self):
+    _print(self.check_pass("{1,}"))
+    _print(self.check_pass("{1,,}"))
     _print(self.check_pass("{1,1}"))
     _print(self.check_pass("{1+2,3}"))
     _print(self.check_pass("{1+2,3,X}"))

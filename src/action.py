@@ -285,22 +285,19 @@ def variableConcatenationValueAction(s,l,token):
 
 # A.8.2 Function calls (0/3)
 @Action(grammar.constant_function_call)
-@NotImplemented
 def constantFunctionCallAction(s,l,token):
-    pass
-
+    return ast.FunctionCall(token.function_identifier, 
+                            [arg for arg in token.args])
 
 @Action(grammar.function_call)
-@NotImplemented
 def functionCallAction(s,l,token):
-    pass
-
+    return ast.FunctionCall(token.hierarchical_function_identifier, 
+                            [arg for arg in token.args])
 
 @Action(grammar.system_function_call)
-@NotImplemented
 def systemFunctionCallAction(s,l,token):
-    pass
-
+    return ast.FunctionCall(token.system_task_identifier,
+                            [arg for arg in token.args])
 
 # A.8.3 Expressions (0/16)
 
@@ -422,12 +419,14 @@ def widthConstantExpressionAction(s,l,token):
 
 @Action(grammar.constant_primary)
 def constantPrimaryAction(s,l,token):
-    if isinstance(token,ast.Expression):
-        return token
-    elif token.number:
+    if token.number:
         return ast.NumberPrimary( token.number )
+    elif token.constant_function_call:
+        return token.constant_function_call
     elif token.constant_concatenation:
-        return node(token.constant_concatenation)
+        return token.constant_concatenation
+    elif token.constant_mintypmax_expression:
+        return token.constant_mintypmax_expression
     else:
         raise Exception("Not Implemented completely constantPrimaryAction: token={0}".format(token))
 
@@ -439,16 +438,20 @@ def modulePathPrimaryAction(s,l,token):
 
 @Action(grammar.primary)
 def primaryAction(_s,l,token):
-    #print("primaryAction: token={0}".format(ast.nodeInfo(token)))
     if token.number:
         return ast.NumberPrimary( token.number )
     elif token.hierarchical_identifier:
-        #print("primaryAction: id={0}".format(token.hierarchical_identifier))
         return ast.IdPrimary( token.hierarchical_identifier,
                               [ node(exp) for exp in token.exps ],
                               node(token.range_expression) if token.range_expression else None )
     elif token.concatenation:
         return token.concatenation
+    elif token.function_call:
+        return token.function_call
+    elif token.system_function_call:
+        return token.system_function_call
+    elif token.constant_function_call:
+        return token.constant_function_call
     elif token.mintypmax_expression:
         return token.mintypmax_expression
     else:

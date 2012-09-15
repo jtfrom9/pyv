@@ -439,20 +439,21 @@ variable_concatenation_value << Group(
     variable_concatenation )
 
 # A.8.2 Function calls
-constant_function_call << Group( function_identifier + LP + delimitedList( constant_expression )     + RP )
-function_call          << Group( hierarchical_function_identifier + LP + delimitedList( expression ) + RP )
-system_function_call   << Group( system_task_identifier + Optional( LP + delimitedList( expression ) + RP ) )
+constant_function_call << Group( function_identifier              + LP + alias(delimitedList( constant_expression ),"args") + RP )
+function_call          << Group( hierarchical_function_identifier + LP + alias(delimitedList( expression          ),"args") + RP )
+system_function_call   << Group( system_task_identifier + Optional( LP + alias(delimitedList( expression ),         "args") + RP ) )
 
 # A.8.3 Expressions
 base_expression          << expression
 conditional_expression   << Group( alias(primary,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else") )
 constant_base_expression << constant_expression
 
-_constant_expression  = Group( unary_operator + constant_primary                                                                                               |
-                               constant_primary                                                                                                                |
-                               string                                                                                                                          |
-                               alias(constant_expression,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") )
-#                     constant_expression + binary_operator + constant_expression                 |
+_constant_expression  = Group( alias(constant_primary,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") 
+                               |
+                               unary_operator + constant_primary |
+                               constant_primary                  |
+                               string                            )
+                               
 constant_expression << operatorPrecedence( _constant_expression, [ (binary_operator, 2, opAssoc.RIGHT) ] )
 
 constant_mintypmax_expression << Group( 
@@ -465,11 +466,11 @@ constant_range_expression << Group( msb_constant_expression + COLON + lsb_consta
 # constant_base_expression + alias(MINUS,"sign") + COLON + width_constant_expression |
 
 dimension_constant_expression << constant_expression
+
 _expression = Group( conditional_expression   |
                      unary_operator + primary |
                      primary                  |
                      string                   )
-
 expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.LEFT) ])
 
 lsb_constant_expression << constant_expression
@@ -495,11 +496,11 @@ range_expression << Group( msb_constant_expression + COLON + lsb_constant_expres
 width_constant_expression << constant_expression
 
 # A.8.4 Primaries
-constant_primary << group( LP + constant_mintypmax_expression + RP |
+constant_primary << group( number                                  |
+                           constant_function_call                  |
                            constant_concatenation                  |
                            constant_multiple_concatenation         |
-                           number                                  |
-                           constant_function_call                  , 
+                           LP + constant_mintypmax_expression + RP ,
                            err = "constant_primary" )
 
 module_path_primary << Group( number                                     |
@@ -514,13 +515,13 @@ module_path_primary << Group( number                                     |
 primary << Group( hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB |
                   hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
                   hierarchical_identifier                                                   + LB + range_expression + RB |
-                  hierarchical_identifier                                                                                |
+                  hierarchical_identifier                                                                                ^
+                  function_call                                                                                          |
+                  constant_function_call                                                                                 |
+                  system_function_call                                                                                   |
                   number                                                                                                 |
                   concatenation                                                                                          |
                   multiple_concatenation                                                                                 |
-                  function_call                                                                                          |
-                  system_function_call                                                                                   |
-                  constant_function_call                                                                                 |
                   LP + mintypmax_expression + RP                                                                         )
 
 # A.8.5 Expression left-side value

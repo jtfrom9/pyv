@@ -315,3 +315,12 @@ class Concatenation(Expression):
         return "{" + ",".join(exp.shortName() for exp in self.exps) + "}"
     def longName(self):
         return "{" + ",".join(exp.longName() for exp in self.exps) + "}"
+
+class FunctionCall(Expression):
+    def __init__(self, fid, args):
+        self.fid = fid
+        self.args = args
+    def shortName(self):
+        return "(call {0}({1}))".format(self.fid.shortName(),
+                                        ",".join(arg.shortName() for arg in self.args))
+
