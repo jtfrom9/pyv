@@ -2,15 +2,15 @@
 import sys
 import unittest
 
-from test_common import GrammarTestCase, TestCase2, _print
+from test_common import GrammarTestCase, TestCase2, _print, run_tests
 from pyparsing import stringEnd
 import grammar
 import action
 
 @TestCase2(grammar.concatenation)
 def test102(self):
-    _print(self.check_pass("{1,}"))
-    _print(self.check_pass("{1,,}"))
+    _print(self.check_fail("{1,}"))
+    _print(self.check_fail("{1,,}"))
     _print(self.check_pass("{1,1}"))
     _print(self.check_pass("{1+2,3}"))
     _print(self.check_pass("{1+2,3,X}"))
@@ -115,4 +115,4 @@ def test111(self):
 
 
 if __name__=='__main__':
-    unittest.main()
+    run_tests()

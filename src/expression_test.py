@@ -39,14 +39,6 @@ def test114(self):
     _print(self.check_fail("$A.b.c( X+1, -Z+1 )"))
 
 
-@TestCase2(grammar.expression)
-def test_cond_exp(self):
-    _print(self.check_pass("A ? B : C"))
-    _print(self.check_pass("A ? B : A ? B : C"))
-    _print(self.check_pass("0 ? 1 : 2 ? 1 : 2"))
-    _print(self.check_pass("0 ? 0 ? 1 : 2 : 2"))
-    _print(self.check_pass("(0 ? 1 : 2) ? 3 : 4"))
-
 @TestCase2(grammar.base_expression)
 def test115(self):
     _print(self.check_pass("1+2"))
@@ -65,6 +57,7 @@ def test116(self):
     _print(self.check_pass(" 0 ? 1 : 2"))
     _print(self.check_pass(" A ? 1 : 2"))
     _print(self.check_pass(" A+1 ? X<0 : Y==1"))
+    _print(self.check_pass(" 0?1:2 ? X<0 : Y==1"))
 
 
 @TestCase2(grammar.constant_base_expression)
@@ -116,6 +109,11 @@ def test122(self):
     _print(self.check_pass("-X+1*A"))
     _print(self.check_pass("1?2:3"))
     _print(self.check_pass("-1?2:3"))
+    _print(self.check_pass("A ? B : C"))
+    _print(self.check_pass("A ? B : A ? B : C"))
+    _print(self.check_pass("0 ? 1 : 2 ? 1 : 2"))
+    _print(self.check_pass("0 ? 0 ? 1 : 2 : 2"))
+    _print(self.check_pass("(0 ? 1 : 2) ? 3 : 4"))
 
 @TestCase2(grammar.lsb_constant_expression)
 def test123(self):
@@ -163,6 +161,7 @@ if __name__=='__main__':
     #run_tests()
     #run_tests(["test112"])
     #run_tests(["test114", "test113"])
-    run_tests(["test118"])
+    #run_tests(["test118"])
     #run_tests(["test122"])
+    run_tests(["test116"])
 
