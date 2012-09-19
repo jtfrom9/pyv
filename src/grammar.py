@@ -519,7 +519,7 @@ module_path_primary << Group( number                                     |
                               constant_function_call                     |
                               LP + module_path_mintypmax_expression + RP )
 
-primary << Group( hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB |
+primary << group( hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB |
                   hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
                   hierarchical_identifier                                                   + LB + range_expression + RB |
                   hierarchical_identifier                                                                                ^
@@ -529,7 +529,8 @@ primary << Group( hierarchical_identifier + alias(OneOrMore( LB + expression + R
                   number                                                                                                 |
                   concatenation                                                                                          |
                   multiple_concatenation                                                                                 |
-                  LP + mintypmax_expression + RP                                                                         )
+                  LP + mintypmax_expression + RP                                                                         ,
+                  err = "primary")
 
 # A.8.5 Expression left-side value
 net_lvalue << Group( hierarchical_net_identifier + alias(OneOrMore( LB + constant_expression + RB ),"exps") + LB + constant_range_expression + RB  |

@@ -24,12 +24,29 @@ def test132(self):
 
 @TestCase2(grammar.primary)
 def test133(self):
-    _print(self.check_pass("10"))
-    _print(self.check_pass("foo.bar.hoge[5].A[1]"))
-    _print(self.check_pass("foo.bar.hoge[5].A[1][1]"))
-    _print(self.check_pass("foo.bar.hoge[5].A[1][X]"))
-    _print(self.check_pass("foo.bar.hoge[5].A[1][X][y]"))
-    _print(self.check_pass("foo.bar.hoge[5].A[1][X][3:1]"))
+    inputs = [
+        "10",
+        "foo.bar.hoge[5].A[1]",
+        "foo.bar.hoge[5].A[1][1]",
+        "foo.bar.hoge[5].A[1][X]",
+        "foo.bar.hoge[5].A[1][X][y]",
+        "foo.bar.hoge[5].A[1][X][3:1]",
+        "foo(1)",
+        "$display(a,b,c)",
+        "{1,2,3}",
+        "(10)",];
+    for inp in inputs:
+
+    # _print(self.check_pass("10"))
+    # _print(self.check_pass("foo.bar.hoge[5].A[1]"))
+    # _print(self.check_pass("foo.bar.hoge[5].A[1][1]"))
+    # _print(self.check_pass("foo.bar.hoge[5].A[1][X]"))
+    # _print(self.check_pass("foo.bar.hoge[5].A[1][X][y]"))
+    # _print(self.check_pass("foo.bar.hoge[5].A[1][X][3:1]"))
+    # _print(self.check_pass("foo(1)"))
+    # _print(self.check_pass("$display(a,b,c)"))
+    # _print(self.check_pass("{1,2,3}"))
+    # _print(self.check_pass("(10)"))
 
 
 @TestCase2(grammar.net_lvalue)

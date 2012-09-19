@@ -76,13 +76,13 @@ def test109(self):
     _print(self.check_pass("foo.bar.hoge[5].A[1][X]"))
     _print(self.check_pass("foo.bar.hoge[5].A[1][X][y]"))
     _print(self.check_pass("foo.bar.hoge[5].A[1][X][3:1]"))
+    _print(self.check_pass("A[0][func(1)][foo(2+X)]"))
     _print(self.check_fail(" 4'b10 "))
     _print(self.check_pass("{X,Y}"))
+
     _print(self.check_pass("{X,Y.foo,Z[1]}"))
     _print(self.check_pass("{ a, { b, c }, { d, e } }"))
     #_print(self.check_pass("10"))
-
-
 
 @TestCase2(grammar.variable_concatenation)
 def test110(self):
