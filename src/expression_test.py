@@ -20,6 +20,7 @@ def test112(self):
 
 @TestCase2(grammar.function_call)
 def test113(self):
+    _print(self.check_pass("foo(0)"))
     _print(self.check_pass("foo(0,1,2)"))
     _print(self.check_pass("foo(bar(0))"))
     _print(self.check_pass("foo(-10)"))
@@ -114,6 +115,7 @@ def test122(self):
     _print(self.check_pass("0 ? 1 : 2 ? 1 : 2"))
     _print(self.check_pass("0 ? 0 ? 1 : 2 : 2"))
     _print(self.check_pass("(0 ? 1 : 2) ? 3 : 4"))
+    _print(self.check_pass("func(1)"))
 
 @TestCase2(grammar.lsb_constant_expression)
 def test123(self):

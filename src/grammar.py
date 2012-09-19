@@ -47,6 +47,15 @@ def group(expr, err):
                 pbe.msg = "Syntax Error: " + err
                 raise            
     return WrapGroup(expr)
+
+def oneOrMore(expr,name,err=""):
+    return alias(OneOrMore(expr),name)
+
+def zeroOrMore(expr,name,err=""):
+    return alias(ZeroOrMore(expr),name)
+
+def delim(expr,name,delimiter=','):
+    return alias(delimitedList(expr,delimiter),name)
     
 # A.1 Source text2
 # A.1.1 Library source text
@@ -287,7 +296,7 @@ par_block           << Group( FORK + Optional( COLON + block_identifier  + ZeroO
                               JOIN )
 seq_block           << Group( BEGIN + 
                               Optional( COLON + block_identifier + Group(ZeroOrMore( block_item_declaration ))("item_decls") ) +
-                              alias(ZeroOrMore( statement ),"statements") +
+                              zeroOrMore( statement,"statements") +
                               END )
 
 # A.6.4 Statements
@@ -342,13 +351,13 @@ wait_statement                      << Group( WAIT + LP + expression + RP + stat
 conditional_statement << Group( 
     if_else_if_statement
     |
-    IF + LP + alias(expression, "condition") + RP + alias(statement_or_null, "statement_if") + 
+    IF + LP + alias(expression,"condition") + RP + alias(statement_or_null,"statement_if") + 
     Optional( ELSE + alias(statement_or_null,"statement_else") ) )
 
 _else_if_part = Group( ELSE + IF + LP + alias(expression,"condition_elseif") + RP + alias(statement_or_null,"statement_elseif") )
 if_else_if_statement << Group( 
     IF + LP + alias(expression,"condition") + RP + alias(statement_or_null,"statement_if") + 
-    alias(ZeroOrMore( _else_if_part ), "elseif_blocks") +
+    zeroOrMore( _else_if_part, "elseif_blocks") +
     Optional( ELSE + alias(statement_or_null,"statement_else") ) )
 
 function_conditional_statement << Group(
@@ -414,34 +423,34 @@ task_enable << Group(
 
 # A.8 Expressions
 # A.8.1 Concatenations
-concatenation                   << Group( LC + alias(delimitedList( expression ),"exps")          + RC )
-constant_concatenation          << Group( LC + alias(delimitedList( constant_expression ),"exps") + RC )
+concatenation                   << Group( LC + delim(expression,"exps")          + RC )
+constant_concatenation          << Group( LC + delim(constant_expression,"exps") + RC )
 constant_multiple_concatenation << Group( LC + constant_expression + constant_concatenation + RC )
 
 module_path_concatenation          << Group( LC + delimitedList( module_path_expression )         + RC )
 module_path_multiple_concatenation << Group( LC + constant_expression + module_path_concatenation + RC )
 multiple_concatenation             << Group( LC + constant_expression + concatenation             + RC )
 
-net_concatenation << Group( LC + alias(delimitedList( net_concatenation_value ),"exps") + RC )
+net_concatenation << Group( LC + delim(net_concatenation_value,"exps") + RC )
 net_concatenation_value << Group( 
-    hierarchical_net_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB |
-    hierarchical_net_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
-    hierarchical_net_identifier +                                                   LB + range_expression + RB |
-    hierarchical_net_identifier                                                                                |
+    hierarchical_net_identifier + oneOrMore( LB + expression + RB, "exps") + LB + range_expression + RB |
+    hierarchical_net_identifier + oneOrMore( LB + expression + RB, "exps")                              |
+    hierarchical_net_identifier +                                            LB + range_expression + RB |
+    hierarchical_net_identifier                                                                         |
     net_concatenation )
 
-variable_concatenation << Group( LC + alias(delimitedList( variable_concatenation_value ),"exps") + RC )
+variable_concatenation << Group( LC + delim(variable_concatenation_value,"exps") + RC )
 variable_concatenation_value << Group(
-    hierarchical_variable_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB |
-    hierarchical_variable_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
-    hierarchical_variable_identifier +                                                   LB + range_expression + RB |
-    hierarchical_variable_identifier                                                                                |
+    hierarchical_variable_identifier + oneOrMore( LB + expression + RB,"exps" ) + LB + range_expression + RB |
+    hierarchical_variable_identifier + oneOrMore( LB + expression + RB,"exps" )                              |
+    hierarchical_variable_identifier +                                            LB + range_expression + RB |
+    hierarchical_variable_identifier                                                                         |
     variable_concatenation )
 
 # A.8.2 Function calls
-constant_function_call << Group( function_identifier              + LP + Optional(alias(delimitedList( constant_expression ),"args")) + RP )
-function_call          << Group( hierarchical_function_identifier + LP + Optional(alias(delimitedList( expression          ),"args")) + RP )
-system_function_call   << Group( system_task_identifier + Optional( LP + Optional(alias(delimitedList( expression ),         "args")) + RP ) )
+constant_function_call << Group( function_identifier              + LP + Optional(delim(constant_expression,"args")) + RP )
+function_call          << Group( hierarchical_function_identifier + LP + Optional(delim(expression         ,"args")) + RP )
+system_function_call   << Group( system_task_identifier + Optional( LP + Optional(delim(expression         ,"args")) + RP ) )
 
 # A.8.3 Expressions
 base_expression          << expression
@@ -473,7 +482,7 @@ dimension_constant_expression << constant_expression
 _expr  = Forward()
 _expr_ = Group( unary_operator + primary | primary | string )("_expr_")
 
-conditional_expression << Group( alias( _expr, "exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else") )
+conditional_expression << Group( alias(_expr,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else") )
 _expression = Group( conditional_expression | _expr_ )
 
 _expr      << operatorPrecedence( _expr_,      [ (binary_operator, 2, opAssoc.LEFT) ])
@@ -519,31 +528,31 @@ module_path_primary << Group( number                                     |
                               constant_function_call                     |
                               LP + module_path_mintypmax_expression + RP )
 
-primary << group( hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB |
-                  hierarchical_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                              |
-                  hierarchical_identifier                                                   + LB + range_expression + RB |
-                  hierarchical_identifier                                                                                ^
-                  function_call                                                                                          |
-                  constant_function_call                                                                                 |
-                  system_function_call                                                                                   |
-                  number                                                                                                 |
-                  concatenation                                                                                          |
-                  multiple_concatenation                                                                                 |
-                  LP + mintypmax_expression + RP                                                                         ,
+primary << group( function_call                                                                                    |
+                  constant_function_call                                                                           |
+                  system_function_call                                                                             |
+                  hierarchical_identifier                                                                          |
+                  hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" ) + LB + range_expression + RB |
+                  hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" )                              |
+                  hierarchical_identifier                                             + LB + range_expression + RB |
+                  number                                                                                           |
+                  concatenation                                                                                    |
+                  multiple_concatenation                                                                           |
+                  LP + mintypmax_expression + RP                                                                   ,
                   err = "primary")
 
 # A.8.5 Expression left-side value
-net_lvalue << Group( hierarchical_net_identifier + alias(OneOrMore( LB + constant_expression + RB ),"exps") + LB + constant_range_expression + RB  |
-                     hierarchical_net_identifier + alias(OneOrMore( LB + constant_expression + RB ),"exps")                                        |
-                     hierarchical_net_identifier                                                            + LB + constant_range_expression + RB  |
-                     net_concatenation                                                                                                             |
-                     hierarchical_net_identifier                                                                                                   )
+net_lvalue << Group( hierarchical_net_identifier + oneOrMore( LB + constant_expression + RB, "exps" ) + LB + constant_range_expression + RB  |
+                     hierarchical_net_identifier + oneOrMore( LB + constant_expression + RB, "exps" )                                        |
+                     hierarchical_net_identifier                                                      + LB + constant_range_expression + RB  |
+                     net_concatenation                                                                                                       |
+                     hierarchical_net_identifier                                                                                             )
 
-variable_lvalue << Group( hierarchical_variable_identifier + alias(OneOrMore( LB + expression + RB ),"exps") + LB + range_expression + RB  |
-                          hierarchical_variable_identifier + alias(OneOrMore( LB + expression + RB ),"exps")                               |
-                          hierarchical_variable_identifier                                                    + LB + range_expression + RB |
-                          variable_concatenation                                                                                           |
-                          hierarchical_variable_identifier                                                                                 )
+variable_lvalue << Group( hierarchical_variable_identifier + oneOrMore( LB + expression + RB, "exps") + LB + range_expression + RB  |
+                          hierarchical_variable_identifier + oneOrMore( LB + expression + RB, "exps")                               |
+                          hierarchical_variable_identifier                                            + LB + range_expression + RB  |
+                          variable_concatenation                                                                                    |
+                          hierarchical_variable_identifier                                                                          )
 
 # A.8.6 Operators
 unary_operator              << oneOf("+ - ! ~ & ~& | ~| ^ ~^ ^~                                            ")("unary_operator")
