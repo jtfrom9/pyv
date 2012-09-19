@@ -112,8 +112,11 @@ def TestCase2(grammar):
         return _TestCase
     return _decolator
 
-def run_tests(tests=None):
-    if not tests:
+def run_tests(tests=[]):
+    import sys
+    if len(sys.argv)>1:
+        for arg in sys.argv[1:]: tests.append(arg)
+    if len(tests)==0:
         unittest.main()
     else:
         import inspect
