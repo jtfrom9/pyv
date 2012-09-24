@@ -84,20 +84,30 @@ def test118(self):
 
 @TestCase2(grammar.constant_mintypmax_expression)
 def test119(self):
-    pass
+    _print(self.check_fail("A"))
+    _print(self.check_pass("1"))
+    _print(self.check_pass("(1)"))
+    _print(self.check_pass("func(1)"))
+    _print(self.check_pass("func()"))
+    _print(self.check_pass("1 + 2"))
+    _print(self.check_pass("1 + 2 * 3"))
+    _print(self.check_pass("1 + (2 * 3)"))
+    _print(self.check_pass("(1 + 2) * 3"))
+    _print(self.check_pass("0 ? 1 : 2"))
+    _print(self.check_pass("IsOK() ? 1 : 2"))
+    _print(self.check_pass("-0 ? 1 : 2"))
+
 
 @TestCase2(grammar.constant_range_expression)
 def test120(self):
     _print(self.check_pass("1:0"))
     _print(self.check_pass("1:0+10"))
     _print(self.check_fail("1:X"))
-
+    _print(self.check_pass("func(0):{1,2}"))
 
 @TestCase2(grammar.dimension_constant_expression)
 def test121(self):
-    _print(self.check_fail("1:0"))
-    _print(self.check_pass("20"))
-
+    pass
 
 @TestCase2(grammar.expression)
 def test122(self):
@@ -121,11 +131,26 @@ def test122(self):
 def test123(self):
     _print(self.check_fail("1:0"))
     _print(self.check_pass("20"))
+    _print(self.check_fail("X"))
 
 
 @TestCase2(grammar.mintypmax_expression)
 def test124(self):
-    pass
+    _print(self.check_pass("0"))
+    _print(self.check_pass("A+10"))
+    _print(self.check_pass("-X"))
+    _print(self.check_pass("1+2+3"))
+    _print(self.check_pass("-X+1"))
+    _print(self.check_pass("-X+1+A"))
+    _print(self.check_pass("-X+1*A"))
+    _print(self.check_pass("1?2:3"))
+    _print(self.check_pass("-1?2:3"))
+    _print(self.check_pass("A ? B : C"))
+    _print(self.check_pass("A ? B : A ? B : C"))
+    _print(self.check_pass("0 ? 1 : 2 ? 1 : 2"))
+    _print(self.check_pass("0 ? 0 ? 1 : 2 : 2"))
+    _print(self.check_pass("(0 ? 1 : 2) ? 3 : 4"))
+    _print(self.check_pass("func(1)"))
 
 
 @TestCase2(grammar.module_path_conditional_expression)
@@ -160,10 +185,10 @@ def test130(self):
     pass
 
 if __name__=='__main__':
-    #run_tests()
+    run_tests()
     #run_tests(["test112"])
     #run_tests(["test114", "test113"])
     #run_tests(["test118"])
     #run_tests(["test122"])
-    run_tests(["test116"])
+    #run_tests(["test116"])
 
