@@ -35,7 +35,7 @@ def emsg(msg):
     sym.setName(msg)
     return sym
 
-def group(expr, err):
+def _group(expr, err):
     class WrapGroup(Group):
         def __init__(self, expr):
             super(WrapGroup,self).__init__(expr)
@@ -351,14 +351,14 @@ wait_statement                      << Group( WAIT + LP + expression + RP + stat
 conditional_statement << Group( 
     if_else_if_statement
     |
-    IF + LP + alias(expression,"condition") + RP + alias(statement_or_null,"statement_if") + 
-    Optional( ELSE + alias(statement_or_null,"statement_else") ) )
+    IF + LP + expression("condition") + RP + statement_or_null("statement_if") + 
+    Optional( ELSE + statement_or_null("statement_else") ) )
 
-_else_if_part = Group( ELSE + IF + LP + alias(expression,"condition_elseif") + RP + alias(statement_or_null,"statement_elseif") )
+_else_if_part = Group( ELSE + IF + LP + expression("condition_elseif") + RP + statement_or_null("statement_elseif") )
 if_else_if_statement << Group( 
-    IF + LP + alias(expression,"condition") + RP + alias(statement_or_null,"statement_if") + 
-    zeroOrMore( _else_if_part, "elseif_blocks") +
-    Optional( ELSE + alias(statement_or_null,"statement_else") ) )
+    IF + LP + expression("condition") + RP + statement_or_null("statement_if") + 
+    zeroOrMore(_else_if_part,"elseif_blocks") +
+    Optional( ELSE + statement_or_null("statement_else") ) )
 
 function_conditional_statement << Group(
     IF + LP + expression + RP + function_statement_or_null +
@@ -399,7 +399,7 @@ loop_statement << Group(
     REPEAT + LP + expression + RP + statement |
     WHILE  + LP + expression + RP + statement 
     |
-    FOR + LP + alias(variable_assignment,"init") + SEMICOLON + expression + SEMICOLON + alias(variable_assignment,"next") + RP +
+    FOR + LP + variable_assignment("init") + SEMICOLON + expression + SEMICOLON + variable_assignment("next") + RP +
     statement )
 
 # A.6.9 Task enable statements
@@ -457,13 +457,14 @@ base_expression          << expression
 constant_base_expression << constant_expression
 
 _constant_expr  = Forward()
-_constant_expr_ = Group( unary_operator + constant_primary |
-                         constant_primary                  |
-                         string                            )("_constant_expr_")
+_constant_expr_ = _group( unary_operator + constant_primary |
+                          constant_primary                  |
+                          string                            ,
+                          "_constant_expr_")
 
-_constant_conditional_expression = Group( 
-    alias(_constant_expr,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") 
-    )("_constant_conditional_expression")
+_constant_conditional_expression = alias( 
+    alias(_constant_expr,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else"),
+    "_constant_conditional_expression")
 _constant_expression  = Group( _constant_conditional_expression | _constant_expr_ )
 
 _constant_expr      << operatorPrecedence( _constant_expr_,      [ (binary_operator, 2, opAssoc.LEFT) ] )
@@ -490,7 +491,7 @@ expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.LE
 
 lsb_constant_expression << constant_expression
 msb_constant_expression << constant_expression
-mintypmax_expression    << Group( alias(expression,"exp") | 
+mintypmax_expression    << Group( expression("exp") | 
                                   expression + COLON + expression + COLON + expression )
 
 module_path_conditional_expression << module_path_expression + Q + module_path_expression + COLON + module_path_expression
@@ -512,12 +513,12 @@ range_expression << Group( msb_constant_expression + COLON + lsb_constant_expres
 width_constant_expression << constant_expression
 
 # A.8.4 Primaries
-constant_primary << group( number                                  |
-                           constant_function_call                  |
-                           constant_concatenation                  |
-                           constant_multiple_concatenation         |
-                           LP + constant_mintypmax_expression + RP ,
-                           err = "constant_primary" )
+constant_primary << _group( number                                  |
+                            constant_function_call                  |
+                            constant_concatenation                  |
+                            constant_multiple_concatenation         |
+                            LP + constant_mintypmax_expression + RP ,
+                            err = "constant_primary" )
 
 module_path_primary << Group( number                                     |
                               identifier                                 |
@@ -528,18 +529,18 @@ module_path_primary << Group( number                                     |
                               constant_function_call                     |
                               LP + module_path_mintypmax_expression + RP )
 
-primary << group( function_call                                                                                    |
-                  constant_function_call                                                                           |
-                  system_function_call                                                                             |
-                  hierarchical_identifier                                                                          |
-                  hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" ) + LB + range_expression + RB |
-                  hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" )                              |
-                  hierarchical_identifier                                             + LB + range_expression + RB |
-                  number                                                                                           |
-                  concatenation                                                                                    |
-                  multiple_concatenation                                                                           |
-                  LP + mintypmax_expression + RP                                                                   ,
-                  err = "primary")
+primary << _group( function_call                                                                                    |
+                   constant_function_call                                                                           |
+                   system_function_call                                                                             |
+                   hierarchical_identifier                                                                          |
+                   hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" ) + LB + range_expression + RB |
+                   hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" )                              |
+                   hierarchical_identifier                                             + LB + range_expression + RB |
+                   number                                                                                           |
+                   concatenation                                                                                    |
+                   multiple_concatenation                                                                           |
+                   LP + mintypmax_expression + RP                                                                   ,
+                   err = "primary")
 
 # A.8.5 Expression left-side value
 net_lvalue << Group( hierarchical_net_identifier + oneOrMore( LB + constant_expression + RB, "exps" ) + LB + constant_range_expression + RB  |

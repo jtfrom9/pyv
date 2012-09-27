@@ -34,8 +34,10 @@ def test133(self):
         "foo(1)",
         "$display(a,b,c)",
         "{1,2,3}",
-        "(10)",];
+        "(10)",
+        ]
     for inp in inputs:
+        _print(self.check_pass(inp))
 
     # _print(self.check_pass("10"))
     # _print(self.check_pass("foo.bar.hoge[5].A[1]"))
