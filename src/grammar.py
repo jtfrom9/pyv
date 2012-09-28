@@ -460,7 +460,7 @@ _constant_expr  = Forward()
 _constant_expr_ = _group( unary_operator + constant_primary |
                           constant_primary                  |
                           string                            ,
-                          "_constant_expr_")
+                          "_constant_expr_")("_constant_expr_")
 
 _constant_conditional_expression = alias( 
     alias(_constant_expr,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else"),
