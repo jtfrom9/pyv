@@ -7,6 +7,10 @@ from pyparsing import stringEnd
 import grammar
 import action
 
+@TestCase2(grammar._constant_expression)
+def test(self):
+    _print(self.check_pass("1"))
+    
 
 @TestCase2(grammar.constant_function_call)
 def test112(self):

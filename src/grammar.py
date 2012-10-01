@@ -55,7 +55,11 @@ def zeroOrMore(expr,name,err=""):
     return alias(ZeroOrMore(expr),name)
 
 def delim(expr,name,delimiter=','):
-    return alias(delimitedList(expr,delimiter),name)
+    def _action(token):
+        return token[0]
+    expr_ext = _group( delimitedList(expr,delimiter) - NotAny(delimiter),
+                       err = "invalid ','" ).setParseAction(_action)
+    return alias(expr_ext,name)
     
 # A.1 Source text2
 # A.1.1 Library source text

@@ -23,6 +23,7 @@ def test102(self):
  
 @TestCase2(grammar.constant_concatenation)
 def test103(self):
+    _print(self.check_pass("{1,2,3}"))
     _print(self.check_pass("{1,1}"))
     _print(self.check_pass("{1+2,3}"))
     _print(self.check_pass("{1+2,3,4}"))
