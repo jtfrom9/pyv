@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from test_common import GrammarTestCase, TestCase
+from test_common import GrammarTestCase, TestCase, TestCase2, _print
 import pyparsing as pp
 import grammar
 import action
@@ -25,11 +25,11 @@ import action
 # def test_procedural_continuous_assignments(self):
 #     print(self.check_pass("assign hoge = 1").asXML())
 
-@TestCase(grammar)
-def test_conditional_statement(self):
-    print(self.check_pass("if(ABC < 0) ;").asXML())
-    print(self.check_pass(" if ( ABC < 0) A=B;").asXML())
-    print(self.check_pass('''
+@TestCase2(grammar.conditional_statement)
+def test(self):
+    _print(self.check_pass("if(ABC < 0) ;"))
+    _print(self.check_pass(" if ( ABC < 0) A=B;"))
+    _print(self.check_pass('''
 if ( -1 < X )
      A = 0;
 else 
@@ -42,7 +42,7 @@ else  if ( 0 < X)
      A = 1;
 else
      A = 2;
-''').asXML())
+'''))
     print(self.check_pass('''
 if ( -1 < X )
      A = 0;

@@ -355,8 +355,8 @@ wait_statement                      << Group( WAIT + LP + expression + RP + stat
 conditional_statement << Group( 
     if_else_if_statement
     |
-    IF + LP + expression("condition") + RP + statement_or_null("statement_if") + 
-    Optional( ELSE + statement_or_null("statement_else") ) )
+    IF + LP + alias(expression,"condition") + RP + alias(statement_or_null,"statement_if") + 
+    Optional( ELSE + alias(statement_or_null,"statement_else") ) )
 
 _else_if_part = Group( ELSE + IF + LP + expression("condition_elseif") + RP + statement_or_null("statement_elseif") )
 if_else_if_statement << Group( 
