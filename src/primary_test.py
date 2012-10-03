@@ -6,6 +6,8 @@ from test_common import GrammarTestCase, TestCase2, _print, run_tests
 import grammar
 import action
 
+grammar.constant_primary.enablePackrat()
+
 @TestCase2(grammar.constant_primary)
 def test131(self):
     _print(self.check_pass("1"))
@@ -15,6 +17,7 @@ def test131(self):
     _print(self.check_pass("({1,2,3})"))
     _print(self.check_pass("func(0,1,2)"))
     _print(self.check_pass("func(0?1:2)"))
+    _print(self.check_pass("{{{{1}}}}"))
     
 
 @TestCase2(grammar.module_path_primary)

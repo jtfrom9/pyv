@@ -518,9 +518,9 @@ width_constant_expression << constant_expression
 
 # A.8.4 Primaries
 constant_primary << _group( number                                  |
-                            constant_function_call                  |
                             constant_concatenation                  |
                             constant_multiple_concatenation         |
+                            constant_function_call                  |
                             LP + constant_mintypmax_expression + RP ,
                             err = "constant_primary" )
 
@@ -533,14 +533,14 @@ module_path_primary << Group( number                                     |
                               constant_function_call                     |
                               LP + module_path_mintypmax_expression + RP )
 
-primary << _group( function_call                                                                                    |
+primary << _group( number                                                                                           |
+                   function_call                                                                                    |
                    constant_function_call                                                                           |
                    system_function_call                                                                             |
                    hierarchical_identifier                                                                          |
                    hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" ) + LB + range_expression + RB |
                    hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" )                              |
                    hierarchical_identifier                                             + LB + range_expression + RB |
-                   number                                                                                           |
                    concatenation                                                                                    |
                    multiple_concatenation                                                                           |
                    LP + mintypmax_expression + RP                                                                   ,

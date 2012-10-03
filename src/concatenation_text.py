@@ -7,6 +7,20 @@ from pyparsing import stringEnd
 import grammar
 import action
 
+#print(dir(grammar.concatenation))
+
+grammar.concatenation.enablePackrat()
+
+@TestCase2(grammar.concatenation)
+def test(self):
+    #print(dir(grammar.concatenation))
+    #grammar.concatenation.setBreak()
+    # self.check_pass("{1,2}")
+    # self.check_pass("{{1}}")
+    self.check_pass("{{{1}}}")
+    self.check_pass("{{{{1}}}}")
+    self.check_pass("{ {1,2}, {3,4,5}, {6,7, {8,9}} }")
+
 @TestCase2(grammar.concatenation)
 def test102(self):
     _print(self.check_pass("{1,2,3}"))
