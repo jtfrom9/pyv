@@ -77,23 +77,7 @@ def NotImplemented(func):
 
 @Action(grammar._range)
 def rangeAction(_s,loc,token):
-    # print("rangeAction: s={0}, loc={1}, token={2}".format(s,loc,token))
-    # print("msb_constant_expression={0}".format(token.msb_constant_expression.asXML()))
-    # print("lsb_constant_expression={0}".format(token.lsb_constant_expression))
-    try:
-        if not token.msb_constant_expression:
-            raise Exception("1")
-        if not token.msb_constant_expression.constant_expression:
-            raise Exception("2")
-        if not token.msb_constant_expression.constant_expression[0].constant_primary:
-            raise Exception("3")
-        if not token.msb_constant_expression.constant_expression[0].constant_primary[0].number:
-            raise Exception("4")
-    except Exception as msg:
-        print("_range Not Implemented completely: {0}".format(msg))
-        assert False
-    return ast.Range(token.msb_constant_expression.constant_expression[0].constant_primary[0].number,
-                     token.lsb_constant_expression.constant_expression[0].constant_primary[0].number)
+    return ast.Range(token.msb_constant_expression, token.lsb_constant_expression)
 
 # A.2.6 Function declarations (0/4)
 # A.2.7 Task declarations (0/8)

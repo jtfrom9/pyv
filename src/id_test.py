@@ -74,10 +74,13 @@ def test181(self):
     _id_print(self.check_pass("hoge"))
 
 
+@TestCase2(grammar._range)
+def test182r(self):
+    self.check_pass("[10:5]")
+
 @TestCase2(grammar.simple_arrayed_identifier)
 def test182(self):
     _id_print(self.check_pass("hoge[10:5]"))
-
 
 @TestCase2(grammar.task_identifier)
 def test183(self):
@@ -100,7 +103,7 @@ def test185(self):
     _id_print(self.check_pass("hoge[5].foo.bar"))
     _id_print(self.check_pass("hoge[5].foo.bar.A[10]"))
     _id_print(self.check_pass("foo.bar.hoge[5].A[1]"))
-    _id_print(self.check_pass("-X"))
+    self.check_fail("-X")
     
 
 @TestCase2(grammar.escaped_hierarchical_identifier)
