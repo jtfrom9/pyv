@@ -56,15 +56,33 @@ def test133(self):
 
 @TestCase2(grammar.net_lvalue)
 def test134(self):
-#    print(self.check_pass("hoge").asXML())
-    print(self.check_pass("hoge.foo[1:0]").asXML())
-    print(self.check_pass("hoge.foo[0][1][2][1:0]").asXML())
+    _print(self.check_pass("A"))
+    _print(self.check_pass("A[1:0]"))
+    _print(self.check_pass("A[1]"))
+    _print(self.check_pass("A[1][2]"))
+    _print(self.check_fail("A[1][2][X]"))
+    _print(self.check_pass("A[foo()][0][5:3]"))
+    _print(self.check_pass("hoge.foo[1:0]"))
+    _print(self.check_pass("hoge.foo[0][1][2][1:0]"))
+    _print(self.check_fail("{1}"))
+    _print(self.check_pass("{A,B}"))
+    _print(self.check_pass("{{A,B},X,f}"))
 
 @TestCase2(grammar.variable_lvalue)
 def test135(self):
-    pass
+    _print(self.check_pass("A"))
+    _print(self.check_pass("A[1:0]"))
+    _print(self.check_pass("A[1]"))
+    _print(self.check_pass("A[1][2]"))
+    _print(self.check_pass("A[1][2][X]"))
+    _print(self.check_pass("A[foo()][0][5:3]"))
+    _print(self.check_pass("hoge.foo[1:0]"))
+    _print(self.check_pass("hoge.foo[0][1][2][1:0]"))
+    _print(self.check_fail("{1}"))
+    _print(self.check_pass("{A,B}"))
+    _print(self.check_pass("{{A,B},X,f}"))
 
 
 if __name__=='__main__':
-    run_tests(["test131"])
+    run_tests()
 

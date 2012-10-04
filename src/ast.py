@@ -182,6 +182,8 @@ class Assignment(Statement):
         self.delay_event = delay_event
         self.exp         = exp
         self.blocking    = blocking
+    def shortName(self):
+        return self.left.shortName() + "=" + self.exp.shortName()
 
 class ContinuousAssignment(Assignment):
     def __init__(self, prefix, assignmentStatement):
@@ -284,6 +286,10 @@ class LeftSideValue(Expression):
         self.id      = id
         self.indexes = indexes
         self.range   = range
+    def shortName(self):
+        return self.id.shortName() + \
+            "".join("["+i.shortName()+"]" for i in self.indexes) + \
+            ("[" +self.range.shortName() + "]" if self.range else "")
 
 class ConditionalExpression(Expression):
     def __init__(self,exp_cond,exp_if,exp_else):

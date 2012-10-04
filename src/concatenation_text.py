@@ -83,7 +83,7 @@ def test108(self):
     _print(self.check_pass("{X[1:0],Y.foo,Z[1][2]}"))
     _print(self.check_pass("{ a, { b, c }, { d, e } }"))
     _print(self.check_pass("{ { { { { { { X } } } } } } }"))
-
+    _print(self.check_fail("{1}"))
 
 @TestCase2(grammar.net_concatenation_value)
 def test109(self):

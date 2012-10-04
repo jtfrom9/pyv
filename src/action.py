@@ -475,26 +475,26 @@ def primaryAction(_s,l,token):
 @Action(grammar.net_lvalue)
 def netLvalueAction(s,l,token):
     if token.net_concatenation:
-        raise Exception("Not Implemented. net_concatenation")
+        return token.net_concatenation
     else:
         print("netLvalueAction:")
-        print("id={0}".format(token.hierarchical_identifier))
+        print("id={0}".format(token.hierarchical_net_identifier))
         print("exps={0}".format(token.exps))
         print("range={0}".format(token.constant_range_expression))
         for i,e in enumerate(token.exps):
             print("{0}={1}".format(i,e))
-        return ast.LeftSideValue( node(token.hierarchical_identifier),
-                                  [ node(e.constant_expression) for e in token.exps ],
-                                  node(token.constant_range_expression) )
+        return ast.LeftSideValue( token.hierarchical_net_identifier,
+                                  token.exps,
+                                  token.constant_range_expression )
         
 @Action(grammar.variable_lvalue)
 def variableLvalueAction(s,l,token):
     if token.variable_concatenation:
-        raise Exception("Not Implemented. variable_concatenation")
+        return token.variable_concatenation
     else:
-        return ast.LeftSideValue( node(token.hierarchical_identifier),
-                                  [ node(e.expression) for e in token.exps ],
-                                  node(token.range_expression) )
+        return ast.LeftSideValue( token.hierarchical_variable_identifier,
+                                  token.exps,
+                                  token.range_expression )
 
 # A.8.7 Numbers
 
