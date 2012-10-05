@@ -28,7 +28,10 @@ with open("non_terminal_symbols.txt","r") as f:
         setattr(self, sym, Forward()(result_name))
 
 def alias(grammar, name):
-    return Group(grammar)(name)
+    if name: 
+        return Group(grammar)(name)
+    else:
+        return Group(grammar)
 
 def emsg(msg):
     sym = NoMatch()
@@ -54,7 +57,7 @@ def oneOrMore(expr,name,err=""):
 def zeroOrMore(expr,name,err=""):
     return alias(ZeroOrMore(expr),name)
 
-def delim(expr,name,delimiter=','):
+def delim(expr,name=None,delimiter=','):
     def _action(token):
         return token[0]
     expr_ext = _group( delimitedList(expr,delimiter) - NotAny(delimiter),
@@ -271,7 +274,7 @@ named_port_connection    << Group( PERIOD + port_identifier + LP + Optional( exp
 # A.6 Behavioral statements
 # A.6.1 Continuous assignment statements
 continuous_assign      << Group( ASSIGN + Optional( delay3 ) + list_of_net_assignment )
-list_of_net_assignment << Group( delimitedList( net_assignment ) )
+list_of_net_assignment << Group( delim( net_assignment, "list" ) )
 net_assignment         << Group( net_lvalue + EQUAL + expression )
 
 # A.6.2 Procedural blocks and assigments
@@ -537,10 +540,10 @@ primary << _group( number                                                       
                    function_call                                                                                    |
                    constant_function_call                                                                           |
                    system_function_call                                                                             |
-                   hierarchical_identifier                                                                          |
                    hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" ) + LB + range_expression + RB |
                    hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" )                              |
                    hierarchical_identifier                                             + LB + range_expression + RB |
+                   hierarchical_identifier                                                                          |
                    concatenation                                                                                    |
                    multiple_concatenation                                                                           |
                    LP + mintypmax_expression + RP                                                                   ,

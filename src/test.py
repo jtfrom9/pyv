@@ -5,9 +5,12 @@ import unittest
 
 import module_test
 import operator_test
+import expression_test
+import id_test
 import primary_test 
-import statement_test
+import number_test
 import value_test
+import statement_test
 
 this = sys.modules[__name__]
 

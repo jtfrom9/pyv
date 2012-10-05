@@ -184,11 +184,8 @@ class Assignment(Statement):
         self.blocking    = blocking
     def shortName(self):
         return self.left.shortName() + "=" + self.exp.shortName()
-
-class ContinuousAssignment(Assignment):
-    def __init__(self, prefix, assignmentStatement):
-        self.prefix              = prefix
-        self.assignmentStatement = assignmentStatement
+    def setPrefix(self, pref):
+        self.prefix = pref
 
 class Conditional(Statement):
     def __init__(self, cs_list, else_s):
@@ -216,9 +213,6 @@ class SequencialBlock(Statement):
     def __init__(self, item_decls, statements):
         self.item_decls = item_decls
         self.statements = statements
-
-class ProceduralContinuousAssignment(Assignment): #assign
-    pass
 
 class ProceduralTimingControl(Statement): # #, @
     pass
@@ -330,3 +324,15 @@ class FunctionCall(Expression):
         return "(call {0}({1}))".format(self.fid.shortName(),
                                         ",".join(arg.shortName() for arg in self.args))
 
+
+class NodeList(AstNode):
+    def __init__(self,nodes):
+        self._list = list(nodes)
+    def __iter__(self):
+        return self._list
+    def __getitem__(self,index):
+        return self._list[index]
+    def __setitem__(self,index,value):
+        self._list[index] = value
+    def _asXML():
+        pass

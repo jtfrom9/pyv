@@ -86,10 +86,28 @@ def rangeAction(_s,loc,token):
 # A.4.1 Module instantiation (0/6)
 
 # A.6.1 Continuous assignment statements (1/3)
+@Action(grammar.continuous_assign)
+def continuousAsignmentAction(_s,l,token):
+    print("------------")
+    print("Action: " + ast.nodeInfo(token))
+    print("Action: " + ast.nodeInfo(token.list_of_net_assignment))
+    for stmt in token.list_of_net_assignment:
+        print("OK: " + ast.nodeInfo(node(stmt)))
+        # stmt.setPrefix('assign')
+        # if token.delay3: stmt.setDelay(token.delay3)
+    return token.list_of_net_assignment
+                           
+@Action(grammar.list_of_net_assignment)
+def listOfNetAssignmentAction(_s,l,token):
+    print("------------")
+    print("Action2: " + ast.nodeInfo(token))
+    print("Action2: " + ast.nodeInfo(token.list))
+    print("Action2: {0}".format([stmt for stmt in token.list]))
+    return [stmt for stmt in token.list]
+    
 @Action(grammar.net_assignment)
 def netAssignmentAction(_s,l,token):
     return ast.Assignment( node(token.net_lvalue), None, node(token.expression) )
-
                            
 # A.6.2 Procedural blocks and assignments (3/7)
 @Action(grammar.nonblocking_assignment)
