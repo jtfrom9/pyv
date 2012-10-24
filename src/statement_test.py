@@ -5,8 +5,6 @@ import unittest
 from test_common import GrammarTestCase, TestCase, TestCase2, _print
 import pyparsing as pp
 import grammar
-import action
-
 
 @TestCase2(grammar.conditional_statement)
 def test(self):

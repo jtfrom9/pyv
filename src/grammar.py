@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 from pyparsing import *
+import ast
 
 self = sys.modules[__name__]
 
@@ -63,6 +64,60 @@ def delim(expr,name=None,delimiter=','):
     expr_ext = _group( delimitedList(expr,delimiter) - NotAny(delimiter),
                        err = "invalid ','" ).setParseAction(_action)
     return alias(expr_ext,name)
+
+def node(token, fail_ret=ast.null):
+    if token:
+        if isinstance(token,ParseResults):
+            return token[0]
+        else:
+            return token
+    else:
+        return fail_ret
+
+def GroupedAction(action):
+    import inspect
+    try:
+        frame = inspect.currentframe(2)
+    except ValueError as e:
+        return None
+    else:
+        filename = frame.f_code.co_filename
+        lineno   = frame.f_lineno
+
+    def _decorator(_s,loc,tokens):
+        result = None
+        
+        #print(">> enter {0}: l={1}, token={2}".format(action.__name__, loc, tokens[0]))
+        try:
+            result = action(_s, loc, node(tokens))
+        except Exception as e:
+            raise ParseFatalException(_s, loc, 
+                                      "\n  File \"{filename}\", line {lineno}\n    {reason}".
+                                      format(action   = action.__name__,
+                                             filename = filename,
+                                             lineno   = lineno,
+                                             reason   = e))
+        #print("<< exit  {0}: ret={1}".format(action.__name__, result))
+        return result
+    return _decorator
+
+def Action(grammar):
+    def _decorator(action):
+        func = GroupedAction(action)
+        grammar.setParseAction(func)
+        return func
+    return _decorator
+
+@GroupedAction
+def OneOfAction(s,l,token):
+    return node(token)
+
+def NotImplemented(func):
+    def _decorator(s,l,t):
+        raise Exception("Not Implemented: " + func.__name__)
+    return _decorator
+
+
     
 # A.1 Source text2
 # A.1.1 Library source text
@@ -185,6 +240,11 @@ net_decl_assignment << Group( net_identifier + EQUAL + expression )
 dimension << Group( LB + dimension_constant_expression + COLON + dimension_constant_expression + RB )
 _range    << Group( LB + msb_constant_expression       + COLON + lsb_constant_expression       + RB )
 
+@Action(_range)
+def rangeAction(_s,loc,token):
+    return ast.Range(token.msb_constant_expression, token.lsb_constant_expression)
+
+
 # A.2.6 Function declarations
 function_declaration << Group( 
     FUNCTION + 
@@ -277,6 +337,32 @@ continuous_assign      << Group( ASSIGN + Optional( delay3 ) + list_of_net_assig
 list_of_net_assignment << Group( delim( net_assignment, "list" ) )
 net_assignment         << Group( net_lvalue + EQUAL + expression )
 
+
+@Action(continuous_assign)
+def continuousAsignmentAction(_s,l,token):
+    print("------------")
+    print("Action: " + ast.nodeInfo(token))
+    print("Action: " + ast.nodeInfo(token.list_of_net_assignment))
+    for stmt in token.list_of_net_assignment:
+        print("OK: " + ast.nodeInfo(node(stmt)))
+        # stmt.setPrefix('assign')
+        # if token.delay3: stmt.setDelay(token.delay3)
+    return token.list_of_net_assignment
+                           
+@Action(list_of_net_assignment)
+def listOfNetAssignmentAction(_s,l,token):
+    print("------------")
+    print("Action2: " + ast.nodeInfo(token))
+    print("Action2: " + ast.nodeInfo(token.list))
+    print("Action2: {0}".format([stmt for stmt in token.list]))
+    return [stmt for stmt in token.list]
+    
+@Action(net_assignment)
+def netAssignmentAction(_s,l,token):
+    return ast.Assignment( node(token.net_lvalue), None, node(token.expression) )
+                           
+
+
 # A.6.2 Procedural blocks and assigments
 initial_construct      << Group( INITIAL + statement )
 always_construct       << Group( ALWAYS  + statement )
@@ -293,6 +379,34 @@ procedural_continuous_assignments << Group( ASSIGN   + variable_assignment |
 function_blocking_assignment << Group( variable_lvalue + EQUAL + expression )
 function_statement_or_null   << Group( function_statement | SEMICOLON )
 
+
+@Action(nonblocking_assignment)
+def nonBlockingAssignmentAction(_s,l,token):
+    return ast.Assignment( node( token.variable_lvalue ),
+                           node( token.delay_or_event_control ),
+                           node( token.expression ),
+                           blocking = False )
+
+@Action(blocking_assignment)
+def blockingAssignmentAction(_s,l,token):
+    return ast.Assignment( node( token.variable_lvalue ),
+                           node( token.delay_or_event_control ),
+                           node( token.Expression ),
+                           blocking = True )
+
+@Action(procedural_continuous_assignments)
+def proceduralContinuousAssignmentAction(_s,l,token):
+    if token.variable_assignment:
+        return ast.ContinuousAssignment(token.keyword, node(token.variable_assignment))
+    elif token.net_assignment:
+        return ast.ContinuousAssignment(token.keyword, node(token.net_assignment))
+    elif token.variable_lvalue:
+        return ast.ContinuousAssignment(token.keyword, node(token.variable_lvalue))
+    elif token.net_lvalue:
+        return ast.ContinuousAssignment(token.keyword, node(token.net_lvalue))
+         
+
+
 # A.6.3 Parallel and sequential blocks
 function_seq_block  << Group( BEGIN + Optional( COLON + block_identifier + ZeroOrMore( block_item_declaration ) ) +
                               ZeroOrMore( function_statement ) +
@@ -305,6 +419,18 @@ seq_block           << Group( BEGIN +
                               Optional( COLON + block_identifier + Group(ZeroOrMore( block_item_declaration ))("item_decls") ) +
                               zeroOrMore( statement,"statements") +
                               END )
+
+@Action(variable_assignment)
+def variableAssignmentAction(_s,l,token):
+    return ast.Assignment( node( token.variable_lvalue ),
+                           None,
+                           node( token.expression ) )
+
+@Action(seq_block)
+def sequencialBlockAction(_s,l,token):
+    return ast.SequencialBlock( node(token.item_decls, []),
+                                node(token.statements, []) )
+
 
 # A.6.4 Statements
 statement << Group( nonblocking_assignment            + SEMICOLON |
@@ -331,6 +457,29 @@ function_statement << Group( function_blocking_assignment + SEMICOLON |
                              disable_statement                        |
                              system_task_enable                       )
 
+
+@Action(statement)
+def statementAction(_s,l,token):
+    if (token.nonblocking_assignment              or 
+        token.blocking_assignment                 or
+        token.case_statement                      or 
+        token.conditional_statement               or
+        token.loop_statement                      or
+        token.event_trigger                       or
+        token.wait_statement                      or
+        token.procedural_casontinuous_assignments or
+        token.procedural_timing_control_statement or
+        token.seq_block ):
+        return node(token)
+    else:
+        raise Exception("Not implemented completely statementAction")
+
+@Action(statement_or_null)
+def statementOrNullAction(_s,l,token):
+    #print("Action: statement_or_null token={0}".format(token))
+    return node(token.statement)
+
+
 # A.6.5 Timing control statements
 delay_control          << Group( SHARP + delay_value | 
                                  SHARP + LP + mintypmax_expression + RP )
@@ -353,6 +502,15 @@ event_expression       << Group( expression                               |
 
 procedural_timing_control_statement << Group( delay_or_event_control + statement_or_null      )
 wait_statement                      << Group( WAIT + LP + expression + RP + statement_or_null )
+
+@Action(event_trigger)
+def eventTriggerAction(_s,l,token):
+    pass
+
+@Action(procedural_timing_control_statement)
+def proceduralTimingControlStatementAction(_s,l,token):
+    pass
+    
 
 # A.6.6 Conditional statements
 conditional_statement << Group( 
@@ -378,6 +536,25 @@ function_if_else_if_statement << Group(
     ZeroOrMore ( ELSE + IF + LP + expression + RP + function_statement_or_null ) +
     Optional   ( ELSE + function_statement_or_null ) )
 
+@Action(conditional_statement)
+def conditionalStatementAction(_s,l,token):
+    if not token.if_else_if_statement:
+        print("<1>")
+        print(token.statement_if)
+        return ast.Conditional( [(node(token.condition), node(token.statement_if))], node(token.statement_else) )
+    else:
+        print("<2>")
+        return node( token )
+                        
+@Action(if_else_if_statement)
+def ifElseIfStatementAction(_s,l,token):
+    # print("condi:{0}".format(dir(token)))
+    # print("condi:{0}".format(token.condition))
+    return ast.Conditional( [ (node(token.condition), node(token.statement_if)) ] +
+                            [ (node(block.condition_elseif), node(block.statement_elseif)) for block in token.elseif_blocks ],
+                            node(token.statement_else) )
+
+
 # A.6.7 Case statements
 case_statement << Group( CASE  + LP + expression + RP + OneOrMore( case_item ) + ENDCASE |
                          CASEZ + LP + expression + RP + OneOrMore( case_item ) + ENDCASE |
@@ -390,6 +567,11 @@ function_case_statement << Group( CASE  + LP + expression + RP + OneOrMore (func
                                   CASEX + LP + expression + RP + OneOrMore (function_case_item ) + ENDCASE )
 function_case_item      << Group( delimitedList( expression ) + COLON + function_statement_or_null |
                                   DEFAULT + Optional( COLON ) + function_statement_or_null         )
+
+
+@Action(case_statement)
+def caseStatementAction(_s,l,token):
+    pass
 
 
 # A.6.8 Loop statements
@@ -409,6 +591,19 @@ loop_statement << Group(
     FOR + LP + variable_assignment("init") + SEMICOLON + expression + SEMICOLON + variable_assignment("next") + RP +
     statement )
 
+@Action(loop_statement)
+def loopStatementAction(_s,l,token):
+    print("loopStatementAction: {0}".format(token.keyword))
+    if token.keyword != 'for':
+        #return ast.Loop( node(token.expression),node(token.statement) )
+        pass
+    else:
+        print("init={0}".format(token.init))
+        print("exp={0}".format(token.expression))
+        print("next={0}".format(token.next))
+        #return ast.ForLoop( node(token.init), node(token.expression), node(token.next) )
+                            
+        
 # A.6.9 Task enable statements
 system_task_enable << Group( 
     system_task_identifier + Optional( LP + delimitedList( expression ) + LP ) + SEMICOLON )
@@ -454,10 +649,87 @@ variable_concatenation_value << Group(
     hierarchical_variable_identifier                                                                         |
     variable_concatenation )
 
+@Action(concatenation)
+def concatenationAction(s,l,token):
+    return ast.Concatenation([e for e in token.exps])
+
+@Action(constant_concatenation)
+def constantConcatenationAction(s,l,token):
+    return ast.Concatenation([e for e in token.exps])
+
+@Action(constant_multiple_concatenation)
+@NotImplemented
+def constantMultipleConcatenationAction(s,l,token):
+    pass
+
+
+@Action(module_path_concatenation)
+@NotImplemented
+def modulePathConcatenationAction(s,l,token):
+    pass
+
+
+@Action(module_path_multiple_concatenation)
+@NotImplemented
+def modulePathMultipleConcatenationAction(s,l,token):
+    pass
+
+
+@Action(multiple_concatenation)
+@NotImplemented
+def multipleConcatenationAction(s,l,token):
+    pass
+
+
+@Action(net_concatenation)
+def netConcatenationAction(s,l,token):
+    el = [e for e in token.exps]
+    return el[0] if len(el)==1 else ast.Concatenation(el)
+
+@Action(net_concatenation_value)
+def netConcatenationValueAction(s,l,token):
+    if token.net_concatenation:
+        return node(token.net_concatenation)
+    else:
+        return ast.IdPrimary(token.hierarchical_net_identifier,
+                             [ node(e) for e in token.exps ],
+                             node(token.range_expression) if token.range_expression else None )
+
+@Action(variable_concatenation)
+def variableConcatenationAction(s,l,token):
+    el = [e for e in token.exps]
+    return el[0] if len(el)==1 else ast.Concatenation(el)
+
+@Action(variable_concatenation_value)
+def variableConcatenationValueAction(s,l,token):
+    if token.variable_concatenation:
+        return node(token.variable_concatenation)
+    else:
+        return ast.IdPrimary(token.hierarchical_variable_identifier,
+                             [ node(e) for e in token.exps ],
+                             node(token.range_expression) if token.range_expression else None )
+
 # A.8.2 Function calls
 constant_function_call << Group( function_identifier              + LP + Optional(delim(constant_expression,"args")) + RP )
 function_call          << Group( hierarchical_function_identifier + LP + Optional(delim(expression         ,"args")) + RP )
 system_function_call   << Group( system_task_identifier + Optional( LP + Optional(delim(expression         ,"args")) + RP ) )
+
+
+@Action(constant_function_call)
+def constantFunctionCallAction(s,l,token):
+    return ast.FunctionCall(token.function_identifier, 
+                            [arg for arg in token.args])
+
+@Action(function_call)
+def functionCallAction(s,l,token):
+    return ast.FunctionCall(token.hierarchical_function_identifier, 
+                            [arg for arg in token.args])
+
+@Action(system_function_call)
+def systemFunctionCallAction(s,l,token):
+    return ast.FunctionCall(token.system_task_identifier,
+                            [arg for arg in token.args])
+
 
 # A.8.3 Expressions
 base_expression          << expression
@@ -519,6 +791,147 @@ range_expression << Group( msb_constant_expression + COLON + lsb_constant_expres
 
 width_constant_expression << constant_expression
 
+
+
+base_expression.setParseAction(lambda t: node(t))
+
+constant_base_expression.setParseAction(lambda t: node(t))
+
+@Action(_constant_conditional_expression)
+def _constantConditionalExpressionAction(s,l,token):
+    return ast.ConditionalExpression( node(token.exp_cond),
+                                      node(token.exp_if),
+                                      node(token.exp_else) )
+
+@Action(_constant_expr_)
+def _constantExpr_Action(s,l,token):
+    if token.unary_operator:
+        return ast.UnaryExpression(token.unary_operator, token.constant_primary)
+    elif token.constant_primary:
+        return token.constant_primary
+    else:
+        raise Exception("Not Implemented completely _constant_expr_Action: token={0}".format(ast.nodeInfo(token)))
+    
+@Action(_constant_expression)
+def _constantExpressionAction(s,l,token):
+    if token._constant_conditional_expression:
+        return token._constant_conditional_expression
+    elif token._constant_expr_:
+        return token._constant_expr_
+    else:
+        raise Exception("Not Implemented completely _constantExpressionAction: token={0}".format(ast.nodeInfo(token)))
+
+@Action(constant_expression)
+def constantExpressionAction(s,l,token):
+    if isinstance(token, ast.Expression):
+        return token
+    elif token.binary_operator:
+        return ast.BinaryExpression(token.binary_operator, 
+                                    [node(t) for t in token[0::2]])
+    else:
+        raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
+_constant_expr.setParseAction(constantExpressionAction)
+
+
+@Action(constant_mintypmax_expression)
+def constantMintypmaxExpressionAction(s,l,token):
+    if token.exp:
+        return token.exp
+    else:
+        raise Exception("Not Implemented completely constantMintypmaxExpressionAction: token={0}".format(token))
+
+@Action(constant_range_expression)
+def constantRangeExpressionAction(s,l,token):
+    if token.constant_expression:
+        return node(token.constant_expression)
+    else:
+        return ast.Range(node(token.msb_constant_expression),
+                         node(token.lsb_constant_expression))
+        
+dimension_constant_expression.setParseAction(lambda t: node(t))
+
+
+
+@Action(conditional_expression)
+def conditionalExpressionAction(s,l,token):
+    return ast.ConditionalExpression( node(token.exp_cond),
+                                      node(token.exp_if),
+                                      node(token.exp_else) )
+
+@Action(_expr_)
+def _expr_Action(_s,l,token):
+    if token.unary_operator:
+        return ast.UnaryExpression(token.unary_operator, token.primary)
+    elif token.primary:
+        return token.primary
+    else:
+        raise Exception("Not Implemented completely _expWithoutCondAction: token={0}".format(token))
+
+@Action(_expression)
+def _expressionAction(_s,l,token):
+    if token.conditional_expression:
+        return token.conditional_expression
+    elif token._expr_:
+        return token._expr_
+    else:
+        raise Exception("Not Implemented completely _expressionAction: token={0}".format(token))
+
+@Action(expression)
+def expressionAction(_s,l,token):
+    if isinstance(token, ast.Expression):
+        return token
+    elif token.binary_operator:
+        return ast.BinaryExpression(token.binary_operator, 
+                                    [node(t) for t in token[0::2]])
+    else:
+        raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
+_expr.setParseAction(expressionAction)
+    
+
+lsb_constant_expression.setParseAction(lambda t: node(t))
+msb_constant_expression.setParseAction(lambda t: node(t))
+
+@Action(mintypmax_expression)
+def mintypmaxExpressionAction(s,l,token):
+    if token.exp: return token.exp
+    else: raise Exception("Not Implemented completely mintypmaxExpressionAction: token={0}".format(token))
+
+@Action(module_path_conditional_expression)
+@NotImplemented
+def modulePathConditionalExpressionAction(s,l,token):
+    pass
+
+@Action(module_path_expression)
+@NotImplemented
+def modulePathExpressionAction(s,l,token):
+    pass
+
+@Action(module_path_mintypmax_expression)
+@NotImplemented
+def modulePathMintypmaxExpressionAction(s,l,token):
+    pass
+
+@Action(range_expression)
+def rangeExpressionAction(s,l,token):
+    if token.expression:
+        return node(token.expression)
+    elif token.base_expression:
+        if token.sign=="+":
+            return ast.Range(node(token.base_expression),
+                             ndoe(token.width_constant_expression))
+        else:
+            raise Exception("Not Implemented completely rangeExpressionAction: token={0}".format(token))
+    else:
+        return ast.Range(node(token.msb_constant_expression),
+                         node(token.lsb_constant_expression))
+
+@Action(width_constant_expression)
+@NotImplemented
+def widthConstantExpressionAction(s,l,token):
+    pass
+
+    
+
 # A.8.4 Primaries
 constant_primary << _group( number                                  |
                             constant_concatenation                  |
@@ -549,6 +962,49 @@ primary << _group( number                                                       
                    LP + mintypmax_expression + RP                                                                   ,
                    err = "primary")
 
+
+
+@Action(constant_primary)
+def constantPrimaryAction(s,l,token):
+    if token.number:
+        return ast.NumberPrimary( token.number )
+    elif token.constant_function_call:
+        return token.constant_function_call
+    elif token.constant_concatenation:
+        return token.constant_concatenation
+    elif token.constant_mintypmax_expression:
+        return token.constant_mintypmax_expression
+    else:
+        raise Exception("Not Implemented completely constantPrimaryAction: token={0}".format(token))
+
+@Action(module_path_primary)
+@NotImplemented
+def modulePathPrimaryAction(s,l,token):
+    pass
+
+
+@Action(primary)
+def primaryAction(_s,l,token):
+    if token.number:
+        return ast.NumberPrimary( token.number )
+    elif token.hierarchical_identifier:
+        return ast.IdPrimary( token.hierarchical_identifier,
+                              [ node(exp) for exp in token.exps ],
+                              node(token.range_expression) if token.range_expression else None )
+    elif token.concatenation:
+        return token.concatenation
+    elif token.function_call:
+        return token.function_call
+    elif token.system_function_call:
+        return token.system_function_call
+    elif token.constant_function_call:
+        return token.constant_function_call
+    elif token.mintypmax_expression:
+        return token.mintypmax_expression
+    else:
+        raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
+
+
 # A.8.5 Expression left-side value
 net_lvalue << Group( hierarchical_net_identifier + oneOrMore( LB + constant_expression + RB, "exps" ) + LB + constant_range_expression + RB  |
                      hierarchical_net_identifier + oneOrMore( LB + constant_expression + RB, "exps" )                                        |
@@ -561,6 +1017,31 @@ variable_lvalue << Group( hierarchical_variable_identifier + oneOrMore( LB + exp
                           hierarchical_variable_identifier                                            + LB + range_expression + RB  |
                           variable_concatenation                                                                                    |
                           hierarchical_variable_identifier                                                                          )
+
+
+@Action(net_lvalue)
+def netLvalueAction(s,l,token):
+    if token.net_concatenation:
+        return token.net_concatenation
+    else:
+        print("netLvalueAction:")
+        print("id={0}".format(token.hierarchical_net_identifier))
+        print("exps={0}".format(token.exps))
+        print("range={0}".format(token.constant_range_expression))
+        for i,e in enumerate(token.exps):
+            print("{0}={1}".format(i,e))
+        return ast.LeftSideValue( token.hierarchical_net_identifier,
+                                  token.exps,
+                                  token.constant_range_expression )
+        
+@Action(variable_lvalue)
+def variableLvalueAction(s,l,token):
+    if token.variable_concatenation:
+        return token.variable_concatenation
+    else:
+        return ast.LeftSideValue( token.hierarchical_variable_identifier,
+                                  token.exps,
+                                  token.range_expression )
 
 # A.8.6 Operators
 unary_operator              << oneOf("+ - ! ~ & ~& | ~| ^ ~^ ^~                                            ")("unary_operator")
@@ -620,6 +1101,64 @@ binary_base              << Regex(r"'[sS]?[bB]")
 octal_base               << Regex(r"'[sS]?[oO]")
 hex_base                 << Regex(r"'[sS]?[hH]")
 
+number.setParseAction(OneOfAction)
+
+@Action(real_number)
+def realNumberAction(_s,l,token):
+    if not token.exp:
+        return ast.Float( node(token.integral_part) + "." + node(token.decimal_part))
+    else:
+        return ast.Float( node(token.integral_part) + "." + node(token.decimal_part) + token.exp + node(token.sign,"") + node(token.expornential_part) )
+
+@Action(decimal_number)
+def decimalNumberAction(_s, loc, token):
+    def dval(vstr): 
+        return int(vstr, ast.FixedWidthValue.Decimal)
+    def i2val(width):
+        val = int(token.unsigned_number)
+        if val >= pow(2,width):
+            print("Warning: constant {0} is truncate to {1} bit value: {2}".format(
+                    token.unsigned_number, width, pow(2,width)-1))
+        return ast.Int2(token.unsigned_number,width,ast.FixedWidthValue.Decimal, val)
+    def i4val(width,v):
+        return ast.Int4(v,width,ast.FixedWidthValue.Decimal, v*width)
+
+    if len(token)==1:
+        return i2val(32)
+    else:
+        width = token.size if token.size else 32
+        if token.x_digit:
+            return i4val(width,token.x_digit)
+        if token.z_digit:
+             return i4val(width,token.z_digit)
+        if token.unsigned_number:
+            return i2val(width)
+
+def valueActions(name,vtype):
+    @GroupedAction
+    def _action(_s,loc,token):
+        width = token.size if token.size else 32
+        vstr = getattr(token,name)
+        trans = vstr.translate(None,'xXzZ?')
+        if trans==vstr:
+            return ast.Int2(vstr,width,vtype,int(vstr,vtype))
+        else:
+            return ast.Int4(vstr,width,vtype,vstr)
+    return _action
+
+binary_number.setParseAction (valueActions('binary_value' , ast.FixedWidthValue.Binary))
+octal_number.setParseAction  (valueActions('octal_value'  , ast.FixedWidthValue.Octal))
+hex_number.setParseAction    (valueActions('hex_value'    , ast.FixedWidthValue.Hex))
+
+size.setParseAction                    (lambda t: int(t[0]))
+non_zero_unsigned_number.setParseAction(lambda t: t[0])
+unsigned_number.setParseAction         (lambda t: t[0])
+binary_value.setParseAction            (lambda t: t[0])
+octal_value.setParseAction             (lambda t: t[0])
+hex_value.setParseAction               (lambda t: t[0])
+
+
+
 # A.8.8 Strings
 string << Suppress("\"") + ZeroOrMore( CharsNotIn("\"\n") ) + Suppress("\"")
 
@@ -676,4 +1215,90 @@ hierarchical_variable_identifier << hierarchical_identifier
 hierarchical_task_identifier     << hierarchical_identifier
 
 system_task_identifier << Regex(r"\$[a-zA-Z0-9_$][a-zA-Z0-9_$]*")
+
+@Action(simple_identifier)
+def simpleIdentifierAction(_s,loc,token):
+    return ast.BasicId(token)
+
+@Action(simple_arrayed_identifier)
+def simpleArrayedIdentifierAction(_s,loc,token):
+    print(token.simple_identifier)
+    if token._range:
+        return ast.RangedId(token.simple_identifier.shortName(), token._range)
+    else:
+        return ast.BasicId(token.simple_identifier.shortName())
+
+
+@Action(escaped_identifier)
+@NotImplemented
+def escapedIdentifierAction(_s,loc,token):
+    pass
+
+@Action(escaped_arrayed_identifier)
+@NotImplemented
+def escapedArrayedIdentifierAction(_s,loc,token):
+    pass
+
+identifier.setParseAction         (OneOfAction)
+arrayed_identifier.setParseAction (OneOfAction)
+
+event_identifier.setParseAction           (lambda t: node(t))
+function_identifier.setParseAction        (lambda t: node(t))
+module_identifier.setParseAction          (lambda t: node(t))
+module_instance_identifier.setParseAction (lambda t: node(t))
+net_identifier.setParseAction             (lambda t: node(t))
+port_identifier.setParseAction            (lambda t: node(t))
+real_identifier.setParseAction            (lambda t: node(t))
+task_identifier.setParseAction            (lambda t: node(t))
+variable_identifier.setParseAction        (lambda t: node(t))
+
+hierarchical_identifier.setParseAction(OneOfAction)
+
+@Action(simple_hierarchical_identifier)
+def simpleHierarchicalIdnetifierAction(_s,loc,token):
+    ret = token.simple_hierarchical_branch
+    if token.escaped_identifier:
+        assert isinstance(ret, HierarchicalId)
+        ret.addId(ast.BasicId(token.escaped_identifier))
+    return ret
+        
+@Action(escaped_hierarchical_identifier)
+@NotImplemented
+def escapedHierarchicalIdentifier(_s,loc,token):
+    pass
+
+@Action(simple_hierarchical_branch)
+def simpleHierarchicalBranchAction(_s,loc,token):
+    if token.index:
+        headId = ast.IndexedId(token.simple_identifier.string, int(token.index))
+    else:
+        headId = token.simple_identifier
+    ids = [ headId ]
+    for id in token.ids: 
+        if id.index:
+            ids.append(ast.IndexedId(id.simple_identifier.string, int(id.index)))
+        else:
+            ids.append(id.simple_identifier)
+    if len(ids)==1:
+        return ids[0]
+    else:
+        return ast.HierarchicalId(ids)
+
+
+@Action(escaped_hierarchical_branch)
+@NotImplemented
+def escapedHierarchicalBranchAction(_s,loc,token):
+    pass
+
+
+hierarchical_block_identifier.setParseAction    (lambda t: node(t))
+hierarchical_event_identifier.setParseAction    (lambda t: node(t))
+hierarchical_function_identifier.setParseAction (lambda t: node(t))
+hierarchical_net_identifier.setParseAction      (lambda t: node(t))
+hierarchical_variable_identifier.setParseAction (lambda t: node(t))
+hierarchical_task_identifier.setParseAction     (lambda t: node(t))
+
+@Action(system_task_identifier)
+def systemTaskIdentifierAction(s,l,token):
+    return ast.BasicId(token)
 

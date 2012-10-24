@@ -4,8 +4,6 @@ import unittest
 
 from test_common import GrammarTestCase, TestCase2, _print
 import grammar
-import action
-
 
 @TestCase2(grammar.number)
 def test(self):

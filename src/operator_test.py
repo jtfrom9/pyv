@@ -4,7 +4,6 @@ import unittest
 
 from test_common import GrammarTestCase, TestCase
 import grammar
-import action
 
 @TestCase(grammar)
 def test_unary_operator(self):

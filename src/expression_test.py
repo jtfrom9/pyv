@@ -5,7 +5,6 @@ import unittest
 from test_common import GrammarTestCase, TestCase2, _print, run_tests
 from pyparsing import stringEnd
 import grammar
-import action
 
 @TestCase2(grammar._constant_expression)
 def test(self):

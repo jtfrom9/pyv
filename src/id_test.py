@@ -4,7 +4,6 @@ import unittest
 
 from test_common import GrammarTestCase, TestCase2, _id_print
 import grammar
-import action
 
 @TestCase2(grammar.simple_identifier)
 def test169(self):

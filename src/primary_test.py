@@ -4,7 +4,6 @@ import unittest
 
 from test_common import GrammarTestCase, TestCase2, _print, run_tests
 import grammar
-import action
 
 grammar.constant_primary.enablePackrat()
 
