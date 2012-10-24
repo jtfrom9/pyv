@@ -252,23 +252,36 @@ class FunctionCall(Expression):
                                         ",".join(arg.shortName() for arg in self.args))
 
 
-
-
 class Statement(AstNode):
-    def dump(self):
-        pass
+    pass
+
+class Construct(Statement):
+    def __init__(self, ctype, stmt):
+        self.ctype = ctype
+        self.stmt = stmt
+    def shortName(self):
+        return self.ctype + ":" + self.stmt.shortName()
 
 class Assignment(Statement):
-    def __init__(self, left, delay_event, exp, blocking=True):
+    def __init__(self, left, delay_event, right, blocking=True):
         self.left        = left
         self.delay_event = delay_event
-        self.exp         = exp
+        self.right       = right
         self.blocking    = blocking
-        self.prefix      = ""
+        self._continuous = ""
     def shortName(self):
-        return self.prefix + " " + self.left.shortName() + "=" + self.exp.shortName()
-    def setPrefix(self, pref):
-        self.prefix = pref
+        return self._continuous + self.left.shortName() + ("=" if self.blocking else "<=") + self.right.shortName()
+    def isContinuous(self):
+        '''if with assign or not'''
+        return self._continuous is not None
+    def setContinuous(self, con):
+        self._continuous = con
+
+class ReleaseLeftValue(Statement):
+    def __init__(self, _type, lvalue):
+        self._type   = _type
+        self._lvalue = lvalue
+
 
 class Conditional(Statement):
     def __init__(self, cs_list, else_s):
@@ -292,17 +305,9 @@ class Case(Statement):
 class Loop(Statement):
     pass
 
-class SequencialBlock(Statement):
-    def __init__(self, item_decls, statements):
+class Block(Statement):
+    def __init__(self, item_decls, statements, seq=True):
         self.item_decls = item_decls
         self.statements = statements
-
-class ProceduralTimingControl(Statement): # #, @
-    pass
-
-class WaitEvent(Statement):
-    pass
-
-class EventTrigger(Statement):
-    pass
+        self._seq       = seq
 

@@ -340,9 +340,9 @@ net_assignment         << Group( net_lvalue + EQUAL + expression )
 
 @Action(continuous_assign)
 def continuousAsignmentAction(_s,l,token):
-    for stmt in node(token.list_of_net_assignment):
-        stmt.setPrefix(token.keyword)
-    return token.list_of_net_assignment
+    for asgn in node(token.list_of_net_assignment):
+        asgn.setContinuous(token.keyword)
+    return [ asgn for asgn in token.list_of_net_assignment ]
                            
 @Action(net_assignment)
 def netAssignmentAction(_s,l,token):
@@ -352,70 +352,72 @@ def netAssignmentAction(_s,l,token):
 # A.6.2 Procedural blocks and assigments
 initial_construct      << Group( INITIAL + statement )
 always_construct       << Group( ALWAYS  + statement )
+
+@Action(initial_construct, always_construct)
+def initialConstructAction(_s,l,token):
+    return ast.Construct(token.keyword, token.statement)
+
 blocking_assignment    << Group( variable_lvalue + EQUAL + Optional( delay_or_event_control ) + expression )
 nonblocking_assignment << Group( variable_lvalue + NB    + Optional( delay_or_event_control ) + expression )
 
-procedural_continuous_assignments << Group( ASSIGN   + variable_assignment |
-                                            DEASSIGN + variable_lvalue     |
-                                            FORCE    + variable_assignment |
-                                            FORCE    + net_assignment      |
-                                            RELEASE  + variable_lvalue     |
-                                            RELEASE  + net_lvalue          )
-
-function_blocking_assignment << Group( variable_lvalue + EQUAL + expression )
-function_statement_or_null   << Group( function_statement | SEMICOLON )
-
+@Action(blocking_assignment)
+def blockingAssignmentAction(_s,l,token):
+    return ast.Assignment( token.variable_lvalue,
+                           None,
+                           token.expression,
+                           blocking = True )
 
 @Action(nonblocking_assignment)
 def nonBlockingAssignmentAction(_s,l,token):
-    return ast.Assignment( node( token.variable_lvalue ),
-                           node( token.delay_or_event_control ),
-                           node( token.expression ),
+    return ast.Assignment( token.variable_lvalue,
+                           None,
+                           token.expression,
                            blocking = False )
 
-@Action(blocking_assignment)
-def blockingAssignmentAction(_s,l,token):
-    return ast.Assignment( node( token.variable_lvalue ),
-                           node( token.delay_or_event_control ),
-                           node( token.Expression ),
-                           blocking = True )
+procedural_continuous_assignments << Group( DEASSIGN + alias(variable_lvalue,"lvalue")         |
+                                            ASSIGN   + alias(variable_assignment,"assignment") |
+                                            FORCE    + alias(variable_assignment,"assignment") |
+                                            FORCE    + alias(net_assignment,"assignment")      |
+                                            RELEASE  + alias(variable_lvalue,"lvalue")         |
+                                            RELEASE  + alias(net_lvalue,"lvalue")              )
 
 @Action(procedural_continuous_assignments)
 def proceduralContinuousAssignmentAction(_s,l,token):
-    if token.variable_assignment:
-        return ast.ContinuousAssignment(token.keyword, node(token.variable_assignment))
-    elif token.net_assignment:
-        return ast.ContinuousAssignment(token.keyword, node(token.net_assignment))
-    elif token.variable_lvalue:
-        return ast.ContinuousAssignment(token.keyword, node(token.variable_lvalue))
-    elif token.net_lvalue:
-        return ast.ContinuousAssignment(token.keyword, node(token.net_lvalue))
-         
+    if token.keyword in ['deassign','release']:
+        return ast.ReleaseLeftValue(token.keyword,node(token.lvalue))
+    else:
+        return node(token.assignment)
+    
+     
+function_blocking_assignment << Group( variable_lvalue + EQUAL + expression )
+variable_assignment          << Group( variable_lvalue + EQUAL + expression )
+
+@Action(function_blocking_assignment, variable_assignment)
+def functionBlockingAssignmentAction(_s,l,token):
+    return ast.Assignment(token.variable_lvalue,None,token.expression)
 
 
 # A.6.3 Parallel and sequential blocks
-function_seq_block  << Group( BEGIN + Optional( COLON + block_identifier + ZeroOrMore( block_item_declaration ) ) +
-                              ZeroOrMore( function_statement ) +
+function_seq_block  << Group( BEGIN + 
+                              Optional( COLON + block_identifier + zeroOrMore( block_item_declaration, "item_delcs" ) ) +
+                              zeroOrMore( function_statement, "statements" ) +
                               END )
-variable_assignment << Group( variable_lvalue + EQUAL + expression )
-par_block           << Group( FORK + Optional( COLON + block_identifier  + ZeroOrMore( block_item_declaration ) ) +
-                              ZeroOrMore( statement ) +
+par_block           << Group( FORK + 
+                              Optional( COLON + block_identifier  + zeroOrMore( block_item_declaration, "item_delcs" ) ) +
+                              zeroOrMore( statement, "statements" ) +
                               JOIN )
 seq_block           << Group( BEGIN + 
-                              Optional( COLON + block_identifier + Group(ZeroOrMore( block_item_declaration ))("item_decls") ) +
-                              zeroOrMore( statement,"statements") +
+                              Optional( COLON + block_identifier + zeroOrMore( block_item_declaration, "item_decls") ) +
+                              zeroOrMore( statement, "statements" ) +
                               END )
 
-@Action(variable_assignment)
-def variableAssignmentAction(_s,l,token):
-    return ast.Assignment( node( token.variable_lvalue ),
-                           None,
-                           node( token.expression ) )
-
-@Action(seq_block)
+@Action(function_seq_block, seq_block)
 def sequencialBlockAction(_s,l,token):
-    return ast.SequencialBlock( node(token.item_decls, []),
-                                node(token.statements, []) )
+    return ast.Block( node(token.item_decls, []), node(token.statements, []) )
+
+@Action(par_block)
+def parallelBlockAction(_s,l,token):
+    return ast.Block( node(token.item_decls, []), node(token.statements, []), seq=False)
 
 
 # A.6.4 Statements
@@ -433,8 +435,8 @@ statement << Group( nonblocking_assignment            + SEMICOLON |
                     system_task_enable                            |
                     task_enable                                   |
                     wait_statement                                )
+statement.setParseAction(OneOfAction)
 
-statement_or_null  << Group(  SEMICOLON | statement  )
 function_statement << Group( function_blocking_assignment + SEMICOLON |
                              function_case_statement                  |
                              function_conditional_statement           |
@@ -442,28 +444,15 @@ function_statement << Group( function_blocking_assignment + SEMICOLON |
                              function_seq_block                       |
                              disable_statement                        |
                              system_task_enable                       )
+function_statement.setParseAction(OneOfAction)
 
+statement_or_null          << Group( SEMICOLON | alias(statement,"stmt")  )
+function_statement_or_null << Group( SEMICOLON | alias(function_statement,"stmt") )
 
-@Action(statement)
-def statementAction(_s,l,token):
-    if (token.nonblocking_assignment              or 
-        token.blocking_assignment                 or
-        token.case_statement                      or 
-        token.conditional_statement               or
-        token.loop_statement                      or
-        token.event_trigger                       or
-        token.wait_statement                      or
-        token.procedural_casontinuous_assignments or
-        token.procedural_timing_control_statement or
-        token.seq_block ):
-        return node(token)
-    else:
-        raise Exception("Not implemented completely statementAction")
-
-@Action(statement_or_null)
+@Action(statement_or_null, function_statement_or_null)
 def statementOrNullAction(_s,l,token):
-    #print("Action: statement_or_null token={0}".format(token))
-    return node(token.statement)
+    return node(token.stmt) if token.stmt else ast.null
+
 
 
 # A.6.5 Timing control statements
@@ -823,7 +812,7 @@ def _expressionAction(_s,l,token):
     else:
         raise Exception("Not Implemented completely _expressionAction: token={0}".format(token))
 
-@Action(expression)
+@Action(expression, _expr)
 def expressionAction(_s,l,token):
     if isinstance(token, ast.Expression):
         return token
@@ -832,7 +821,6 @@ def expressionAction(_s,l,token):
                                     [node(t) for t in token[0::2]])
     else:
         raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
-_expr.setParseAction(expressionAction)
     
 
 lsb_constant_expression << constant_expression

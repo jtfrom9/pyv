@@ -47,7 +47,7 @@ def test65(self):
 
 @TestCase2(grammar.list_of_net_assignment)
 def test66(self):
-#   _print(self.check_pass("a=1"))
+   _print(self.check_pass("a=1"))
    _print(self.check_pass("a=1,b=2"))
 
 @TestCase2(grammar.net_assignment)
@@ -56,71 +56,84 @@ def test67(self):
 
 @TestCase2(grammar.initial_construct)
 def test68(self):
-    pass
-
+   _print(self.check_pass("initial a=1;"))
 
 @TestCase2(grammar.always_construct)
 def test69(self):
-    pass
-
+   _print(self.check_pass("always a=1;"))
 
 @TestCase2(grammar.blocking_assignment)
 def test70(self):
-    pass
+    _print(self.check_pass("a=1"))
 
 
 @TestCase2(grammar.nonblocking_assignment)
 def test71(self):
-    pass
+    _print(self.check_pass("a<=1"))
 
 
 @TestCase2(grammar.procedural_continuous_assignments)
 def test72(self):
-    pass
-
+    _print(self.check_pass("deassign A"))
+    _print(self.check_pass("assign A=1"))
+    _print(self.check_pass("force A=1"))
+    _print(self.check_pass("release A"))
 
 @TestCase2(grammar.function_blocking_assignment)
 def test73(self):
-    pass
-
-
-@TestCase2(grammar.function_statement_or_null)
-def test74(self):
-    pass
-
-
-@TestCase2(grammar.function_seq_block)
-def test75(self):
-    pass
-
+    _print(self.check_pass("A = 1"))
+    _print(self.check_pass("A = foo(0,1)"))
 
 @TestCase2(grammar.variable_assignment)
 def test76(self):
-    pass
+    _print(self.check_pass("A = 1"))
+    _print(self.check_pass("A = foo(0,1)"))
 
+@TestCase2(grammar.function_seq_block)
+def test75(self):
+    _print(self.check_pass("""begin 
+end
+"""))
+    _print(self.check_pass("""begin 
+a=1;
+end
+"""))
 
 @TestCase2(grammar.par_block)
 def test77(self):
-    pass
+    _print(self.check_pass("""fork
+join
+"""))
 
 
 @TestCase2(grammar.seq_block)
 def test78(self):
-    pass
+    _print(self.check_pass("""begin end"""))
+    _print(self.check_pass("""begin a=1; end"""))
+    _print(self.check_pass("""begin a=1; b=2; end"""))
 
 @TestCase2(grammar.statement)
 def test79(self):
-    pass
-
-
-@TestCase2(grammar.statement_or_null)
-def test80(self):
-    pass
-
+    _print(self.check_pass("a<=1;"))
+    _print(self.check_pass("a=1;"))
+    _print(self.check_fail("a<=1"))
+    _print(self.check_fail("a=1"))
 
 @TestCase2(grammar.function_statement)
 def test81(self):
-    pass
+    _print(self.check_fail("a<=1;"))
+    _print(self.check_pass("a=1;"))
+
+
+@TestCase2(grammar.function_statement_or_null)
+def test74(self):
+    _print(self.check_pass(";"))
+    _print(self.check_pass("A=1;"))
+
+@TestCase2(grammar.statement_or_null)
+def test80(self):
+    _print(self.check_pass(";"))
+    _print(self.check_pass("A=1;"))
 
 
 @TestCase2(grammar.delay_control)
