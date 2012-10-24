@@ -101,10 +101,11 @@ def GroupedAction(action):
         return result
     return _decorator
 
-def Action(grammar):
+def Action(*argv):
     def _decorator(action):
         func = GroupedAction(action)
-        grammar.setParseAction(func)
+        for grammar in argv:
+            grammar.setParseAction(func)
         return func
     return _decorator
 
@@ -146,7 +147,7 @@ port             << Group( Optional( port_expression ) |
                            PERIOD + ID + LP + Optional( port_expression ) + RP )
 port_expression  << Group( port_reference                            | 
                            LC + delimitedList( port_reference ) + RC )
-port_reference   << Group( port_identifier                    |
+port_reference   << Group( identifier                    |
                            ID + LB + constant_expression + RB |
                            ID + LB + range_expression    + RB )
 port_declaration << Group ( inout_declaration | 
@@ -210,10 +211,10 @@ time_declaration     << Group(TIME                                      + list_o
 # A.2.2.1 Net and variable types
 net_type             << WIRE
 output_variable_type << Group( INTEGER | TIME )
-real_type            << Group( real_identifier + Optional( EQUAL + constant_expression ) |
-                               real_identifier + dimension + ZeroOrMore ( dimension ) )
-variable_type        << Group( variable_identifier + Optional( EQUAL + constant_expression ) | 
-                               variable_identifier + dimension + ZeroOrMore ( dimension ) )
+real_type            << Group( identifier + Optional( EQUAL + constant_expression ) |
+                               identifier + dimension + ZeroOrMore ( dimension ) )
+variable_type        << Group( identifier + Optional( EQUAL + constant_expression ) | 
+                               identifier + dimension + ZeroOrMore ( dimension ) )
 
 # A.2.2.2 Strenghths
 
@@ -225,16 +226,16 @@ delay2      << Group( SHARP + delay_value |
 delay_value << Group( unsigned_number | mintypmax_expression )
 
 # A.2.3 Declaration lists
-list_of_event_identifiers        << Group(delimitedList( event_identifier + Optional( dimension + ZeroOrMore(dimension) ) ))
-list_of_net_decl_assignments     << Group(delimitedList( net_decl_assignment                                              ))
-list_of_net_identifiers          << Group(delimitedList( net_identifier + Optional( dimension + ZeroOrMore(dimension) )   ))
-list_of_port_identifers          << Group(delimitedList( port_identifier                                                  ))
-list_of_real_identifiers         << Group(delimitedList( real_type                                                        ))
-list_of_variable_identifiers     << Group(delimitedList( variable_type                                                    ))
-list_of_variable_port_identifers << Group(delimitedList( port_identifier + Optional( EQUAL + constant_expression )        ))
+list_of_event_identifiers        << Group(delimitedList( identifier + Optional( dimension + ZeroOrMore(dimension) ) ))
+list_of_net_decl_assignments     << Group(delimitedList( net_decl_assignment                                        ))
+list_of_net_identifiers          << Group(delimitedList( identifier + Optional( dimension + ZeroOrMore(dimension) ) ))
+list_of_port_identifers          << Group(delimitedList( identifier                                                 ))
+list_of_real_identifiers         << Group(delimitedList( real_type                                                  ))
+list_of_variable_identifiers     << Group(delimitedList( variable_type                                              ))
+list_of_variable_port_identifers << Group(delimitedList( identifier + Optional( EQUAL + constant_expression )       ))
 
 # A.2.4 Declaration assignments
-net_decl_assignment << Group( net_identifier + EQUAL + expression )
+net_decl_assignment << Group( identifier + EQUAL + expression )
 
 # A.2.5 Declaration ranges
 dimension << Group( LB + dimension_constant_expression + COLON + dimension_constant_expression + RB )
@@ -248,13 +249,13 @@ def rangeAction(_s,loc,token):
 # A.2.6 Function declarations
 function_declaration << Group( 
     FUNCTION + 
-    Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + function_identifier + SEMICOLON + 
+    Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + identifier + SEMICOLON + 
     function_item_declaration + ZeroOrMore( function_item_declaration ) + 
     function_statement + 
     ENDFUNCTION
     ^
     FUNCTION + 
-    Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + function_identifier + LP + function_port_list + RP + SEMICOLON + 
+    Optional(AUTOMATIC) + Optional(SIGNED) + Optional(range_or_type) + identifier + LP + function_port_list + RP + SEMICOLON + 
     block_item_declaration + ZeroOrMore(block_item_declaration) + 
     function_statement + 
     ENDFUNCTION
@@ -266,12 +267,12 @@ range_or_type             << Group( _range | INTEGER | REAL | REALTIME | TIME )
 
 # A.2.7 Task declarations
 task_declaration << Group( 
-    TASK + Optional(AUTOMATIC) + task_identifier + SEMICOLON + 
+    TASK + Optional(AUTOMATIC) + identifier + SEMICOLON + 
     ZeroOrMore( task_item_declaration ) + 
     statement + 
     ENDTASK
     ^
-    TASK + Optional(AUTOMATIC) + task_identifier + LP + task_port_list + RP + SEMICOLON + 
+    TASK + Optional(AUTOMATIC) + identifier + LP + task_port_list + RP + SEMICOLON + 
     ZeroOrMore( block_item_declaration ) + 
     statement + 
     ENDTASK )
@@ -309,19 +310,19 @@ block_item_declaration << Group(
 
 block_reg_declaration              << Group( REG + Optional(SIGNED) + Optional(_range) + list_of_block_variable_identifiers + SEMICOLON )
 list_of_block_variable_identifiers << Group( delimitedList( block_variable_type ) )
-block_variable_type                << Group( variable_identifier | variable_identifier + dimension + ZeroOrMore(dimension) )
+block_variable_type                << Group( identifier | identifier + dimension + ZeroOrMore(dimension) )
 
 # A.3 Primitive instances
 
 # A.4 Module and generated instantiation
 # A.4.1 Module instantiation
-module_instantiation     << Group( module_identifier + Optional( parameter_value_assignment ) + delimitedList( module_instance ) + SEMICOLON )
+module_instantiation     << Group( identifier + Optional( parameter_value_assignment ) + delimitedList( module_instance ) + SEMICOLON )
 module_instance          << Group( name_of_instance + LP + Optional( list_of_port_connections ) + RP )
 name_of_instance         << Group( module_instance_identifier + Optional( _range ) )
 list_of_port_connections << Group( delimitedList ( ordered_port_connection ) |
                                    delimitedList ( named_port_connection   ) )
 ordered_port_connection  << Group( Optional( expression ) )
-named_port_connection    << Group( PERIOD + port_identifier + LP + Optional( expression ) + RP )
+named_port_connection    << Group( PERIOD + identifier + LP + Optional( expression ) + RP )
 
 # A.4.2 Generated instantiation
 
@@ -471,13 +472,12 @@ delay_control          << Group( SHARP + delay_value |
 delay_or_event_control << Group( delay_control | 
                                  event_control |
                                  REPEAT + LP + expression + RP + event_control )
-disable_statement      << Group( DISABLE + hierarchical_task_identifier  + SEMICOLON |
-                                 DISABLE + hierarchical_block_identifier + SEMICOLON )
-event_control          << Group( AT + event_identifier           |
+disable_statement      << Group( DISABLE + hierarchical_identifier  + SEMICOLON )
+event_control          << Group( AT + identifier                 |
                                  AT + LP + event_expression + RP |
                                  AT + ASTA                       |
                                  AT + LP + ASTA + RP             )
-event_trigger          << Group( TRIG + hierarchical_event_identifier + SEMICOLON )
+event_trigger          << Group( TRIG + hierarchical_identifier + SEMICOLON )
 event_expression       << Group( expression                               |
                                  hierarchical_identifier                  |
                                  POSEDGE + expression                     |
@@ -614,26 +614,6 @@ concatenation                   << Group( LC + delim(expression,"exps")         
 constant_concatenation          << Group( LC + delim(constant_expression,"exps") + RC )
 constant_multiple_concatenation << Group( LC + constant_expression + constant_concatenation + RC )
 
-module_path_concatenation          << Group( LC + delimitedList( module_path_expression )         + RC )
-module_path_multiple_concatenation << Group( LC + constant_expression + module_path_concatenation + RC )
-multiple_concatenation             << Group( LC + constant_expression + concatenation             + RC )
-
-net_concatenation << Group( LC + delim(net_concatenation_value,"exps") + RC )
-net_concatenation_value << Group( 
-    hierarchical_net_identifier + oneOrMore( LB + expression + RB, "exps") + LB + range_expression + RB |
-    hierarchical_net_identifier + oneOrMore( LB + expression + RB, "exps")                              |
-    hierarchical_net_identifier +                                            LB + range_expression + RB |
-    hierarchical_net_identifier                                                                         |
-    net_concatenation )
-
-variable_concatenation << Group( LC + delim(variable_concatenation_value,"exps") + RC )
-variable_concatenation_value << Group(
-    hierarchical_variable_identifier + oneOrMore( LB + expression + RB,"exps" ) + LB + range_expression + RB |
-    hierarchical_variable_identifier + oneOrMore( LB + expression + RB,"exps" )                              |
-    hierarchical_variable_identifier +                                            LB + range_expression + RB |
-    hierarchical_variable_identifier                                                                         |
-    variable_concatenation )
-
 @Action(concatenation)
 def concatenationAction(s,l,token):
     return ast.Concatenation([e for e in token.exps])
@@ -647,6 +627,9 @@ def constantConcatenationAction(s,l,token):
 def constantMultipleConcatenationAction(s,l,token):
     pass
 
+module_path_concatenation          << Group( LC + delimitedList( module_path_expression )         + RC )
+module_path_multiple_concatenation << Group( LC + constant_expression + module_path_concatenation + RC )
+multiple_concatenation             << Group( LC + constant_expression + concatenation             + RC )
 
 @Action(module_path_concatenation)
 @NotImplemented
@@ -666,48 +649,54 @@ def multipleConcatenationAction(s,l,token):
     pass
 
 
-@Action(net_concatenation)
-def netConcatenationAction(s,l,token):
+net_concatenation << Group( LC + delim(net_concatenation_value,"exps") + RC )
+net_concatenation_value << Group( 
+    hierarchical_identifier + oneOrMore( LB + expression + RB, "exps") + LB + range_expression + RB |
+    hierarchical_identifier + oneOrMore( LB + expression + RB, "exps")                              |
+    hierarchical_identifier +                                            LB + range_expression + RB |
+    hierarchical_identifier                                                                         |
+    net_concatenation )
+
+variable_concatenation << Group( LC + delim(variable_concatenation_value,"exps") + RC )
+variable_concatenation_value << Group(
+    hierarchical_identifier + oneOrMore( LB + expression + RB,"exps" ) + LB + range_expression + RB |
+    hierarchical_identifier + oneOrMore( LB + expression + RB,"exps" )                              |
+    hierarchical_identifier +                                            LB + range_expression + RB |
+    hierarchical_identifier                                                                         |
+    variable_concatenation )
+
+@Action(net_concatenation, variable_concatenation)
+def _NetVariableConcatenationAction(s,l,token):
     el = [e for e in token.exps]
     return el[0] if len(el)==1 else ast.Concatenation(el)
+    
 
-@Action(net_concatenation_value)
-def netConcatenationValueAction(s,l,token):
+@Action(net_concatenation_value, variable_concatenation_value)
+def _NetVariableConcatenationValueAction(s,l,token):
     if token.net_concatenation:
         return node(token.net_concatenation)
-    else:
-        return ast.IdPrimary(token.hierarchical_net_identifier,
-                             [ node(e) for e in token.exps ],
-                             node(token.range_expression) if token.range_expression else None )
-
-@Action(variable_concatenation)
-def variableConcatenationAction(s,l,token):
-    el = [e for e in token.exps]
-    return el[0] if len(el)==1 else ast.Concatenation(el)
-
-@Action(variable_concatenation_value)
-def variableConcatenationValueAction(s,l,token):
-    if token.variable_concatenation:
+    elif token.variable_concatenation:
         return node(token.variable_concatenation)
     else:
-        return ast.IdPrimary(token.hierarchical_variable_identifier,
+        return ast.IdPrimary(token.hierarchical_identifier,
                              [ node(e) for e in token.exps ],
                              node(token.range_expression) if token.range_expression else None )
 
+
 # A.8.2 Function calls
-constant_function_call << Group( function_identifier              + LP + Optional(delim(constant_expression,"args")) + RP )
-function_call          << Group( hierarchical_function_identifier + LP + Optional(delim(expression         ,"args")) + RP )
-system_function_call   << Group( system_task_identifier + Optional( LP + Optional(delim(expression         ,"args")) + RP ) )
+constant_function_call << Group( identifier              + LP + Optional(delim(constant_expression ,"args")) + RP )
+function_call          << Group( hierarchical_identifier + LP + Optional(delim(expression          ,"args")) + RP )
+system_function_call   << Group( system_task_identifier  + Optional( LP + Optional(delim(expression,"args")) + RP ) )
 
 
 @Action(constant_function_call)
 def constantFunctionCallAction(s,l,token):
-    return ast.FunctionCall(token.function_identifier, 
+    return ast.FunctionCall(token.identifier, 
                             [arg for arg in token.args])
 
 @Action(function_call)
 def functionCallAction(s,l,token):
-    return ast.FunctionCall(token.hierarchical_function_identifier, 
+    return ast.FunctionCall(token.hierarchical_identifier, 
                             [arg for arg in token.args])
 
 @Action(system_function_call)
@@ -717,8 +706,9 @@ def systemFunctionCallAction(s,l,token):
 
 
 # A.8.3 Expressions
-base_expression          << expression
 constant_base_expression << constant_expression
+constant_base_expression.setParseAction(lambda t: node(t))
+
 
 _constant_expr  = Forward()
 _constant_expr_ = _group( unary_operator + constant_primary |
@@ -733,54 +723,6 @@ _constant_expression  = Group( _constant_conditional_expression | _constant_expr
 
 _constant_expr      << operatorPrecedence( _constant_expr_,      [ (binary_operator, 2, opAssoc.LEFT) ] )
 constant_expression << operatorPrecedence( _constant_expression, [ (binary_operator, 2, opAssoc.LEFT) ] )
-
-constant_mintypmax_expression << Group( alias(constant_expression,"exp") |
-                                        constant_expression + COLON + constant_expression + COLON + constant_expression )
-
-constant_range_expression << Group( msb_constant_expression + COLON + lsb_constant_expression   |
-                                    constant_expression                                         )
-# constant_base_expression + alias(PLUS, "sign") + COLON + width_constant_expression |
-# constant_base_expression + alias(MINUS,"sign") + COLON + width_constant_expression |
-
-dimension_constant_expression << constant_expression
-
-_expr  = Forward()
-_expr_ = Group( unary_operator + primary | primary | string )("_expr_")
-
-conditional_expression << Group( alias(_expr,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else") )
-_expression = Group( conditional_expression | _expr_ )
-
-_expr      << operatorPrecedence( _expr_,      [ (binary_operator, 2, opAssoc.LEFT) ])
-expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.LEFT) ])
-
-lsb_constant_expression << constant_expression
-msb_constant_expression << constant_expression
-mintypmax_expression    << Group( expression("exp") | 
-                                  expression + COLON + expression + COLON + expression )
-
-module_path_conditional_expression << module_path_expression + Q + module_path_expression + COLON + module_path_expression
-
-module_path_expression << Group( module_path_primary                                                           |
-                                 unary_module_path_operator + module_path_primary                              |
-                                 module_path_expression + binary_module_path_operator + module_path_expression |
-                                 module_path_conditional_expression                                            )
-
-module_path_mintypmax_expression << Group( 
-    module_path_expression | 
-    module_path_expression + COLON + module_path_expression + COLON + module_path_expression )
-
-range_expression << Group( msb_constant_expression + COLON + lsb_constant_expression |
-                           expression                                                )
-#                           base_expression + alias(PLUS, "sign") + COLON + width_constant_expression ^
-#                           base_expression + alias(MINUS,"sign") + COLON + width_constant_expression |
-
-width_constant_expression << constant_expression
-
-
-
-base_expression.setParseAction(lambda t: node(t))
-
-constant_base_expression.setParseAction(lambda t: node(t))
 
 @Action(_constant_conditional_expression)
 def _constantConditionalExpressionAction(s,l,token):
@@ -818,6 +760,17 @@ def constantExpressionAction(s,l,token):
 _constant_expr.setParseAction(constantExpressionAction)
 
 
+
+constant_mintypmax_expression << Group( alias(constant_expression,"exp") |
+                                        constant_expression + COLON + constant_expression + COLON + constant_expression )
+
+constant_range_expression << Group( msb_constant_expression + COLON + lsb_constant_expression   |
+                                    constant_expression                                         )
+# constant_base_expression + alias(PLUS, "sign") + COLON + width_constant_expression |
+# constant_base_expression + alias(MINUS,"sign") + COLON + width_constant_expression |
+
+dimension_constant_expression << constant_expression
+
 @Action(constant_mintypmax_expression)
 def constantMintypmaxExpressionAction(s,l,token):
     if token.exp:
@@ -832,9 +785,18 @@ def constantRangeExpressionAction(s,l,token):
     else:
         return ast.Range(node(token.msb_constant_expression),
                          node(token.lsb_constant_expression))
-        
+
 dimension_constant_expression.setParseAction(lambda t: node(t))
 
+
+_expr  = Forward()
+_expr_ = Group( unary_operator + primary | primary | string )("_expr_")
+
+conditional_expression << Group( alias(_expr,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else") )
+_expression = Group( conditional_expression | _expr_ )
+
+_expr      << operatorPrecedence( _expr_,      [ (binary_operator, 2, opAssoc.LEFT) ])
+expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.LEFT) ])
 
 
 @Action(conditional_expression)
@@ -873,8 +835,32 @@ def expressionAction(_s,l,token):
 _expr.setParseAction(expressionAction)
     
 
+lsb_constant_expression << constant_expression
+msb_constant_expression << constant_expression
+
 lsb_constant_expression.setParseAction(lambda t: node(t))
 msb_constant_expression.setParseAction(lambda t: node(t))
+
+mintypmax_expression    << Group( expression("exp") | 
+                                  expression + COLON + expression + COLON + expression )
+
+module_path_conditional_expression << module_path_expression + Q + module_path_expression + COLON + module_path_expression
+
+module_path_expression << Group( module_path_primary                                                           |
+                                 unary_module_path_operator + module_path_primary                              |
+                                 module_path_expression + binary_module_path_operator + module_path_expression |
+                                 module_path_conditional_expression                                            )
+
+module_path_mintypmax_expression << Group( 
+    module_path_expression | 
+    module_path_expression + COLON + module_path_expression + COLON + module_path_expression )
+
+range_expression << Group( msb_constant_expression + COLON + lsb_constant_expression |
+                           expression                                                )
+#                           expression + alias(PLUS, "sign") + COLON + width_constant_expression ^
+#                           expression + alias(MINUS,"sign") + COLON + width_constant_expression |
+
+width_constant_expression << constant_expression
 
 @Action(mintypmax_expression)
 def mintypmaxExpressionAction(s,l,token):
@@ -900,7 +886,7 @@ def modulePathMintypmaxExpressionAction(s,l,token):
 def rangeExpressionAction(s,l,token):
     if token.expression:
         return node(token.expression)
-    elif token.base_expression:
+    elif token.expression:
         if token.sign=="+":
             return ast.Range(node(token.base_expression),
                              ndoe(token.width_constant_expression))
@@ -914,6 +900,7 @@ def rangeExpressionAction(s,l,token):
 @NotImplemented
 def widthConstantExpressionAction(s,l,token):
     pass
+
 
     
 
@@ -991,31 +978,24 @@ def primaryAction(_s,l,token):
 
 
 # A.8.5 Expression left-side value
-net_lvalue << Group( hierarchical_net_identifier + oneOrMore( LB + constant_expression + RB, "exps" ) + LB + constant_range_expression + RB  |
-                     hierarchical_net_identifier + oneOrMore( LB + constant_expression + RB, "exps" )                                        |
-                     hierarchical_net_identifier                                                      + LB + constant_range_expression + RB  |
-                     net_concatenation                                                                                                       |
-                     hierarchical_net_identifier                                                                                             )
+net_lvalue << Group( hierarchical_identifier + oneOrMore( LB + constant_expression + RB, "exps" ) + LB + constant_range_expression + RB  |
+                     hierarchical_identifier + oneOrMore( LB + constant_expression + RB, "exps" )                                        |
+                     hierarchical_identifier                                                      + LB + constant_range_expression + RB  |
+                     net_concatenation                                                                                                   |
+                     hierarchical_identifier                                                                                             )
 
-variable_lvalue << Group( hierarchical_variable_identifier + oneOrMore( LB + expression + RB, "exps") + LB + range_expression + RB  |
-                          hierarchical_variable_identifier + oneOrMore( LB + expression + RB, "exps")                               |
-                          hierarchical_variable_identifier                                            + LB + range_expression + RB  |
-                          variable_concatenation                                                                                    |
-                          hierarchical_variable_identifier                                                                          )
-
+variable_lvalue << Group( hierarchical_identifier + oneOrMore( LB + expression + RB, "exps") + LB + range_expression + RB  |
+                          hierarchical_identifier + oneOrMore( LB + expression + RB, "exps")                               |
+                          hierarchical_identifier                                            + LB + range_expression + RB  |
+                          variable_concatenation                                                                           |
+                          hierarchical_identifier                                                                          )
 
 @Action(net_lvalue)
 def netLvalueAction(s,l,token):
     if token.net_concatenation:
         return token.net_concatenation
     else:
-        print("netLvalueAction:")
-        print("id={0}".format(token.hierarchical_net_identifier))
-        print("exps={0}".format(token.exps))
-        print("range={0}".format(token.constant_range_expression))
-        for i,e in enumerate(token.exps):
-            print("{0}={1}".format(i,e))
-        return ast.LeftSideValue( token.hierarchical_net_identifier,
+        return ast.LeftSideValue( token.hierarchical_identifier,
                                   token.exps,
                                   token.constant_range_expression )
         
@@ -1024,7 +1004,7 @@ def variableLvalueAction(s,l,token):
     if token.variable_concatenation:
         return token.variable_concatenation
     else:
-        return ast.LeftSideValue( token.hierarchical_variable_identifier,
+        return ast.LeftSideValue( token.hierarchical_identifier,
                                   token.exps,
                                   token.range_expression )
 
@@ -1157,22 +1137,42 @@ string << Suppress("\"") + ZeroOrMore( CharsNotIn("\"\n") ) + Suppress("\"")
 simple_identifier         << ID  
 simple_arrayed_identifier << Group( simple_identifier + Optional( _range ) )
 
+@Action(simple_identifier)
+def simpleIdentifierAction(_s,loc,token):
+    return ast.BasicId(token)
+
+@Action(simple_arrayed_identifier)
+def simpleArrayedIdentifierAction(_s,loc,token):
+    print(token.simple_identifier)
+    if token._range:
+        return ast.RangedId(token.simple_identifier.shortName(), token._range)
+    else:
+        return ast.BasicId(token.simple_identifier.shortName())
+
+
 # \ {Any_ASCII_character_except_white_space} white_space
 escaped_identifier         << simple_identifier # temp
 escaped_arrayed_identifier << Group( escaped_identifier + Optional( _range ) )
 
+@Action(escaped_identifier)
+@NotImplemented
+def escapedIdentifierAction(_s,loc,token):
+    pass
+
+@Action(escaped_arrayed_identifier)
+@NotImplemented
+def escapedArrayedIdentifierAction(_s,loc,token):
+    pass
+
+
 identifier                 << Group( simple_identifier         | escaped_identifier         )
 arrayed_identifier         << Group( simple_arrayed_identifier | escaped_arrayed_identifier ) 
 
-event_identifier           << identifier
-function_identifier        << identifier
-module_identifier          << identifier
+identifier.setParseAction         (OneOfAction)
+arrayed_identifier.setParseAction (OneOfAction)
+
 module_instance_identifier << arrayed_identifier 
-net_identifier             << identifier
-port_identifier            << identifier
-real_identifier            << identifier
-task_identifier            << identifier
-variable_identifier        << identifier
+module_instance_identifier.setParseAction (lambda t: node(t))
 
 hierarchical_identifier         << Group( simple_hierarchical_identifier | escaped_hierarchical_identifier )
 simple_hierarchical_identifier  << Group( simple_hierarchical_branch + Optional( PERIOD + escaped_identifier ) )
@@ -1192,50 +1192,7 @@ escaped_hierarchical_branch << Group(
     escaped_identifier + Optional( LB + unsigned_number + RB ) + Optional(
         ZeroOrMore( PERIOD + escaped_identifier + Optional( LB + unsigned_number + RB ) ) ) )
 
-hierarchical_block_identifier    << hierarchical_identifier
-hierarchical_event_identifier    << hierarchical_identifier
-hierarchical_function_identifier << hierarchical_identifier
-hierarchical_net_identifier      << hierarchical_identifier
-hierarchical_variable_identifier << hierarchical_identifier
-hierarchical_task_identifier     << hierarchical_identifier
-
 system_task_identifier << Regex(r"\$[a-zA-Z0-9_$][a-zA-Z0-9_$]*")
-
-@Action(simple_identifier)
-def simpleIdentifierAction(_s,loc,token):
-    return ast.BasicId(token)
-
-@Action(simple_arrayed_identifier)
-def simpleArrayedIdentifierAction(_s,loc,token):
-    print(token.simple_identifier)
-    if token._range:
-        return ast.RangedId(token.simple_identifier.shortName(), token._range)
-    else:
-        return ast.BasicId(token.simple_identifier.shortName())
-
-
-@Action(escaped_identifier)
-@NotImplemented
-def escapedIdentifierAction(_s,loc,token):
-    pass
-
-@Action(escaped_arrayed_identifier)
-@NotImplemented
-def escapedArrayedIdentifierAction(_s,loc,token):
-    pass
-
-identifier.setParseAction         (OneOfAction)
-arrayed_identifier.setParseAction (OneOfAction)
-
-event_identifier.setParseAction           (lambda t: node(t))
-function_identifier.setParseAction        (lambda t: node(t))
-module_identifier.setParseAction          (lambda t: node(t))
-module_instance_identifier.setParseAction (lambda t: node(t))
-net_identifier.setParseAction             (lambda t: node(t))
-port_identifier.setParseAction            (lambda t: node(t))
-real_identifier.setParseAction            (lambda t: node(t))
-task_identifier.setParseAction            (lambda t: node(t))
-variable_identifier.setParseAction        (lambda t: node(t))
 
 hierarchical_identifier.setParseAction(OneOfAction)
 
@@ -1274,14 +1231,6 @@ def simpleHierarchicalBranchAction(_s,loc,token):
 @NotImplemented
 def escapedHierarchicalBranchAction(_s,loc,token):
     pass
-
-
-hierarchical_block_identifier.setParseAction    (lambda t: node(t))
-hierarchical_event_identifier.setParseAction    (lambda t: node(t))
-hierarchical_function_identifier.setParseAction (lambda t: node(t))
-hierarchical_net_identifier.setParseAction      (lambda t: node(t))
-hierarchical_variable_identifier.setParseAction (lambda t: node(t))
-hierarchical_task_identifier.setParseAction     (lambda t: node(t))
 
 @Action(system_task_identifier)
 def systemTaskIdentifierAction(s,l,token):

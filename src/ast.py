@@ -149,81 +149,7 @@ class HierarchicalId(Id):
         return "({cls} {str})".format(cls = self.__class__.__name__,
                                       str = "".join(id.longName() for id in self.ids))
 
-# class HierarchicalId(BasicId):
-#     def __init__(self, headId, headIndex, tailIds):
-#         super(HierarchicalId,self).__init__(headId.string)
-#         self.headId    = headId
-#         self.headIndex = headIndex
-#         self.tailIds   = tailIds
-
-#     def shortName(self):
-#         tailStr =".".join(id.shortName() for id in self.tailIds) 
-#         if tailStr: tailStr = "." + tailStr
-#         return "(i:{head}{index}{tail})".format(head  = self.string,
-#                                                 index = "[{0}]".format(self.headIndex) if self.headIndex else "",
-#                                                 tail  = tailStr)
-#     def longName(self):
-#         tailStr =".".join(str(id) for id in self.tailIds) 
-#         if tailStr: tailStr = "."+tailStr
-#         return "({cls} {head}{index}{tail})".format(cls   = self.__class__.__name__,
-#                                                     head  = self.string,
-#                                                     index = "[{0}]".format(self.headIndex) if self.headIndex else "",
-#                                                     tail  = tailStr)
-#     def addId(self,id):
-#         self.tailIds.append(id)
     
-class Statement(AstNode):
-    def dump(self):
-        pass
-
-class Assignment(Statement):
-    def __init__(self, left, delay_event, exp, blocking=True):
-        self.left        = left
-        self.delay_event = delay_event
-        self.exp         = exp
-        self.blocking    = blocking
-        self.prefix      = ""
-    def shortName(self):
-        return self.prefix + " " + self.left.shortName() + "=" + self.exp.shortName()
-    def setPrefix(self, pref):
-        self.prefix = pref
-
-class Conditional(Statement):
-    def __init__(self, cs_list, else_s):
-        assert len(cs_list) > 0
-        self.cs_list = cs_list
-        self.else_s  = else_s
-    def longName(self):
-        first_exp, first_s = self.cs_list[0]
-        rest_if_ccs = ""
-        # for statements longName() method no longer makes no sense.
-        # Statement classes should has multi-line pretty print functionality
-        return "({cls} {if_cs}{rest_if_cs}{else_s})".format(cls=self.__class__.__name__,
-                                                            if_cs = "cond:{0}, then:{1}".format(first_exp, first_s.longName()),
-                                                            rest_if_cs = "...",
-                                                            else_s  = "else:{0}".format(self.else_s.longName() if self.else_s else ""))
-    
-
-class Case(Statement):
-    pass
-
-class Loop(Statement):
-    pass
-
-class SequencialBlock(Statement):
-    def __init__(self, item_decls, statements):
-        self.item_decls = item_decls
-        self.statements = statements
-
-class ProceduralTimingControl(Statement): # #, @
-    pass
-
-class WaitEvent(Statement):
-    pass
-
-class EventTrigger(Statement):
-    pass
-
 class Expression(AstNode):
     def __init__(self):
         pass
@@ -259,7 +185,7 @@ class IdPrimary(Primary):
         return self.id.longName() \
             + "".join("[" + e.shortName() + "]" for e in self.exps ) \
             + (("[" + self.range.shortName() + "]") if self.range else "")
-    
+
 class UnaryExpression(Expression):
     def __init__(self, op, exp):
         self.op = op
@@ -325,4 +251,58 @@ class FunctionCall(Expression):
         return "(call {0}({1}))".format(self.fid.shortName(),
                                         ",".join(arg.shortName() for arg in self.args))
 
+
+
+
+class Statement(AstNode):
+    def dump(self):
+        pass
+
+class Assignment(Statement):
+    def __init__(self, left, delay_event, exp, blocking=True):
+        self.left        = left
+        self.delay_event = delay_event
+        self.exp         = exp
+        self.blocking    = blocking
+        self.prefix      = ""
+    def shortName(self):
+        return self.prefix + " " + self.left.shortName() + "=" + self.exp.shortName()
+    def setPrefix(self, pref):
+        self.prefix = pref
+
+class Conditional(Statement):
+    def __init__(self, cs_list, else_s):
+        assert len(cs_list) > 0
+        self.cs_list = cs_list
+        self.else_s  = else_s
+    def longName(self):
+        first_exp, first_s = self.cs_list[0]
+        rest_if_ccs = ""
+        # for statements longName() method no longer makes no sense.
+        # Statement classes should has multi-line pretty print functionality
+        return "({cls} {if_cs}{rest_if_cs}{else_s})".format(cls=self.__class__.__name__,
+                                                            if_cs = "cond:{0}, then:{1}".format(first_exp, first_s.longName()),
+                                                            rest_if_cs = "...",
+                                                            else_s  = "else:{0}".format(self.else_s.longName() if self.else_s else ""))
+    
+
+class Case(Statement):
+    pass
+
+class Loop(Statement):
+    pass
+
+class SequencialBlock(Statement):
+    def __init__(self, item_decls, statements):
+        self.item_decls = item_decls
+        self.statements = statements
+
+class ProceduralTimingControl(Statement): # #, @
+    pass
+
+class WaitEvent(Statement):
+    pass
+
+class EventTrigger(Statement):
+    pass
 

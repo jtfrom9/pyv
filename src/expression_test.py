@@ -43,19 +43,6 @@ def test114(self):
     _print(self.check_fail("$A.b.c( X+1, -Z+1 )"))
 
 
-@TestCase2(grammar.base_expression)
-def test115(self):
-    _print(self.check_pass("1+2"))
-    _print(self.check_pass("X+2"))
-    _print(self.check_pass("0"))
-    _print(self.check_pass("A+10"))
-    _print(self.check_pass("-X"))
-    _print(self.check_pass("1+2+3"))
-    _print(self.check_pass("-X+1"))
-    _print(self.check_pass("-X+1+A"))
-    _print(self.check_pass("-X+1*A"))
-
-
 @TestCase2(grammar.conditional_expression)
 def test116(self):
     _print(self.check_pass(" 0 ? 1 : 2"))

@@ -38,40 +38,10 @@ def test174(self):
     pass
 
 
-@TestCase2(grammar.event_identifier)
-def test175(self):
-    _id_print(self.check_pass("hoge"))
-
-
-@TestCase2(grammar.function_identifier)
-def test176(self):
-    _id_print(self.check_pass("hoge"))
-
-
-@TestCase2(grammar.module_identifier)
-def test177(self):
-    _id_print(self.check_pass("hoge"))
-
-
 @TestCase2(grammar.module_instance_identifier)
 def test178(self):
     _id_print(self.check_pass("hoge"))
     _id_print(self.check_pass("hoge[2:3]"))
-
-@TestCase2(grammar.net_identifier)
-def test179(self):
-    _id_print(self.check_pass("hoge"))
-
-
-@TestCase2(grammar.port_identifier)
-def test180(self):
-    _id_print(self.check_pass("hoge"))
-
-
-@TestCase2(grammar.real_identifier)
-def test181(self):
-    _id_print(self.check_pass("hoge"))
-
 
 @TestCase2(grammar._range)
 def test182r(self):
@@ -80,16 +50,6 @@ def test182r(self):
 @TestCase2(grammar.simple_arrayed_identifier)
 def test182(self):
     _id_print(self.check_pass("hoge[10:5]"))
-
-@TestCase2(grammar.task_identifier)
-def test183(self):
-    _id_print(self.check_pass("hoge"))
-
-
-@TestCase2(grammar.variable_identifier)
-def test184(self):
-    _id_print(self.check_pass("hoge"))
-
 
 @TestCase2(grammar.hierarchical_identifier)
 def test185(self):
@@ -112,53 +72,6 @@ def test186(self):
 
 @TestCase2(grammar.simple_hierarchical_identifier)
 def test187(self):
-    _id_print(self.check_pass("hoge[5]"))
-    _id_print(self.check_pass("hoge[5].a"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar[10]"))
-
-
-@TestCase2(grammar.hierarchical_task_identifier)
-def test188(self):
-    _id_print(self.check_pass("hoge[5]"))
-    _id_print(self.check_pass("hoge[5].a"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar[10]"))
-
-
-@TestCase2(grammar.hierarchical_block_identifier)
-def test189(self):
-    _id_print(self.check_pass("hoge[5]"))
-    _id_print(self.check_pass("hoge[5].a"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar[10]"))
-
-
-@TestCase2(grammar.hierarchical_event_identifier)
-def test190(self):
-    _id_print(self.check_pass("hoge[5]"))
-    _id_print(self.check_pass("hoge[5].a"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar[10]"))
-
-
-@TestCase2(grammar.hierarchical_net_identifier)
-def test191(self):
-    _id_print(self.check_pass("hoge[5]"))
-    _id_print(self.check_pass("hoge[5].a"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar[10]"))
-
-
-@TestCase2(grammar.hierarchical_variable_identifier)
-def test192(self):
-    _id_print(self.check_pass("hoge[5]"))
-    _id_print(self.check_pass("hoge[5].a"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar"))
-    _id_print(self.check_pass("hoge[5].foo[1].bar[10]"))
-
-@TestCase2(grammar.hierarchical_function_identifier)
-def test193(self):
     _id_print(self.check_pass("hoge[5]"))
     _id_print(self.check_pass("hoge[5].a"))
     _id_print(self.check_pass("hoge[5].foo[1].bar"))
