@@ -42,21 +42,12 @@ else
 
 @TestCase2(grammar.continuous_assign)
 def test65(self):
-    #_print(self.check_pass("assign a=1"))
+    _print(self.check_pass("assign a=1"))
     _print(self.check_pass("assign a=1,b=2"))
-    # _print(self.check_pass("assign a=1,b=2"))
-    # r = self.check_pass("assign a=1,b=2")
-    # import ast
-    # print(r)
-    # print(r.continuous_assign)
-    # print(ast.nodeInfo(r.continuous_assign))
-    # print(ast.nodeInfo(r.continuous_assign[0]))
-    # import pprint
-    # pprint.pprint(r)
 
 @TestCase2(grammar.list_of_net_assignment)
 def test66(self):
-   _print(self.check_pass("a=1"))
+#   _print(self.check_pass("a=1"))
    _print(self.check_pass("a=1,b=2"))
 
 @TestCase2(grammar.net_assignment)

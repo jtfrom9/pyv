@@ -182,8 +182,9 @@ class Assignment(Statement):
         self.delay_event = delay_event
         self.exp         = exp
         self.blocking    = blocking
+        self.prefix      = ""
     def shortName(self):
-        return self.left.shortName() + "=" + self.exp.shortName()
+        return self.prefix + " " + self.left.shortName() + "=" + self.exp.shortName()
     def setPrefix(self, pref):
         self.prefix = pref
 
@@ -325,14 +326,3 @@ class FunctionCall(Expression):
                                         ",".join(arg.shortName() for arg in self.args))
 
 
-class NodeList(AstNode):
-    def __init__(self,nodes):
-        self._list = list(nodes)
-    def __iter__(self):
-        return self._list
-    def __getitem__(self,index):
-        return self._list[index]
-    def __setitem__(self,index,value):
-        self._list[index] = value
-    def _asXML():
-        pass

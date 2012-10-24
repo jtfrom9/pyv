@@ -334,34 +334,19 @@ named_port_connection    << Group( PERIOD + port_identifier + LP + Optional( exp
 # A.6 Behavioral statements
 # A.6.1 Continuous assignment statements
 continuous_assign      << Group( ASSIGN + Optional( delay3 ) + list_of_net_assignment )
-list_of_net_assignment << Group( delim( net_assignment, "list" ) )
+list_of_net_assignment << delim( net_assignment )
 net_assignment         << Group( net_lvalue + EQUAL + expression )
-
 
 @Action(continuous_assign)
 def continuousAsignmentAction(_s,l,token):
-    print("------------")
-    print("Action: " + ast.nodeInfo(token))
-    print("Action: " + ast.nodeInfo(token.list_of_net_assignment))
-    for stmt in token.list_of_net_assignment:
-        print("OK: " + ast.nodeInfo(node(stmt)))
-        # stmt.setPrefix('assign')
-        # if token.delay3: stmt.setDelay(token.delay3)
+    for stmt in node(token.list_of_net_assignment):
+        stmt.setPrefix(token.keyword)
     return token.list_of_net_assignment
                            
-@Action(list_of_net_assignment)
-def listOfNetAssignmentAction(_s,l,token):
-    print("------------")
-    print("Action2: " + ast.nodeInfo(token))
-    print("Action2: " + ast.nodeInfo(token.list))
-    print("Action2: {0}".format([stmt for stmt in token.list]))
-    return [stmt for stmt in token.list]
-    
 @Action(net_assignment)
 def netAssignmentAction(_s,l,token):
     return ast.Assignment( node(token.net_lvalue), None, node(token.expression) )
                            
-
 
 # A.6.2 Procedural blocks and assigments
 initial_construct      << Group( INITIAL + statement )
