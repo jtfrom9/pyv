@@ -2,10 +2,10 @@
 import sys
 import unittest
 
-from test_common import GrammarTestCase, TestCase
+from test_common import testOf
 import grammar
 
-@TestCase(grammar)
+@testOf(grammar.non_zero_unsigned_number)
 def test_non_zero_unsigned_number(self):
     self.check_pass("1")
     self.check_pass(" 1")
@@ -14,7 +14,7 @@ def test_non_zero_unsigned_number(self):
     self.check_fail("120 345")
     self.check_fail("0")
 
-@TestCase(grammar)
+@testOf(grammar.unsigned_number)
 def test_unsigned_number(self):
     self.check_fail("-1")
     self.check_pass("0")
@@ -28,7 +28,7 @@ def test_unsigned_number(self):
     self.check_pass("0_0_0")
     self.check_fail("0_0_0 1")
 
-@TestCase(grammar)
+@testOf(grammar.binary_value)
 def test_binary_value(self):
     self.check_pass("0")
     self.check_pass("0_1")
@@ -41,7 +41,7 @@ def test_binary_value(self):
     self.check_fail("0_1_x_z_!")
     self.check_pass("?_0")
 
-@TestCase(grammar)
+@testOf(grammar.octal_value)
 def test_octal_value(self):
     self.check_pass("0")
     self.check_pass("0_1")
@@ -64,7 +64,7 @@ def test_octal_value(self):
     self.check_pass("z1234567_0x_?")
     self.check_fail("z1234567_08x?")
 
-@TestCase(grammar)
+@testOf(grammar.hex_value)
 def test_hex_value(self):
     self.check_pass("0")
     self.check_pass("0_1")
@@ -88,7 +88,7 @@ def test_hex_value(self):
     self.check_pass("z1234567_08x?")
     
 
-@TestCase(grammar)
+@testOf(grammar.decimal_base)
 def test_decimal_base(self):
     self.check_pass("'sd")
     self.check_pass("'d")
@@ -98,7 +98,7 @@ def test_decimal_base(self):
     self.check_fail("' d")
     self.check_fail("'b")
 
-@TestCase(grammar)
+@testOf(grammar.binary_base)
 def test_binary_base(self):
     self.check_pass("'sb")
     self.check_pass("'b")
@@ -109,7 +109,7 @@ def test_binary_base(self):
     self.check_fail("' b")
     self.check_fail("'h")
 
-@TestCase(grammar)
+@testOf(grammar.octal_base)
 def test_octal_base(self):
     self.check_pass("'so")
     self.check_pass("'o")
@@ -120,7 +120,7 @@ def test_octal_base(self):
     self.check_fail("'h")
     self.check_pass("'O")
 
-@TestCase(grammar)
+@testOf(grammar.hex_base)
 def test_hex_base(self):
     self.check_pass("'sh")
     self.check_pass("'h")
@@ -131,8 +131,7 @@ def test_hex_base(self):
     self.check_fail("'b")
     self.check_pass("'H")
 
-
-@TestCase(grammar)
+@testOf(grammar.decimal_number)
 def test_decimal_number(self):
     self.check_pass("123")
     self.check_pass("01")
@@ -155,7 +154,7 @@ def test_decimal_number(self):
     print(self.check_pass("1'd?").asXML())
     print(self.check_pass("20").asXML())
 
-@TestCase(grammar)
+@testOf(grammar.binary_number)
 def test_binary_number(self):
     self.check_pass("4'b0000")
     self.check_pass("4'SB0?00")
@@ -171,7 +170,7 @@ def test_binary_number(self):
     print(self.check_pass("8'b110x0").asXML())
     print(self.check_pass("40'b1??Zx0z011?1").asXML())
 
-@TestCase(grammar)
+@testOf(grammar.octal_number)
 def test_octal_number(self):
     print(self.check_pass("'o0000").asXML())
     print(self.check_pass("'o01234567").asXML())
@@ -180,7 +179,7 @@ def test_octal_number(self):
     print(self.check_pass("40'o1??Zx0z011?1").asXML())
 
 
-@TestCase(grammar)
+@testOf(grammar.hex_number)
 def test_hex_number(self):
     print(self.check_pass("'h0000").asXML())
     print(self.check_pass("'h0123456789abcdef").asXML())
@@ -188,7 +187,7 @@ def test_hex_number(self):
     print(self.check_pass("8'hF1Fx0").asXML())
     print(self.check_pass("40'h1??Zx0z011?1").asXML())
 
-@TestCase(grammar)
+@testOf(grammar.real_number)
 def test_real_number(self):
     self.check_pass("1.0e+1")
     self.check_pass("23.5")

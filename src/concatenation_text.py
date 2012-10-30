@@ -2,15 +2,14 @@
 import sys
 import unittest
 
-from test_common import GrammarTestCase, TestCase2, _print, run_tests
-from pyparsing import stringEnd
+from test_common import testOf, _print, run_tests
 import grammar
 
 #print(dir(grammar.concatenation))
 
 grammar.concatenation.enablePackrat()
 
-@TestCase2(grammar.concatenation)
+@testOf(grammar.concatenation)
 def test(self):
     #print(dir(grammar.concatenation))
     #grammar.concatenation.setBreak()
@@ -20,7 +19,7 @@ def test(self):
     self.check_pass("{{{{1}}}}")
     self.check_pass("{ {1,2}, {3,4,5}, {6,7, {8,9}} }")
 
-@TestCase2(grammar.concatenation)
+@testOf(grammar.concatenation)
 def test102(self):
     _print(self.check_pass("{1,2,3}"))
     _print(self.check_fail("{1,}"))
@@ -34,7 +33,7 @@ def test102(self):
     _print(self.check_pass("{ {1,2}, {3,4,5}, {6,7, {8,9}} }")) 
     _print(self.check_pass("{ A+B, X + 2, 3'hff }"))
  
-@TestCase2(grammar.constant_concatenation)
+@testOf(grammar.constant_concatenation)
 def test103(self):
     _print(self.check_pass("{1,2,3}"))
     _print(self.check_pass("{1,1}"))
@@ -46,27 +45,27 @@ def test103(self):
     _print(self.check_fail("{ A+B, X + 2, 3'hff }"))
 
 
-@TestCase2(grammar.constant_multiple_concatenation)
+@testOf(grammar.constant_multiple_concatenation)
 def test104(self):
     pass
 
 
-@TestCase2(grammar.module_path_concatenation)
+@testOf(grammar.module_path_concatenation)
 def test105(self):
     pass
 
 
-@TestCase2(grammar.module_path_multiple_concatenation)
+@testOf(grammar.module_path_multiple_concatenation)
 def test106(self):
     pass
 
 
-@TestCase2(grammar.multiple_concatenation)
+@testOf(grammar.multiple_concatenation)
 def test107(self):
     pass
 
 
-@TestCase2(grammar.net_concatenation)
+@testOf(grammar.net_concatenation)
 def test108(self):
     _print(self.check_pass("{foo.bar.hoge[5].A[1] }"))
     _print(self.check_pass("{foo.bar.hoge[5].A[1][1]}"))
@@ -84,7 +83,7 @@ def test108(self):
     _print(self.check_pass("{ { { { { { { X } } } } } } }"))
     _print(self.check_fail("{1}"))
 
-@TestCase2(grammar.net_concatenation_value)
+@testOf(grammar.net_concatenation_value)
 def test109(self):
     _print(self.check_pass("foo.bar.hoge[5].A[1]"))
     _print(self.check_pass("foo.bar.hoge[5].A[1][1]"))
@@ -99,7 +98,7 @@ def test109(self):
     _print(self.check_pass("{ a, { b, c }, { d, e } }"))
     #_print(self.check_pass("10"))
 
-@TestCase2(grammar.variable_concatenation)
+@testOf(grammar.variable_concatenation)
 def test110(self):
     _print(self.check_pass("{foo.bar.hoge[5].A[1] }"))
     _print(self.check_pass("{foo.bar.hoge[5].A[1][1]}"))
@@ -116,7 +115,7 @@ def test110(self):
     _print(self.check_pass("{ a, { b, c }, { d, e } }"))
     _print(self.check_pass("{ { { { { { { X } } } } } } }"))
 
-@TestCase2(grammar.variable_concatenation_value)
+@testOf(grammar.variable_concatenation_value)
 def test111(self):
     _print(self.check_pass("foo.bar.hoge[5].A[1]"))
     _print(self.check_pass("foo.bar.hoge[5].A[1][1]"))

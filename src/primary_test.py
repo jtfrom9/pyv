@@ -2,12 +2,12 @@
 import sys
 import unittest
 
-from test_common import GrammarTestCase, TestCase2, _print, run_tests
+from test_common import testOf, _print, run_tests
 import grammar
 
 grammar.constant_primary.enablePackrat()
 
-@TestCase2(grammar.constant_primary)
+@testOf(grammar.constant_primary)
 def test131(self):
     _print(self.check_pass("1"))
     _print(self.check_pass("{1,2,3}"))
@@ -18,11 +18,11 @@ def test131(self):
     _print(self.check_pass("{{{{1}}}}"))
     _print(self.check_fail("A"))
     
-@TestCase2(grammar.module_path_primary)
+@testOf(grammar.module_path_primary)
 def test132(self):
     pass
 
-@TestCase2(grammar.primary)
+@testOf(grammar.primary)
 def test133(self):
     _print(self.check_pass("10"))
     _print(self.check_pass("foo(1)"))
@@ -35,7 +35,7 @@ def test133(self):
     _print(self.check_pass("{1,2,3}"))
     _print(self.check_pass("(10)"))
 
-@TestCase2(grammar.net_lvalue)
+@testOf(grammar.net_lvalue)
 def test134(self):
     _print(self.check_pass("A"))
     _print(self.check_pass("A[1:0]"))
@@ -49,7 +49,7 @@ def test134(self):
     _print(self.check_pass("{A,B}"))
     _print(self.check_pass("{{A,B},X,f}"))
 
-@TestCase2(grammar.variable_lvalue)
+@testOf(grammar.variable_lvalue)
 def test135(self):
     _print(self.check_pass("A"))
     _print(self.check_pass("A[1:0]"))

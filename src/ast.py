@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import Iterable
+import collections
 import pyparsing as pp
 
 class AstNode(object):
@@ -129,7 +129,7 @@ class IndexedId(BasicId):
 class HierarchicalId(Id):
     def __init__(self, ids):
         self.ids = []
-        if isinstance(ids, Iterable):
+        if isinstance(ids, collections.Iterable):
             self.ids = [x for x in ids]
         elif isinstance(ids, list):
             self.ids = ids
@@ -251,9 +251,15 @@ class FunctionCall(Expression):
         return "(call {0}({1}))".format(self.fid.shortName(),
                                         ",".join(arg.shortName() for arg in self.args))
 
-
-class Statement(AstNode):
-    pass
+class Statement(AstNode, collections.Iterable):
+    def asList(self):
+        children = [ c.asList() for c in self ]
+        if children == []:
+            return [ self ]
+        else:
+            return [ self, children ]
+    def __iter__(self):
+        for x in []: yield x
 
 class Construct(Statement):
     def __init__(self, ctype, stmt):
@@ -276,7 +282,7 @@ class Assignment(Statement):
         return self._continuous is not None
     def setContinuous(self, con):
         self._continuous = con
-
+    
 class ReleaseLeftValue(Statement):
     def __init__(self, _type, lvalue):
         self._type   = _type
@@ -309,5 +315,11 @@ class Block(Statement):
     def __init__(self, item_decls, statements, seq=True):
         self.item_decls = item_decls
         self.statements = statements
-        self._seq       = seq
-
+        print("Block: {0}".format(statements))
+        self.seq       = seq
+    def __iter__(self):
+        for s in self.statements:
+            yield s
+    def shortName(self):
+        if self.seq: return "Block(begin-end)"
+        else: return "Block(fork-join)"

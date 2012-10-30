@@ -11,6 +11,7 @@ class GrammarException(ParseBaseException):
 
 
 class GrammarTestCase(unittest.TestCase):
+
     def grammar(self):
         pass
 
@@ -78,25 +79,7 @@ class GrammarTestCase(unittest.TestCase):
             self.fail("\"{0}\" expected fail...")
         return None
 
-def TestCase(grammarSet):
-    prefix = "test_"
-
-    def _decolator(test_func):
-        func_name = test_func.__name__
-        grammar_name_index = func_name.index(prefix)
-        grammar_name = func_name[len(prefix):]
-        g = getattr(grammarSet, grammar_name)
-        class _TestCase(GrammarTestCase):
-            def grammar(self):
-                return g
-            def runTest(self):
-                test_func(self)
-        _TestCase.__name__   = test_func.__name__
-        _TestCase.__module__ = test_func.__module__
-        return _TestCase
-    return _decolator
-        
-def TestCase2(grammar):
+def testOf(grammar):
     def _decolator(test_func):
         class _TestCase(GrammarTestCase):
             def setUp(self):
@@ -140,6 +123,32 @@ def _id_print(result):
         for index,id in enumerate(idAst.ids):
             print("  name[{0}] short={1}, long={2}".format(index,id.shortName(),id.longName()))
 
+# def _stmt_pprint(obj, level=0, indent=1, out=sys.stdout):
+#     if len(obj)==0: return
+#     if isinstance(obj,list):
+#         start, end = ('[', ']')
+#     out.write("{spc}{start}{top}\n".format(
+#             spc = " " * level * indent,
+#             start = start,
+#             top = obj[0]))
+#     for x in obj[1:]:
+#         _stmt_pprint(x, level+1, indent, out)
+#     out.write("{spc}{end}\n".format(
+#             spc = " " * level * indent,
+#             end = end))
 
-
-
+def _stmt_print(obj, level=0, indent=3, out=sys.stdout):
+    if isinstance(obj, ParseResults):
+        for k in obj.keys():
+            out.write("{spc}{key}:\n".format(spc=" "*indent*level, key=k))
+            _stmt_print(obj[k],level+1,indent)
+            out.write("\n")
+    elif isinstance(obj, ast.Statement):
+        #_stmt_pprint(obj.asList(), level, indent, out)
+        import pprint
+        out.write("{spc}{data}".format(spc=" "*indent*level,
+                                       data=pprint.pformat(obj.asList(),indent=indent, width=80)))
+    elif obj is not None:
+        out.write(str(obj))
+    else:
+        pass # if None

@@ -2,16 +2,16 @@
 import sys
 import unittest
 
-from test_common import GrammarTestCase, TestCase
+from test_common import testOf
 import grammar
 
-@TestCase(grammar)
+@testOf(grammar.unary_operator)
 def test_unary_operator(self):
     self.check_pass("~|")
     self.check_pass("~^")
     self.check_pass("^~")
 
-@TestCase(grammar)
+@testOf(grammar.binary_operator)
 def test_binary_operator(self):
     self.check_pass("|| ")
     self.check_pass("** ")

@@ -413,7 +413,12 @@ seq_block           << Group( BEGIN +
 
 @Action(function_seq_block, seq_block)
 def sequencialBlockAction(_s,l,token):
-    return ast.Block( node(token.item_decls, []), node(token.statements, []) )
+    # print(token)
+    # print(ast.nodeInfo(token))
+    # print(token.statements)
+    # print(ast.nodeInfo(token.statements))
+    return ast.Block( [item for item in token.item_decls], 
+                      [stmt for stmt in token.statements] )
 
 @Action(par_block)
 def parallelBlockAction(_s,l,token):
