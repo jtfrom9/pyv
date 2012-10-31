@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, _stmt_print, run_tests
+from test_common import testOf, _print, _stmt_print, run_tests, debug, fail
 import pyparsing as pp
 import grammar
 
@@ -105,6 +105,9 @@ join
 
 @testOf(grammar.seq_block)
 def test78(self):
+    # debug(grammar.seq_block)
+    # debug(grammar.statement)
+    # debug(grammar.blocking_assignment)
     _stmt_print(self.check_pass("""begin end"""))
     _stmt_print(self.check_pass("""begin a=1; end"""))
     _stmt_print(self.check_pass("""begin a=1; b=2; end"""))

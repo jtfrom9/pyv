@@ -5,51 +5,13 @@ from pyparsing import stringEnd, ParseBaseException, ParseException, ParseSyntax
 
 import ast
 
-class GrammarException(ParseBaseException):
-    def __init__(self, *args):
-        super(ParseBaseException,self).__init__(self,*args)
-
-
 class GrammarTestCase(unittest.TestCase):
 
     def grammar(self):
         pass
 
     def do_parse(self, text):
-        result = None
-        try:
-            result = (self.grammar() + stringEnd).parseString(text)
-        #except (ParseException, ParseSyntaxException, ParseFatalException) as e:
-        except ParseBaseException as e:
-            #e.msg = "input = \"{0}\": Expected: ".format(text) + e.msg
-            #raise e
-            #raise e.__call__("input = \"{0}\": ".format(text) + e.msg)
-            #raise e.__new__(e.__class__, msg = "input = \"{0}\": ".format(text) + e.msg)
-            # for prop in dir(e):
-            #     print("{0} = {1}".format(prop, getattr(e,prop,None)))
-            # #e.msg = "input = \"{0}\" {1}".format(text, e.msg) 
-            #e.msg = "Expected: "
-            #e.msg = "Syntax Error"
-            raise e
-            #raise GrammarException(e.pstr, e.loc, "input = \"{0}\": ".format(text) + e.msg)
-
-        except Exception as e:
-            # print(dir(e))
-            # msgattr = getattr(e, "msg", None)
-            # if msgattr:
-            #     e.msg = "Caught unknown exception! " + e.msg
-            # else:
-            #     print(e)
-            #e.args = "Caught unknown exception! " + e.args
-            #print(e.args)
-            raise e
-        return result
-
-        if expect:
-            self.assertEqual(result, expect, "input = \"{0}\", expect = {1}".format(text,expect))
-        else:
-            self.assertTrue(True)
-        return result
+        return (self.grammar() + stringEnd).parseString(text)
 
     def check_pass(self, text, expect=None):
         print("\ncheck_pass: \"{0}\"".format(text))
@@ -152,3 +114,12 @@ def _stmt_print(obj, level=0, indent=3, out=sys.stdout):
         out.write(str(obj))
     else:
         pass # if None
+
+def debug(expr, on=True):
+    expr.setName(expr.resultsName)
+    expr.setDebug(on)
+
+def fail(expr, action):
+    expr.setName(expr.resultsName)
+    expr.setFailAction(action)
+    

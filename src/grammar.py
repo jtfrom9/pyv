@@ -24,7 +24,6 @@ for kw in _keywords:
 
 with open("non_terminal_symbols.txt","r") as f:
     for sym in (line.strip() for line in f):
-        #result_name = sym if not sym.endswith("identifier") else "id"
         result_name = sym
         setattr(self, sym, Forward()(result_name))
 
@@ -39,7 +38,7 @@ def emsg(msg):
     sym.setName(msg)
     return sym
 
-def _group(expr, err):
+def _group(expr, err=None):
     class WrapGroup(Group):
         def __init__(self, expr):
             super(WrapGroup,self).__init__(expr)
@@ -49,7 +48,7 @@ def _group(expr, err):
                 return super(WrapGroup,self).parseImpl(*(args[1:]))
             except ParseBaseException,pbe:
                 pbe.msg = "Syntax Error: " + err
-                raise            
+                raise
     return WrapGroup(expr)
 
 def oneOrMore(expr,name,err=""):
@@ -426,20 +425,20 @@ def parallelBlockAction(_s,l,token):
 
 
 # A.6.4 Statements
-statement << Group( nonblocking_assignment            + SEMICOLON |
-                    blocking_assignment               + SEMICOLON |
-                    case_statement                                |
+statement << Group( case_statement                                |
                     conditional_statement                         |
                     disable_statement                             |
                     event_trigger                                 |
                     loop_statement                                |
                     par_block                                     |
-                    procedural_continuous_assignments + SEMICOLON |
                     procedural_timing_control_statement           |
                     seq_block                                     |
                     system_task_enable                            |
                     task_enable                                   |
-                    wait_statement                                )
+                    wait_statement                                |
+                    nonblocking_assignment            - SEMICOLON |
+                    blocking_assignment               - SEMICOLON |
+                    procedural_continuous_assignments - SEMICOLON )
 statement.setParseAction(OneOfAction)
 
 function_statement << Group( function_blocking_assignment + SEMICOLON |
