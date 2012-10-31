@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from test_common import TestCase, run_tests
+from test_common import testOf, run_tests
 import grammar
 
 def _id_print(result):

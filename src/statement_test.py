@@ -61,6 +61,7 @@ def test68(self):
 @testOf(grammar.always_construct)
 def test69(self):
     _stmt_print(self.check_pass("always a=1;"))
+    _stmt_print(self.check_pass("always begin a=1; b=2; end"))
 
 @testOf(grammar.blocking_assignment)
 def test70(self):
@@ -111,13 +112,27 @@ def test78(self):
     _stmt_print(self.check_pass("""begin end"""))
     _stmt_print(self.check_pass("""begin a=1; end"""))
     _stmt_print(self.check_pass("""begin a=1; b=2; end"""))
+    _stmt_print(self.check_pass("""begin 
+a = foo(); 
+b <= a[3];
+begin
+  c <= 0;
+end
+end"""))
 
 @testOf(grammar.statement)
 def test79(self):
     _stmt_print(self.check_pass("a<=1;"))
     _stmt_print(self.check_pass("a=1;"))
+    _stmt_print(self.check_pass("""begin a=1; end"""))
     _stmt_print(self.check_fail("a<=1"))
     _stmt_print(self.check_fail("a=1"))
+    _stmt_print(self.check_pass("assign x = 1;"))
+    _stmt_print(self.check_pass("""begin 
+force x= y + 1;
+deassign x;
+release x;
+end """))
 
 @testOf(grammar.function_statement)
 def test81(self):

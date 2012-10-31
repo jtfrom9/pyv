@@ -251,22 +251,17 @@ class FunctionCall(Expression):
         return "(call {0}({1}))".format(self.fid.shortName(),
                                         ",".join(arg.shortName() for arg in self.args))
 
-class Statement(AstNode, collections.Iterable):
+class IterableAstNode(AstNode, collections.Iterable):
     def asList(self):
         children = [ c.asList() for c in self ]
         if children == []:
             return [ self ]
         else:
             return [ self, children ]
+
+class Statement(IterableAstNode):
     def __iter__(self):
         for x in []: yield x
-
-class Construct(Statement):
-    def __init__(self, ctype, stmt):
-        self.ctype = ctype
-        self.stmt = stmt
-    def shortName(self):
-        return self.ctype + ":" + self.stmt.shortName()
 
 class Assignment(Statement):
     def __init__(self, left, delay_event, right, blocking=True):
@@ -287,7 +282,8 @@ class ReleaseLeftValue(Statement):
     def __init__(self, _type, lvalue):
         self._type   = _type
         self._lvalue = lvalue
-
+    def shortName(self):
+        return self._type + "(" + self._lvalue.shortName() + ")"
 
 class Conditional(Statement):
     def __init__(self, cs_list, else_s):
@@ -315,7 +311,6 @@ class Block(Statement):
     def __init__(self, item_decls, statements, seq=True):
         self.item_decls = item_decls
         self.statements = statements
-        print("Block: {0}".format(statements))
         self.seq       = seq
     def __iter__(self):
         for s in self.statements:
@@ -323,3 +318,15 @@ class Block(Statement):
     def shortName(self):
         if self.seq: return "Block(begin-end)"
         else: return "Block(fork-join)"
+
+
+class Construct(IterableAstNode):
+    def __init__(self, ctype, stmt):
+        self.ctype = ctype
+        self.stmt = stmt
+    def shortName(self):
+        return self.ctype + ":" + self.stmt.shortName()
+    def __iter__(self):
+        yield self.stmt
+
+

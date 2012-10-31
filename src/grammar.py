@@ -353,7 +353,7 @@ initial_construct      << Group( INITIAL + statement )
 always_construct       << Group( ALWAYS  + statement )
 
 @Action(initial_construct, always_construct)
-def initialConstructAction(_s,l,token):
+def constructAction(_s,l,token):
     return ast.Construct(token.keyword, token.statement)
 
 blocking_assignment    << Group( variable_lvalue + EQUAL + Optional( delay_or_event_control ) + expression )
@@ -385,6 +385,7 @@ def proceduralContinuousAssignmentAction(_s,l,token):
     if token.keyword in ['deassign','release']:
         return ast.ReleaseLeftValue(token.keyword,node(token.lvalue))
     else:
+        node(token.assignment).setContinuous(token.keyword)
         return node(token.assignment)
     
      

@@ -6,7 +6,10 @@ from pyparsing import stringEnd, ParseBaseException, ParseException, ParseSyntax
 import ast
 
 class GrammarTestCase(unittest.TestCase):
+    import abc
+    __metaclass__ = abc.ABCMeta
 
+    @abc.abstractmethod
     def grammar(self):
         pass
 
@@ -105,11 +108,11 @@ def _stmt_print(obj, level=0, indent=3, out=sys.stdout):
             out.write("{spc}{key}:\n".format(spc=" "*indent*level, key=k))
             _stmt_print(obj[k],level+1,indent)
             out.write("\n")
-    elif isinstance(obj, ast.Statement):
+    elif isinstance(obj, ast.IterableAstNode):
         #_stmt_pprint(obj.asList(), level, indent, out)
         import pprint
         out.write("{spc}{data}".format(spc=" "*indent*level,
-                                       data=pprint.pformat(obj.asList(),indent=indent, width=80)))
+                                       data=pprint.pformat(obj.asList(),indent=indent, width=10)))
     elif obj is not None:
         out.write(str(obj))
     else:
