@@ -224,6 +224,8 @@ delay2      << Group( SHARP + delay_value |
                       SHARP + LP + delay_value + Optional( CAMMA + delay_value ) + RP )
 delay_value << Group( unsigned_number | mintypmax_expression )
 
+delay_value.setParseAction(OneOfAction)
+
 # A.2.3 Declaration lists
 list_of_event_identifiers        << Group(delimitedList( identifier + Optional( dimension + ZeroOrMore(dimension) ) ))
 list_of_net_decl_assignments     << Group(delimitedList( net_decl_assignment                                        ))
@@ -463,21 +465,79 @@ def statementOrNullAction(_s,l,token):
 # A.6.5 Timing control statements
 delay_control          << Group( SHARP + delay_value | 
                                  SHARP + LP + mintypmax_expression + RP )
+@Action(delay_control)
+@NotImplemented
+def delayControlAction(s,l,token): pass
+
 delay_or_event_control << Group( delay_control | 
                                  event_control |
                                  REPEAT + LP + expression + RP + event_control )
+
+@Action(delay_or_event_control)
+def delayOrEventControlAction(s,l,token):
+    if not token.expression:
+        return node(token)
+    else:
+        raise Exception("Not Implemented completely delay_or_event_control: token={0}".format(ast.nodeInfo(token)))
+
 disable_statement      << Group( DISABLE + hierarchical_identifier  + SEMICOLON )
-event_control          << Group( AT + identifier                 |
-                                 AT + LP + event_expression + RP |
-                                 AT + ASTA                       |
-                                 AT + LP + ASTA + RP             )
-event_trigger          << Group( TRIG + hierarchical_identifier + SEMICOLON )
-event_expression       << Group( expression                               |
-                                 hierarchical_identifier                  |
-                                 POSEDGE + expression                     |
-                                 NEGEDGE + expression                     |
-                                 event_expression + OR + event_expression |
-                                 event_expression + CAMMA + event_expression )
+
+@Action(disable_statement)
+@NotImplemented
+def disableStatementAction(s,l,token):pass
+
+event_control << Group( AT + identifier                 |
+                        AT + LP + event_expression + RP |
+                        AT + ASTA                       |
+                        AT + LP + ASTA + RP             )
+
+@Action(event_control)
+def eventControlAction(s,l,token):
+    if token.identifier:
+        return ast.Event(ast.WaitTypeId, token.identifier)
+    elif token.event_expression:
+        print(type(event_expression))
+        return ast.Event(ast.WaitTypeExpr, token.event_expression)
+    else:
+        return ast.Event(ast.WaitTypeAny, None)
+
+
+event_trigger << Group( TRIG + hierarchical_identifier + SEMICOLON )
+
+@Action(event_trigger)
+def eventTriggerAction(s,l,token):
+    return ast.Trigger(token.hierarchical_identifier)
+
+
+_event_expression = Group( POSEDGE + expression                     |
+                           NEGEDGE + expression                     |
+                           hierarchical_identifier                  |
+                           expression                               )
+event_expression << operatorPrecedence( _event_expression, [ (OR,                      2, opAssoc.LEFT),
+                                                             (Literal(",")("keyword"), 2, opAssoc.LEFT) ] )
+
+@Action(_event_expression)
+def _eventExpressionAction(s,l,token):
+    if token.keyword:
+        ret = token.expression
+        ret.setEvent(token.keyword)
+    elif token.hierarchical_identifier:
+        ret = ast.IdPrimary(token.hierarchical_identifier, None, None)
+    else:
+        ret = token.expression
+    return ret
+_event_expression.setParseAction(_eventExpressionAction)
+
+@Action(event_expression)
+def eventExpressionAction(s,l,token):
+    print("eventExpressionAction: {0}".format(ast.nodeInfo(token)))
+    if isinstance(token, ast.Expression): return token
+    elif token.keyword:
+        return ast.BinaryExpression(token.keyword,
+                                    [node(t) for t in token[0::2]])
+    else:
+        raise Exception("Not Implemented completely eventExpressionAction: token={0}".format(token))
+
 
 procedural_timing_control_statement << Group( delay_or_event_control + statement_or_null      )
 wait_statement                      << Group( WAIT + LP + expression + RP + statement_or_null )

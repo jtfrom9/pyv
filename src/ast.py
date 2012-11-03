@@ -153,6 +153,8 @@ class HierarchicalId(Id):
 class Expression(AstNode):
     def __init__(self):
         pass
+    def setEvent(self, etype):
+        self._event_type = etype
     
 class Primary(Expression):
     def primaryLongInfo():
@@ -195,7 +197,7 @@ class UnaryExpression(Expression):
 
 class BinaryExpression(Expression):
     def __init__(self,op,exps):
-        print("Bin: {0}".format(nodeInfo(exps)))
+        print("Bin: {0}".format([e for e in exps]))
         self.op   =op
         self.exps = exps
     def longName(self):
@@ -329,4 +331,27 @@ class Construct(IterableAstNode):
     def __iter__(self):
         yield self.stmt
 
+class Delay(AstNode):
+    def __init__(self):
+        pass
+
+WaitTypeId   = 0
+WaitTypeExpr = 1
+WaitTypeAny  = 2
+class Event(AstNode):
+    def __init__(self, type, obj):
+        self._type = type
+        self._wait_obj = obj
+    def shortName(self):
+        if self._type==WaitTypeId or self._type==WaitTypeExpr:
+            return "@(" + self._wait_obj.shortName() + ")"
+        elif self._type==WaitTypeAny:
+            return "@*"
+        else: assert(False)
+
+class Trigger(AstNode):
+    def __init__(self,id):
+        self._id = id
+    def shortName(self):
+        return "->" + id.shortName()
 
