@@ -117,6 +117,13 @@ def NotImplemented(func):
         raise Exception("Not Implemented: " + func.__name__)
     return _decorator
 
+def Grammar(expr_def):
+    expr, action = expr_def()
+    grammar = getattr(sys.modules[__name__], expr_def.__name__)
+    grammar << expr
+    grammar.setParseAction(action)
+    return grammar
+
 
     
 # A.1 Source text2
@@ -486,57 +493,59 @@ disable_statement      << Group( DISABLE + hierarchical_identifier  + SEMICOLON 
 @NotImplemented
 def disableStatementAction(s,l,token):pass
 
-event_control << Group( AT + identifier                 |
-                        AT + LP + event_expression + RP |
-                        AT + ASTA                       |
-                        AT + LP + ASTA + RP             )
 
-@Action(event_control)
-def eventControlAction(s,l,token):
-    if token.identifier:
-        return ast.Event(ast.WaitTypeId, token.identifier)
-    elif token.event_expression:
-        print(type(event_expression))
-        return ast.Event(ast.WaitTypeExpr, token.event_expression)
-    else:
-        return ast.Event(ast.WaitTypeAny, None)
+@Grammar
+def event_control():
+    g = (AT + identifier                 |
+         AT + LP + event_expression + RP |
+         AT + ASTA                       |
+         AT + LP + ASTA + RP             )
+    
+    def action(token):
+        if token.identifier:
+            return ast.Event(ast.WaitTypeId, token.identifier)
+        elif token.event_expression:
+            return ast.Event(ast.WaitTypeExpr, token.event_expression)
+        else:
+            return ast.Event(ast.WaitTypeAny, None)
+    return (g,action)
 
+@Grammar
+def event_trigger():
+    return ( TRIG + hierarchical_identifier + SEMICOLON,
+             lambda token: ast.Trigger(token.hierarchical_identifier) )
 
-event_trigger << Group( TRIG + hierarchical_identifier + SEMICOLON )
+@Grammar
+def event_expression():
+    ev_base_expr = ( POSEDGE + expression    |
+                     NEGEDGE + expression    |
+                     hierarchical_identifier |
+                     expression              )
+    grammar = operatorPrecedence( ev_base_expr, [ (OR,                      2, opAssoc.LEFT),
+                                                  (Literal(",")("keyword"), 2, opAssoc.LEFT) ] )
 
-@Action(event_trigger)
-def eventTriggerAction(s,l,token):
-    return ast.Trigger(token.hierarchical_identifier)
+    def _base_action(token):
+        if token.keyword:
+            ret = token.expression
+            ret.setEvent(token.keyword)
+        elif token.hierarchical_identifier:
+            ret = ast.IdPrimary(token.hierarchical_identifier)
+        else:
+            ret = token.expression
+        return ret
+    ev_base_expr.setParseAction(_base_action)
 
+    @GroupedAction
+    def action(s,l,token):
+        if isinstance(token, ast.Expression): 
+            return token
+        elif token.keyword:
+            return ast.BinaryExpression(token.keyword,
+                                        [node(t) for t in token[0::2]])
+        else:
+            raise Exception("Not Implemented completely eventExpressionAction: token={0}".format(token))
+    return (grammar, action)
 
-_event_expression = Group( POSEDGE + expression                     |
-                           NEGEDGE + expression                     |
-                           hierarchical_identifier                  |
-                           expression                               )
-event_expression << operatorPrecedence( _event_expression, [ (OR,                      2, opAssoc.LEFT),
-                                                             (Literal(",")("keyword"), 2, opAssoc.LEFT) ] )
-
-@Action(_event_expression)
-def _eventExpressionAction(s,l,token):
-    if token.keyword:
-        ret = token.expression
-        ret.setEvent(token.keyword)
-    elif token.hierarchical_identifier:
-        ret = ast.IdPrimary(token.hierarchical_identifier, None, None)
-    else:
-        ret = token.expression
-    return ret
-_event_expression.setParseAction(_eventExpressionAction)
-
-@Action(event_expression)
-def eventExpressionAction(s,l,token):
-    print("eventExpressionAction: {0}".format(ast.nodeInfo(token)))
-    if isinstance(token, ast.Expression): return token
-    elif token.keyword:
-        return ast.BinaryExpression(token.keyword,
-                                    [node(t) for t in token[0::2]])
-    else:
-        raise Exception("Not Implemented completely eventExpressionAction: token={0}".format(token))
 
 
 procedural_timing_control_statement << Group( delay_or_event_control + statement_or_null      )

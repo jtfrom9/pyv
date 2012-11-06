@@ -175,7 +175,7 @@ class NumberPrimary(Primary):
         return self.number.shortName()
 
 class IdPrimary(Primary):
-    def __init__(self, id, exps, range):
+    def __init__(self, id, exps=[], range=None):
         self.id    = id
         self.exps  = exps
         self.range = range
@@ -353,5 +353,6 @@ class Trigger(AstNode):
     def __init__(self,id):
         self._id = id
     def shortName(self):
+        print("?")
         return "->" + id.shortName()
 

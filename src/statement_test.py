@@ -170,24 +170,20 @@ def test84(self):
 def test85(self):
     _stmt_print(self.check_pass("@A"))
     _stmt_print(self.check_pass("@( hoge )"))
-
+    _stmt_print(self.check_pass("@*"))
+    _stmt_print(self.check_pass("@(*)"))
+    _stmt_print(self.check_pass("@( posedge CLK or ~RESET )"))
 
 @testOf(grammar.event_trigger)
 def test86(self):
-    pass
+    _stmt_print(self.check_pass("->A;"))
 
-
-@testOf(grammar._event_expression)
-def _test87(self):
-    _stmt_print(self.check_pass("posedge A"))
-    _stmt_print(self.check_pass("posedge A+1"))
-    _stmt_print(self.check_pass("en"))
 
 @testOf(grammar.event_expression)
 def test87(self):
+    _stmt_print(self.check_pass("~en"))
     _stmt_print(self.check_pass("posedge A or negedge CLK"))
     _stmt_print(self.check_pass("posedge A , negedge CLK"))
-    _stmt_print(self.check_pass("~en"))
     _stmt_print(self.check_pass("~en or posedge A or negedge CLK"))
     _stmt_print(self.check_pass("~en , posedge A or negedge CLK"))
     _stmt_print(self.check_pass("~en ,posedge A or negedge CLK"))
