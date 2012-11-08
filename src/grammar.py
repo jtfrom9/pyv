@@ -340,23 +340,22 @@ named_port_connection    << Group( PERIOD + identifier + LP + Optional( expressi
 
 # A.6 Behavioral statements
 # A.6.1 Continuous assignment statements
-continuous_assign      << Group( ASSIGN + Optional( delay3 ) + list_of_net_assignment )
-list_of_net_assignment << Group( delim( net_assignment, "list" ) )
-net_assignment         << Group( net_lvalue + EQUAL + expression )
+@Grammar
+def net_assignment( _ = net_lvalue + EQUAL + expression ):
+    return (_, lambda t: ast.Assignment( node(t.net_lvalue), None, node(t.expression) ))
 
-@Action(continuous_assign)
-def continuousAsignmentAction(_s,l,token):
-    for asgn in token.list_of_net_assignment:
-        asgn.setContinuous(token.keyword)
-    return ParseResults([ x for x in token.list_of_net_assignment ])
-                           
-@Action(net_assignment)
-def netAssignmentAction(_s,l,token):
-    return ast.Assignment( node(token.net_lvalue), None, node(token.expression) )
+@Grammar
+def list_of_net_assignment( _ = delim( net_assignment, "list" ) ):
+    return (_, lambda t: ParseResults([ x for x in t.list ]))
 
-@Action(list_of_net_assignment)
-def list_of_net_assignmentAction(s,l,token):
-    return ParseResults([ x for x in token.list ])
+@Grammar
+def continuous_assign(_ = ASSIGN + Optional( delay3 ) + list_of_net_assignment ):
+    def action(token):
+        for asgn in token.list_of_net_assignment:
+            asgn.setContinuous(token.keyword)
+        return ParseResults([ x for x in token.list_of_net_assignment ])
+    return (_,action)
+
 
 # A.6.2 Procedural blocks and assigments
 initial_construct      << Group( INITIAL + statement )
