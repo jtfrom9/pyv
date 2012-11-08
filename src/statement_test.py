@@ -57,7 +57,6 @@ def test67(self):
 
 @testOf(grammar.initial_construct)
 def test68(self):
-    #debug(grammar.initial_construct)
     _stmt_print(self.check_pass("initial a=1;"))
 
 @testOf(grammar.always_construct)
@@ -98,16 +97,20 @@ def test75(self):
 end
 """))
     _stmt_print(self.check_pass("""begin  a=1; end"""))
-
-@testOf(grammar.par_block)
-def test77(self):
-    _stmt_print(self.check_pass("""fork
-join
-"""))
-
+    _stmt_print(self.check_pass("""begin  a=1; b=2; c=func(x); end"""))
+    _stmt_print(self.check_pass("""
+begin 
+ a=1; 
+ b=2; 
+ c=func(x); 
+ begin 
+   d = 10'd5;
+   e = x.abc[0];
+ end
+end"""))
 
 @testOf(grammar.seq_block)
-def test78(self):
+def test77(self):
     # debug(grammar.seq_block)
     # debug(grammar.statement)
     # debug(grammar.blocking_assignment)
@@ -121,6 +124,25 @@ begin
   c <= 0;
 end
 end"""))
+    _stmt_print(self.check_pass("""
+begin 
+ a=1; 
+ b=2; 
+ c=func(x); 
+ begin 
+   d <= 10'd5;
+   e <= x.abc[0];
+   f <= { 0, 1, 2 };
+ end
+end"""))
+
+
+@testOf(grammar.par_block)
+def test78(self):
+    _stmt_print(self.check_pass("""fork
+join
+"""))
+
 
 @testOf(grammar.statement)
 def test79(self):

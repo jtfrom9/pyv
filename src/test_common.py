@@ -96,7 +96,7 @@ def _stmt_print(obj, level=0, indent=3, out=sys.stdout, debug=False):
                                           data = obj.keys()[0]))
         #out.write(obj.resultsName +':\n')
         for x in obj:
-            _stmt_print(x, level+1, indent)
+            _stmt_print(x, level+1, indent, debug = debug)
     elif isinstance(obj, ast.IterableAstNode):
         #_stmt_pprint(obj.asList(), level, indent, out)
         import pprint

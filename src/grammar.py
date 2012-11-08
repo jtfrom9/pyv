@@ -395,41 +395,43 @@ def procedural_continuous_assignments():
             return node(token.assignment)
     return (_,action)
     
-     
-function_blocking_assignment << Group( variable_lvalue + EQUAL + expression )
-variable_assignment          << Group( variable_lvalue + EQUAL + expression )
+@Grammar     
+def function_blocking_assignment( _ = variable_lvalue + EQUAL + expression ):
+    return (_, lambda t: ast.Assignment(t.variable_lvalue,None,t.expression))
 
-@Action(function_blocking_assignment, variable_assignment)
-def functionBlockingAssignmentAction(_s,l,token):
-    return ast.Assignment(token.variable_lvalue,None,token.expression)
+@Grammar
+def variable_assignment(         _ = variable_lvalue + EQUAL + expression ):
+    return (_, lambda t: ast.Assignment(t.variable_lvalue,None,t.expression))
 
 
 # A.6.3 Parallel and sequential blocks
-function_seq_block  << Group( BEGIN + 
-                              Optional( COLON + block_identifier + zeroOrMore( block_item_declaration, "item_delcs" ) ) +
-                              zeroOrMore( function_statement, "statements" ) +
-                              END )
-par_block           << Group( FORK + 
-                              Optional( COLON + block_identifier  + zeroOrMore( block_item_declaration, "item_delcs" ) ) +
-                              zeroOrMore( statement, "statements" ) +
-                              JOIN )
-seq_block           << Group( BEGIN + 
-                              Optional( COLON + block_identifier + zeroOrMore( block_item_declaration, "item_decls") ) +
-                              zeroOrMore( statement, "statements" ) +
-                              END )
 
-@Action(function_seq_block, seq_block)
-def sequencialBlockAction(_s,l,token):
-    # print(token)
-    # print(ast.nodeInfo(token))
-    # print(token.statements)
-    # print(ast.nodeInfo(token.statements))
-    return ast.Block( [item for item in token.item_decls], 
-                      [stmt for stmt in token.statements] )
+@Grammar
+def function_seq_block():
+    return (( BEGIN + 
+              Optional( COLON + block_identifier + zeroOrMore( block_item_declaration, "item_delcs" ) ) +
+              zeroOrMore( function_statement, "statements" ) +
+              END ),
+            lambda t: ast.Block( [item for item in t.item_decls], 
+                                 [stmt for stmt in t.statements] ))
 
-@Action(par_block)
-def parallelBlockAction(_s,l,token):
-    return ast.Block( node(token.item_decls, []), node(token.statements, []), seq=False)
+@Grammar
+def seq_block():
+    return (( BEGIN + 
+              Optional( COLON + block_identifier + zeroOrMore( block_item_declaration, "item_decls") ) +
+              zeroOrMore( statement, "statements" ) +
+              END ),
+            lambda t: ast.Block( [item for item in t.item_decls], 
+                                 [stmt for stmt in t.statements] ))
+            
+@Grammar
+def par_block():
+    return (( FORK + 
+              Optional( COLON + block_identifier  + zeroOrMore( block_item_declaration, "item_delcs" ) ) +
+              zeroOrMore( statement, "statements" ) +
+              JOIN ),
+            lambda t: ast.Block( node(t.item_decls, []), node(t.statements, []), seq=False))
+
 
 
 # A.6.4 Statements
