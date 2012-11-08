@@ -51,6 +51,7 @@ def test117(self):
     _print(self.check_pass("1"))
     _print(self.check_pass("1+2"))
     _print(self.check_fail("X+2"))
+    _print(self.check_pass("0?1:2"))
 
 @testOf(grammar.constant_expression)
 def test118(self):
@@ -94,7 +95,20 @@ def test120(self):
 
 @testOf(grammar.dimension_constant_expression)
 def test121(self):
-    pass
+    _print(self.check_fail("A"))
+    _print(self.check_pass("1"))
+    _print(self.check_pass("(1)"))
+    _print(self.check_pass("func(1)"))
+    _print(self.check_pass("func()"))
+    _print(self.check_pass("1 + 2"))
+    _print(self.check_pass("1 + 2 * 3"))
+    _print(self.check_pass("1 + (2 * 3)"))
+    _print(self.check_pass("(1 + 2) * 3"))
+    _print(self.check_pass("0 ? 1 : 2"))
+    _print(self.check_pass("IsOK() ? 1 : 2"))
+    _print(self.check_pass("-0 ? 1 : 2"))
+    _print(self.check_pass(" 1 ? ( a() ? a() : a() ): 3"))
+    _print(self.check_pass(" 1 ?  a() ? a() : a() : 3"))
 
 @testOf(grammar.expression)
 def test122(self):

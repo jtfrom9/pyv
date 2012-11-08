@@ -823,147 +823,133 @@ def constant_expression():
     return (_constant_expression, action)
 
 
-constant_mintypmax_expression << Group( alias(constant_expression,"exp") |
-                                        constant_expression + COLON + constant_expression + COLON + constant_expression )
+@Grammar
+def constant_mintypmax_expression():
+    _ = ( alias(constant_expression,"exp") |
+          constant_expression + COLON + constant_expression + COLON + constant_expression )
+    def action(token):
+        if token.exp:
+            return node(token.exp)
+        else:
+            raise Exception("Not Implemented completely constantMintypmaxExpressionAction: token={0}".format(token))
+    return (_,action)
 
-constant_range_expression << Group( msb_constant_expression + COLON + lsb_constant_expression   |
-                                    constant_expression                                         )
+@Grammar
+def constant_range_expression():
+    _ = ( msb_constant_expression + COLON + lsb_constant_expression   |
+          constant_expression                                         )
 # constant_base_expression + alias(PLUS, "sign") + COLON + width_constant_expression |
 # constant_base_expression + alias(MINUS,"sign") + COLON + width_constant_expression |
 
-dimension_constant_expression << constant_expression
+    def action(token):
+        if token.constant_expression:
+            return node(token.constant_expression)
+        else:
+            return ast.Range(node(token.msb_constant_expression),
+                             node(token.lsb_constant_expression))
+    return (_, action)
 
-@Action(constant_mintypmax_expression)
-def constantMintypmaxExpressionAction(s,l,token):
-    if token.exp:
-        return token.exp
-    else:
-        raise Exception("Not Implemented completely constantMintypmaxExpressionAction: token={0}".format(token))
-
-@Action(constant_range_expression)
-def constantRangeExpressionAction(s,l,token):
-    if token.constant_expression:
-        return node(token.constant_expression)
-    else:
-        return ast.Range(node(token.msb_constant_expression),
-                         node(token.lsb_constant_expression))
-
-dimension_constant_expression.setParseAction(lambda t: node(t))
+@Grammar
+def dimension_constant_expression( _ = constant_expression ):
+    return (_, lambda t: node(t))
 
 
-_expr  = Forward()
-_expr_ = Group( unary_operator + primary | primary | string )("_expr_")
+basic_expr = Forward()
 
-conditional_expression << Group( alias(_expr,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else") )
-_expression = Group( conditional_expression | _expr_ )
+@Grammar
+def conditional_expression():
+    return ( alias(basic_expr,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else"),
+             lambda token: ast.ConditionalExpression( node(token.exp_cond),
+                                                      node(token.exp_if),
+                                                      node(token.exp_else) ))
 
-_expr      << operatorPrecedence( _expr_,      [ (binary_operator, 2, opAssoc.LEFT) ])
-expression << operatorPrecedence( _expression, [ (binary_operator, 2, opAssoc.LEFT) ])
-
-
-@Action(conditional_expression)
-def conditionalExpressionAction(s,l,token):
-    return ast.ConditionalExpression( node(token.exp_cond),
-                                      node(token.exp_if),
-                                      node(token.exp_else) )
-
-@Action(_expr_)
-def _expr_Action(_s,l,token):
-    if token.unary_operator:
-        return ast.UnaryExpression(token.unary_operator, token.primary)
-    elif token.primary:
-        return token.primary
-    else:
-        raise Exception("Not Implemented completely _expWithoutCondAction: token={0}".format(token))
-
-@Action(_expression)
-def _expressionAction(_s,l,token):
-    if token.conditional_expression:
-        return token.conditional_expression
-    elif token._expr_:
-        return token._expr_
-    else:
-        raise Exception("Not Implemented completely _expressionAction: token={0}".format(token))
-
-@Action(expression, _expr)
-def expressionAction(_s,l,token):
-    if isinstance(token, ast.Expression):
-        return token
-    elif token.binary_operator:
-        return ast.BinaryExpression(token.binary_operator, 
-                                    [node(t) for t in token[0::2]])
-    else:
-        raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
     
+@Grammar
+def expression():
+    basic_primary = Group( unary_operator + primary | primary | string )
 
-lsb_constant_expression << constant_expression
-msb_constant_expression << constant_expression
+    @Action(basic_primary)
+    def basicPrimaryAction(_s,l,token):
+        if token.unary_operator:
+            return ast.UnaryExpression(token.unary_operator, token.primary)
+        elif token.primary:
+            return token.primary
+        else:
+            raise Exception("Not Implemented completely _expWithoutCondAction: token={0}".format(token))
 
-lsb_constant_expression.setParseAction(lambda t: node(t))
-msb_constant_expression.setParseAction(lambda t: node(t))
+    term = conditional_expression | basic_primary
+    term.setParseAction(lambda t: node(t))
 
-mintypmax_expression    << Group( expression("exp") | 
-                                  expression + COLON + expression + COLON + expression )
+    basic_expr << operatorPrecedence( basic_primary,  [ (binary_operator, 2, opAssoc.LEFT) ])
+    _expression = operatorPrecedence( term,           [ (binary_operator, 2, opAssoc.LEFT) ])
 
-module_path_conditional_expression << module_path_expression + Q + module_path_expression + COLON + module_path_expression
+    @GroupedAction
+    def action(_s,l,token):
+        if isinstance(token, ast.Expression):
+            return token
+        elif token.binary_operator:
+            return ast.BinaryExpression(token.binary_operator, 
+                                        [node(t) for t in token[0::2]])
+        else:
+            raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
+    basic_expr.setParseAction(action)
+    
+    return (_expression, action)
 
-module_path_expression << Group( module_path_primary                                                           |
-                                 unary_module_path_operator + module_path_primary                              |
-                                 module_path_expression + binary_module_path_operator + module_path_expression |
-                                 module_path_conditional_expression                                            )
+@Grammar
+def lsb_constant_expression(): return (constant_expression, lambda t: node(t))
 
-module_path_mintypmax_expression << Group( 
-    module_path_expression | 
-    module_path_expression + COLON + module_path_expression + COLON + module_path_expression )
+@Grammar
+def msb_constant_expression(): return (constant_expression, lambda t: node(t))
 
-range_expression << Group( msb_constant_expression + COLON + lsb_constant_expression |
-                           expression                                                )
+@Grammar
+def mintypmax_expression():
+    _ = ( expression("exp") | 
+          expression + COLON + expression + COLON + expression )
+    def action(token):
+        if token.exp: return token.exp
+        else: raise Exception("Not Implemented completely mintypmaxExpressionAction: token={0}".format(token))
+    return (_,action)
+
+@GrammarNotImplementedYet
+def module_path_conditional_expression():
+    return (module_path_expression + Q + module_path_expression + COLON + module_path_expression, )
+
+@GrammarNotImplementedYet
+def module_path_expression():
+    return (( module_path_primary                                                           |
+              unary_module_path_operator + module_path_primary                              |
+              module_path_expression + binary_module_path_operator + module_path_expression |
+              module_path_conditional_expression                                            ), )
+
+@GrammarNotImplementedYet
+def module_path_mintypmax_expression():
+    return (( module_path_expression | 
+              module_path_expression + COLON + module_path_expression + COLON + module_path_expression ), )
+
+@Grammar
+def range_expression():
+    _ = ( msb_constant_expression + COLON + lsb_constant_expression |
+          expression                                                )
 #                           expression + alias(PLUS, "sign") + COLON + width_constant_expression ^
 #                           expression + alias(MINUS,"sign") + COLON + width_constant_expression |
 
-width_constant_expression << constant_expression
-
-@Action(mintypmax_expression)
-def mintypmaxExpressionAction(s,l,token):
-    if token.exp: return token.exp
-    else: raise Exception("Not Implemented completely mintypmaxExpressionAction: token={0}".format(token))
-
-@Action(module_path_conditional_expression)
-@NotImplemented
-def modulePathConditionalExpressionAction(s,l,token):
-    pass
-
-@Action(module_path_expression)
-@NotImplemented
-def modulePathExpressionAction(s,l,token):
-    pass
-
-@Action(module_path_mintypmax_expression)
-@NotImplemented
-def modulePathMintypmaxExpressionAction(s,l,token):
-    pass
-
-@Action(range_expression)
-def rangeExpressionAction(s,l,token):
-    if token.expression:
-        return node(token.expression)
-    elif token.expression:
-        if token.sign=="+":
-            return ast.Range(node(token.base_expression),
-                             ndoe(token.width_constant_expression))
+    def action(s,l,token):
+        if token.expression:
+            return token.expression
+        elif token.expression:
+            if token.sign=="+":
+                return ast.Range( token.base_expression, token.width_constant_expression )
+            else:
+                raise Exception("Not Implemented completely rangeExpressionAction: token={0}".format(token))
         else:
-            raise Exception("Not Implemented completely rangeExpressionAction: token={0}".format(token))
-    else:
-        return ast.Range(node(token.msb_constant_expression),
-                         node(token.lsb_constant_expression))
+            return ast.Range(token.msb_constant_expression, token.lsb_constant_expression)
+    return (_,action)
 
-@Action(width_constant_expression)
-@NotImplemented
-def widthConstantExpressionAction(s,l,token):
-    pass
+@GrammarNotImplementedYet
+def width_constant_expression(): 
+    return (constant_expression, )
 
-
-    
 
 # A.8.4 Primaries
 constant_primary << _group( number                                  |
