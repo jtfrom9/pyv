@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, run_tests
+from test_common import testOf, _print, run_tests, debug
 import grammar
 
 #print(dir(grammar.concatenation))
@@ -47,7 +47,9 @@ def test103(self):
 
 @testOf(grammar.constant_multiple_concatenation)
 def test104(self):
-    pass
+    # debug(grammar.constant_expression)
+    # debug(grammar.constant_multiple_concatenation)
+    _print(self.check_pass("{ 0 {2,3} }"))
 
 
 @testOf(grammar.module_path_concatenation)

@@ -5,10 +5,6 @@ import unittest
 from test_common import testOf, _print, run_tests
 import grammar
 
-@testOf(grammar._constant_expression)
-def test(self):
-    _print(self.check_pass("1"))
-    
 
 @testOf(grammar.constant_function_call)
 def test112(self):
@@ -70,6 +66,8 @@ def test118(self):
     _print(self.check_pass("0 ? 1 : 2"))
     _print(self.check_pass("IsOK() ? 1 : 2"))
     _print(self.check_pass("-0 ? 1 : 2"))
+    _print(self.check_pass(" 1 ? ( a() ? a() : a() ): 3"))
+    _print(self.check_pass(" 1 ?  a() ? a() : a() : 3"))
 
 @testOf(grammar.constant_mintypmax_expression)
 def test119(self):

@@ -23,9 +23,10 @@ for kw in _keywords:
     setattr(self, kw.swapcase(), Keyword(kw)("keyword"))
 
 with open("non_terminal_symbols.txt","r") as f:
-    for sym in (line.strip() for line in f):
-        result_name = sym
-        setattr(self, sym, Forward()(result_name))
+    for name in (line.strip() for line in f):
+        sym = Forward()(name)
+        sym.enablePackrat()
+        setattr(self, name, sym)
 
 def alias(grammar, name):
     if name: 
@@ -122,7 +123,15 @@ def Grammar(expr_def):
     grammar.setParseAction(action)
     return grammar
 
-
+def GrammarNotImplementedYet(expr_def):
+    expr = expr_def()[0]
+    def _error():
+        raise Exception("Not Implemented: " + expr_def.__name__)
+    grammar = getattr(sys.modules[__name__], expr_def.__name__)
+    grammar << expr
+    grammar.setParseAction(_error)
+    return grammar
+    
     
 # A.1 Source text2
 # A.1.1 Library source text
@@ -673,32 +682,34 @@ task_enable << Group(
 
 # A.8 Expressions
 # A.8.1 Concatenations
-concatenation                   << Group( LC + delim(expression,"exps")          + RC )
-constant_concatenation          << Group( LC + delim(constant_expression,"exps") + RC )
-constant_multiple_concatenation << Group( LC + constant_expression + constant_concatenation + RC )
+@Grammar
+def concatenation( _ = LC + delim(expression,"exps") + RC ):
+    return (_, lambda token: ast.Concatenation([e for e in token.exps]))
 
-@Action(concatenation)
-def concatenationAction(s,l,token):
-    return ast.Concatenation([e for e in token.exps])
+@Grammar
+def constant_concatenation( _ = LC + delim(constant_expression,"exps") + RC ):
+    return (_, lambda token: ast.Concatenation([e for e in token.exps]))
 
-@Action(constant_concatenation)
-def constantConcatenationAction(s,l,token):
-    return ast.Concatenation([e for e in token.exps])
+@GrammarNotImplementedYet
+def constant_multiple_concatenation( _ = LC + constant_expression + constant_concatenation + RC ):
+    return (_,)
 
-@Action(constant_multiple_concatenation)
-@NotImplemented
-def constantMultipleConcatenationAction(s,l,token):
-    pass
+@GrammarNotImplementedYet
+def module_path_concatenation():
+    return ( LC + delimitedList( module_path_expression ) + RC, )
 
-module_path_concatenation          << Group( LC + delimitedList( module_path_expression )         + RC )
-module_path_multiple_concatenation << Group( LC + constant_expression + module_path_concatenation + RC )
-multiple_concatenation             << Group( LC + constant_expression + concatenation             + RC )
+@GrammarNotImplementedYet
+def module_path_multiple_concatenation():
+    return (LC + constant_expression + module_path_concatenation + RC, )
+
+@GrammarNotImplementedYet
+def multiple_concatenation():
+    return ( LC + constant_expression + concatenation + RC, )
 
 @Action(module_path_concatenation)
 @NotImplemented
 def modulePathConcatenationAction(s,l,token):
     pass
-
 
 @Action(module_path_multiple_concatenation)
 @NotImplemented
@@ -746,81 +757,70 @@ def _NetVariableConcatenationValueAction(s,l,token):
 
 
 # A.8.2 Function calls
-constant_function_call << Group( identifier              + LP + Optional(delim(constant_expression ,"args")) + RP )
-function_call          << Group( hierarchical_identifier + LP + Optional(delim(expression          ,"args")) + RP )
-system_function_call   << Group( system_task_identifier  + Optional( LP + Optional(delim(expression,"args")) + RP ) )
+@Grammar
+def constant_function_call( _ = identifier + LP + Optional(delim(constant_expression,"args")) + RP ):
+    return (_, lambda token: ast.FunctionCall(token.identifier, [arg for arg in token.args]))
 
+@Grammar
+def function_call( _ = hierarchical_identifier + LP + Optional(delim(expression,"args")) + RP ):
+    return (_, lambda token: ast.FunctionCall(token.hierarchical_identifier, [arg for arg in token.args]))
 
-@Action(constant_function_call)
-def constantFunctionCallAction(s,l,token):
-    return ast.FunctionCall(token.identifier, 
-                            [arg for arg in token.args])
-
-@Action(function_call)
-def functionCallAction(s,l,token):
-    return ast.FunctionCall(token.hierarchical_identifier, 
-                            [arg for arg in token.args])
-
-@Action(system_function_call)
-def systemFunctionCallAction(s,l,token):
-    return ast.FunctionCall(token.system_task_identifier,
-                            [arg for arg in token.args])
+@Grammar
+def system_function_call( _ = system_task_identifier + Optional( LP + Optional(delim(expression,"args")) + RP ) ):
+    return (_, lambda token: ast.FunctionCall(token.system_task_identifier, [arg for arg in token.args]))
 
 
 # A.8.3 Expressions
-constant_base_expression << constant_expression
-constant_base_expression.setParseAction(lambda t: node(t))
+@Grammar
+def constant_base_expression(): 
+    return (constant_expression, lambda t: node(t))
 
 
-_constant_expr  = Forward()
-_constant_expr_ = _group( unary_operator + constant_primary |
-                          constant_primary                  |
-                          string                            ,
-                          "_constant_expr_")("_constant_expr_")
+@Grammar
+def constant_expression():
+    basic_primary = _group( unary_operator + constant_primary |
+                            constant_primary                  |
+                            string                            ,
+                            "basic_primary")
 
-_constant_conditional_expression = alias( 
-    alias(_constant_expr,"exp_cond") + Q + alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else"),
-    "_constant_conditional_expression")
-_constant_expression  = Group( _constant_conditional_expression | _constant_expr_ )
-
-_constant_expr      << operatorPrecedence( _constant_expr_,      [ (binary_operator, 2, opAssoc.LEFT) ] )
-constant_expression << operatorPrecedence( _constant_expression, [ (binary_operator, 2, opAssoc.LEFT) ] )
-
-@Action(_constant_conditional_expression)
-def _constantConditionalExpressionAction(s,l,token):
-    return ast.ConditionalExpression( node(token.exp_cond),
-                                      node(token.exp_if),
-                                      node(token.exp_else) )
-
-@Action(_constant_expr_)
-def _constantExpr_Action(s,l,token):
-    if token.unary_operator:
-        return ast.UnaryExpression(token.unary_operator, token.constant_primary)
-    elif token.constant_primary:
-        return token.constant_primary
-    else:
-        raise Exception("Not Implemented completely _constant_expr_Action: token={0}".format(ast.nodeInfo(token)))
+    @Action(basic_primary)
+    def basicPrimaryAction(s,l,token):
+        if token.unary_operator:
+            return ast.UnaryExpression(token.unary_operator, token.constant_primary)
+        elif token.constant_primary:
+            return token.constant_primary
+        else:
+            raise Exception("Not Implemented completely basic_primaryAction: token={0}".format(ast.nodeInfo(token)))
     
-@Action(_constant_expression)
-def _constantExpressionAction(s,l,token):
-    if token._constant_conditional_expression:
-        return token._constant_conditional_expression
-    elif token._constant_expr_:
-        return token._constant_expr_
-    else:
-        raise Exception("Not Implemented completely _constantExpressionAction: token={0}".format(ast.nodeInfo(token)))
+    basic_expr = Forward()
 
-@Action(constant_expression)
-def constantExpressionAction(s,l,token):
-    if isinstance(token, ast.Expression):
-        return token
-    elif token.binary_operator:
-        return ast.BinaryExpression(token.binary_operator, 
-                                    [node(t) for t in token[0::2]])
-    else:
-        raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
-_constant_expr.setParseAction(constantExpressionAction)
+    cond_expr = Group( alias(basic_expr,"exp_cond") + Q + 
+                       alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") )
 
+    @Action(cond_expr)
+    def condExprActoin(s,l,token):
+        return ast.ConditionalExpression( node(token.exp_cond), 
+                                          node(token.exp_if),
+                                          node(token.exp_else) )
+
+    expr = cond_expr | basic_primary 
+    expr.setParseAction(lambda t: node(t))
+
+    basic_expr           << operatorPrecedence( basic_primary, [ (binary_operator, 2, opAssoc.LEFT) ] )
+    _constant_expression  = operatorPrecedence( expr,          [ (binary_operator, 2, opAssoc.LEFT) ] )
+
+    @GroupedAction
+    def action(s,l,token):
+        if isinstance(token, ast.Expression):
+            return token
+        elif token.binary_operator:
+            return ast.BinaryExpression(token.binary_operator, 
+                                        [node(t) for t in token[0::2]])
+        else:
+            raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
+    basic_expr.setParseAction(action)
+
+    return (_constant_expression, action)
 
 
 constant_mintypmax_expression << Group( alias(constant_expression,"exp") |
