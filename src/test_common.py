@@ -104,17 +104,18 @@ def _id_print(result):
 
 def _stmt_print(obj, level=0, indent=3, out=sys.stdout):
     if isinstance(obj, ParseResults):
-        for k in obj.keys():
-            out.write("{spc}{key}:\n".format(spc=" "*indent*level, key=k))
-            _stmt_print(obj[k],level+1,indent)
-            out.write("\n")
+        out.write("{spc}{data}:\n".format(spc=" "*indent*level,
+                                          data = obj.keys()[0]))
+        #out.write(obj.resultsName +':\n')
+        for x in obj:
+            _stmt_print(x, level+1, indent)
     elif isinstance(obj, ast.IterableAstNode):
         #_stmt_pprint(obj.asList(), level, indent, out)
         import pprint
         out.write("{spc}{data}".format(spc=" "*indent*level,
                                        data=pprint.pformat(obj.asList(),indent=indent, width=10)))
     elif obj is not None:
-        out.write(str(obj))
+        out.write(str(obj)+'\n')
     else:
         pass # if None
 
