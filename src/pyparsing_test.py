@@ -1,62 +1,54 @@
 # -*- coding: utf-8 -*-
 from pyparsing import *
 
-class One(object):
-    pass
+num = Word( nums )
+plus_exp =  num + "+" + num
+plus_exp("pexp")
 
-one = Group(Literal("one"))("one").setParseAction(lambda t: 1)
-two = Group(Literal("two"))("two")
+def action1(t):
+    print("action1: {0}".format(t))
+    #return [ t[0], t[2] ]
 
-class ID(object):
-    pass
+plus_exp.setParseAction(action1)
 
-id = Forward()("id")
-id << Group( one |
-             two )
+r = (plus_exp + stringEnd).parseString("1+1")
+print(r)
 
-result = id.parseString("two")
-print(result.asXML())
-print(type(result))
-print(type(result.id))
-# print("one={0}".format(result.id[0].one))
-# print("two={0}".format(result.id[0].two))
+exp_list = delimitedList( plus_exp )
 
+r = (exp_list + stringEnd).parseString("1+1, 1+1")
+print(r)
 
-# import grammar
-# sd = grammar.simple_identifier("name")
-# def action(t):
-#     print("t.simple_identifier={0}".format(t.simple_identifier))
-#     print("type(t.simple_identifier))={0}".format(type(t.simple_identifier)))
-#     print("t.name={0}".format(t.name))
-#     print("type(t.name)={0}".format(type(t.name)))
-# sd.setParseAction(action)
-# sd.parseString("hoge")
+two_exp = plus_exp("before") + plus_exp("after")
+def action2(t):
+    print("action2: {0}".format(t))
+    print("before = {0}".format(t.before))
+    print("after = {0}".format(t.after))
+two_exp.setParseAction(action2)
 
-ab_grammar = Forward()
-C_grammar = Forward()
-D_grammar = Forward()
-E_grammar = Forward()
-
-a_grammar = Literal("a")
-b_grammar = Literal("b")
-ab_grammar << Group(OneOrMore(a_grammar | b_grammar))("AB")
-
-result = (ab_grammar+stringEnd).parseString("a b")
-print(dir(result))
-
-C_grammar << Group( "(" + ab_grammar + ")" )("C")
-result = (C_grammar+stringEnd).parseString("( a a b ) ")
-print(result.asXML())
+r = (two_exp + stringEnd).parseString("1+1  1+1")
+print(r)
 
 
-D_grammar << Group( "(" + ab_grammar("hoge") + ")" )("D")
-E_grammar << Group( "(" + ab_grammar("hoge") + ")" )("E")
-F_grammar = Group( D_grammar | E_grammar )
-
-def action(t):
-    return "ab_grammar!"
-ab_grammar.setParseAction(action)
+group_exp = Group( plus_exp )("before") + Group( plus_exp )("after")
+r = (group_exp + stringEnd).parseString("1+1  1+1")
+print(r.asXML())
+print(r.asList())
+print(r)
 
 
-result = (F_grammar+stringEnd).parseString("( a a b ) ")
-print(result.asXML())
+group_group_exp = Group( delimitedList( group_exp ) )("G")
+
+def action3(t):
+    print("action3: {0}".format(t))
+    print("action3: {0}".format(t.G))
+    #return [x for x in t.G]
+    return t
+     
+group_group_exp.setParseAction(action3)
+
+r = (group_group_exp + stringEnd).parseString("1+1  1+1, 2+2 3+3")
+print(r)
+
+
+
