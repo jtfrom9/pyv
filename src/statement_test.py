@@ -42,13 +42,14 @@ else
 
 @testOf(grammar.continuous_assign)
 def test65(self):
+    #debug(grammar.continuous_assign)
     _stmt_print(self.check_pass("assign a=1"))
     _stmt_print(self.check_pass("assign a=1,b=2"))
 
 @testOf(grammar.list_of_net_assignment)
 def test66(self):
-   _stmt_print(self.check_pass("a=1"))
-   _stmt_print(self.check_pass("a=1,b=2"))
+    _stmt_print(self.check_pass("a=1"))
+    _stmt_print(self.check_pass("a=1,b=2"))
 
 @testOf(grammar.net_assignment)
 def test67(self):

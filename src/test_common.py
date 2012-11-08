@@ -88,21 +88,8 @@ def _id_print(result):
         for index,id in enumerate(idAst.ids):
             print("  name[{0}] short={1}, long={2}".format(index,id.shortName(),id.longName()))
 
-# def _stmt_pprint(obj, level=0, indent=1, out=sys.stdout):
-#     if len(obj)==0: return
-#     if isinstance(obj,list):
-#         start, end = ('[', ']')
-#     out.write("{spc}{start}{top}\n".format(
-#             spc = " " * level * indent,
-#             start = start,
-#             top = obj[0]))
-#     for x in obj[1:]:
-#         _stmt_pprint(x, level+1, indent, out)
-#     out.write("{spc}{end}\n".format(
-#             spc = " " * level * indent,
-#             end = end))
-
 def _stmt_print(obj, level=0, indent=3, out=sys.stdout):
+    print("_stmt_print: level={0}, obj={1} ({2})".format(level, ast.nodeInfo(obj), type(obj)))
     if isinstance(obj, ParseResults):
         out.write("{spc}{data}:\n".format(spc=" "*indent*level,
                                           data = obj.keys()[0]))
@@ -112,16 +99,31 @@ def _stmt_print(obj, level=0, indent=3, out=sys.stdout):
     elif isinstance(obj, ast.IterableAstNode):
         #_stmt_pprint(obj.asList(), level, indent, out)
         import pprint
-        out.write("{spc}{data}".format(spc=" "*indent*level,
+        out.write("{spc}{data}\n".format(spc=" "*indent*level,
                                        data=pprint.pformat(obj.asList(),indent=indent, width=10)))
     elif obj is not None:
         out.write(str(obj)+'\n')
     else:
         pass # if None
 
+# def _defaultStartDebugAction( instring, loc, expr ):
+#     print ("Match " + _ustr(expr) + " at loc " + _ustr(loc) + "(%d,%d)" % ( lineno(loc,instring), col(loc,instring) ))
+# def _defaultSuccessDebugAction( instring, startloc, endloc, expr, toks ):
+#     print ("Matched " + _ustr(expr) + " -> " + str(toks.asList()))
+# def _defaultExceptionDebugAction( instring, loc, expr, exc ):
+#     print ("Exception raised:" + _ustr(exc))
+
+
 def debug(expr, on=True):
     expr.setName(expr.resultsName)
     expr.setDebug(on)
+    # def start(*argv):
+    #     print("start {0}".format(argv))
+    # def success(*argv):
+    #     print("success {0}".format(argv))
+    # def excep(*argv):
+    #     print("excep {0}".format(argv))
+    # expr.setDebugActions(start,success,excep)
 
 def fail(expr, action):
     expr.setName(expr.resultsName)

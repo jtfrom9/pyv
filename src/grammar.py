@@ -341,19 +341,22 @@ named_port_connection    << Group( PERIOD + identifier + LP + Optional( expressi
 # A.6 Behavioral statements
 # A.6.1 Continuous assignment statements
 continuous_assign      << Group( ASSIGN + Optional( delay3 ) + list_of_net_assignment )
-list_of_net_assignment << delim( net_assignment )
+list_of_net_assignment << Group( delim( net_assignment, "list" ) )
 net_assignment         << Group( net_lvalue + EQUAL + expression )
 
 @Action(continuous_assign)
 def continuousAsignmentAction(_s,l,token):
-    for asgn in node(token.list_of_net_assignment):
+    for asgn in token.list_of_net_assignment:
         asgn.setContinuous(token.keyword)
-    return [ asgn for asgn in token.list_of_net_assignment ]
+    return ParseResults([ x for x in token.list_of_net_assignment ])
                            
 @Action(net_assignment)
 def netAssignmentAction(_s,l,token):
     return ast.Assignment( node(token.net_lvalue), None, node(token.expression) )
-                           
+
+@Action(list_of_net_assignment)
+def list_of_net_assignmentAction(s,l,token):
+    return ParseResults([ x for x in token.list ])
 
 # A.6.2 Procedural blocks and assigments
 initial_construct      << Group( INITIAL + statement )
@@ -730,7 +733,6 @@ variable_concatenation_value << Group(
 def _NetVariableConcatenationAction(s,l,token):
     el = [e for e in token.exps]
     return el[0] if len(el)==1 else ast.Concatenation(el)
-    
 
 @Action(net_concatenation_value, variable_concatenation_value)
 def _NetVariableConcatenationValueAction(s,l,token):
