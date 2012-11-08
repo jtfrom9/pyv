@@ -58,11 +58,9 @@ def zeroOrMore(expr,name,err=""):
     return alias(ZeroOrMore(expr),name)
 
 def delim(expr,name=None,delimiter=','):
-    def _action(token):
-        return token[0]
-    expr_ext = _group( delimitedList(expr,delimiter) - NotAny(delimiter),
-                       err = "invalid ','" ).setParseAction(_action)
-    return alias(expr_ext,name)
+    g = _group( delimitedList(expr,delimiter) - NotAny(delimiter),
+                err = "invalid ','" )
+    return g(name) if name else g
 
 def node(token, fail_ret=ast.null):
     if token:
