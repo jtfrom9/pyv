@@ -88,8 +88,9 @@ def _id_print(result):
         for index,id in enumerate(idAst.ids):
             print("  name[{0}] short={1}, long={2}".format(index,id.shortName(),id.longName()))
 
-def _stmt_print(obj, level=0, indent=3, out=sys.stdout):
-    #print("_stmt_print: level={0}, obj={1} ({2})".format(level, ast.nodeInfo(obj), type(obj)))
+def _stmt_print(obj, level=0, indent=3, out=sys.stdout, debug=False):
+    if debug:
+        print("_stmt_print: level={0}, obj={1} ({2})".format(level, ast.nodeInfo(obj), type(obj)))
     if isinstance(obj, ParseResults):
         out.write("{spc}{data}:\n".format(spc=" "*indent*level,
                                           data = obj.keys()[0]))

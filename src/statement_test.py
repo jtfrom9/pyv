@@ -57,7 +57,8 @@ def test67(self):
 
 @testOf(grammar.initial_construct)
 def test68(self):
-   _stmt_print(self.check_pass("initial a=1;"))
+    #debug(grammar.initial_construct)
+    _stmt_print(self.check_pass("initial a=1;"))
 
 @testOf(grammar.always_construct)
 def test69(self):

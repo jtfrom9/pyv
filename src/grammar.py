@@ -358,44 +358,42 @@ def continuous_assign(_ = ASSIGN + Optional( delay3 ) + list_of_net_assignment )
 
 
 # A.6.2 Procedural blocks and assigments
-initial_construct      << Group( INITIAL + statement )
-always_construct       << Group( ALWAYS  + statement )
+@Grammar
+def initial_construct( _= INITIAL + statement ):
+    return (_, lambda t: ast.Construct(t.keyword, t.statement))
 
-@Action(initial_construct, always_construct)
-def constructAction(_s,l,token):
-    return ast.Construct(token.keyword, token.statement)
+@Grammar
+def always_construct( _ = ALWAYS  + statement ):
+    return (_, lambda t: ast.Construct(t.keyword, t.statement))
 
-blocking_assignment    << Group( variable_lvalue + EQUAL + Optional( delay_or_event_control ) + expression )
-nonblocking_assignment << Group( variable_lvalue + NB    + Optional( delay_or_event_control ) + expression )
+@Grammar
+def blocking_assignment( _ = variable_lvalue + EQUAL + Optional( delay_or_event_control ) + expression ):
+    return (_, lambda t: ast.Assignment( t.variable_lvalue,
+                                         None,
+                                         t.expression,
+                                         blocking = True ))
+@Grammar            
+def nonblocking_assignment( _ = variable_lvalue + NB + Optional( delay_or_event_control ) + expression ):
+    return (_, lambda t: ast.Assignment( t.variable_lvalue,
+                                         None,
+                                         t.expression,
+                                         blocking = False ))
 
-@Action(blocking_assignment)
-def blockingAssignmentAction(_s,l,token):
-    return ast.Assignment( token.variable_lvalue,
-                           None,
-                           token.expression,
-                           blocking = True )
-
-@Action(nonblocking_assignment)
-def nonBlockingAssignmentAction(_s,l,token):
-    return ast.Assignment( token.variable_lvalue,
-                           None,
-                           token.expression,
-                           blocking = False )
-
-procedural_continuous_assignments << Group( DEASSIGN + alias(variable_lvalue,"lvalue")         |
-                                            ASSIGN   + alias(variable_assignment,"assignment") |
-                                            FORCE    + alias(variable_assignment,"assignment") |
-                                            FORCE    + alias(net_assignment,"assignment")      |
-                                            RELEASE  + alias(variable_lvalue,"lvalue")         |
-                                            RELEASE  + alias(net_lvalue,"lvalue")              )
-
-@Action(procedural_continuous_assignments)
-def proceduralContinuousAssignmentAction(_s,l,token):
-    if token.keyword in ['deassign','release']:
-        return ast.ReleaseLeftValue(token.keyword,node(token.lvalue))
-    else:
-        node(token.assignment).setContinuous(token.keyword)
-        return node(token.assignment)
+@Grammar
+def procedural_continuous_assignments():
+    _ = ( DEASSIGN + alias(variable_lvalue,"lvalue")         |
+          ASSIGN   + alias(variable_assignment,"assignment") |
+          FORCE    + alias(variable_assignment,"assignment") |
+          FORCE    + alias(net_assignment,"assignment")      |
+          RELEASE  + alias(variable_lvalue,"lvalue")         |
+          RELEASE  + alias(net_lvalue,"lvalue")              )
+    def action(token):
+        if token.keyword in ['deassign','release']:
+            return ast.ReleaseLeftValue(token.keyword,node(token.lvalue))
+        else:
+            node(token.assignment).setContinuous(token.keyword)
+            return node(token.assignment)
+    return (_,action)
     
      
 function_blocking_assignment << Group( variable_lvalue + EQUAL + expression )

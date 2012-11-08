@@ -322,14 +322,14 @@ class Block(Statement):
         else: return "Block(fork-join)"
 
 
-class Construct(IterableAstNode):
+class Construct(Statement):
     def __init__(self, ctype, stmt):
         self.ctype = ctype
         self.stmt = stmt
     def shortName(self):
         return self.ctype + ":" + self.stmt.shortName()
     def __iter__(self):
-        yield self.stmt
+        for x in self.stmt: yield x
 
 class Delay(AstNode):
     def __init__(self):
