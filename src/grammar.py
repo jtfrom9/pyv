@@ -706,20 +706,6 @@ def module_path_multiple_concatenation():
 def multiple_concatenation():
     return ( LC + constant_expression + concatenation + RC, )
 
-@Action(module_path_concatenation)
-@NotImplemented
-def modulePathConcatenationAction(s,l,token):
-    pass
-
-@Action(module_path_multiple_concatenation)
-@NotImplemented
-def modulePathMultipleConcatenationAction(s,l,token):
-    pass
-
-@Action(multiple_concatenation)
-@NotImplemented
-def multipleConcatenationAction(s,l,token):
-    pass
 
 net_concatenation << Group( LC + delim(net_concatenation_value,"exps") + RC )
 net_concatenation_value << Group( 
@@ -973,16 +959,10 @@ def primary():
             return ast.IdPrimary( token.hierarchical_identifier,
                                   [ node(exp) for exp in token.exps ],
                                   node(token.range_expression) if token.range_expression else None )
-        elif token.concatenation:
-            return token.concatenation
-        elif token.function_call:
-            return token.function_call
-        elif token.system_function_call:
-            return token.system_function_call
-        elif token.constant_function_call:
-            return token.constant_function_call
-        elif token.mintypmax_expression:
-            return token.mintypmax_expression
+        elif (token.concatenation or token.function_call or 
+              token.system_function_call or token.constant_function_call or
+              token.mintypmax_expression):
+            return token[0]
         else:
             raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
     return (_,action)
@@ -1191,105 +1171,96 @@ string << Suppress("\"") + ZeroOrMore( CharsNotIn("\"\n") ) + Suppress("\"")
 # A.9.3 Identifiers
 
 # [ a-zA-Z_ ] { [ a-zA-Z0-9_$ ] }
-simple_identifier         << ID  
-simple_arrayed_identifier << Group( simple_identifier + Optional( _range ) )
+@Grammar
+def simple_identifier():
+    return (ID, lambda t: ast.BasicId(t[0]))
 
-@Action(simple_identifier)
-def simpleIdentifierAction(_s,loc,token):
-    return ast.BasicId(token)
-
-@Action(simple_arrayed_identifier)
-def simpleArrayedIdentifierAction(_s,loc,token):
-    print(token.simple_identifier)
-    if token._range:
-        return ast.RangedId(token.simple_identifier.shortName(), token._range)
-    else:
-        return ast.BasicId(token.simple_identifier.shortName())
+@Grammar
+def simple_arrayed_identifier( _ = simple_identifier + Optional( _range ) ):
+    def action(token):
+        if token._range:
+            return ast.RangedId(token.simple_identifier.shortName(), token._range)
+        else:
+            return ast.BasicId(token.simple_identifier.shortName())
+    return (_, action)
 
 
 # \ {Any_ASCII_character_except_white_space} white_space
-escaped_identifier         << simple_identifier # temp
-escaped_arrayed_identifier << Group( escaped_identifier + Optional( _range ) )
 
-@Action(escaped_identifier)
-@NotImplemented
-def escapedIdentifierAction(_s,loc,token):
-    pass
+@GrammarNotImplementedYet
+def escaped_identifier(): 
+    return (simple_identifier, )#temp
 
-@Action(escaped_arrayed_identifier)
-@NotImplemented
-def escapedArrayedIdentifierAction(_s,loc,token):
-    pass
+@GrammarNotImplementedYet
+def escaped_arrayed_identifier():
+    return (( escaped_identifier + Optional( _range ) ), )
 
+@Grammar
+def identifier():
+    return (( simple_identifier | escaped_identifier ), lambda t: t)
 
-identifier                 << Group( simple_identifier         | escaped_identifier         )
-arrayed_identifier         << Group( simple_arrayed_identifier | escaped_arrayed_identifier ) 
+@Grammar
+def arrayed_identifier():
+    return (( simple_arrayed_identifier | escaped_arrayed_identifier ), lambda t: t)
 
-identifier.setParseAction         (OneOfAction)
-arrayed_identifier.setParseAction (OneOfAction)
+@Grammar
+def module_instance_identifier():
+    return (arrayed_identifier , lambda t: t)
 
-module_instance_identifier << arrayed_identifier 
-module_instance_identifier.setParseAction (lambda t: node(t))
+@Grammar
+def hierarchical_identifier():
+    return (( simple_hierarchical_identifier | escaped_hierarchical_identifier ), lambda t: t)
 
-hierarchical_identifier         << Group( simple_hierarchical_identifier | escaped_hierarchical_identifier )
-simple_hierarchical_identifier  << Group( simple_hierarchical_branch + Optional( PERIOD + escaped_identifier ) )
+@Grammar
+def simple_hierarchical_identifier():
+    _ = simple_hierarchical_branch + Optional( PERIOD + escaped_identifier ) 
+    def action(token):
+        ret = token.simple_hierarchical_branch
+        if token.escaped_identifier:
+            ret.addId(ast.BasicId(token.escaped_identifier))
+        return ret
+    return (_,action)
 
-escaped_hierarchical_identifier << Group( escaped_hierarchical_branch + ZeroOrMore( PERIOD + simple_hierarchical_branch |
-                                                                                    PERIOD + escaped_hierarchical_branch ) )
+@GrammarNotImplementedYet
+def escaped_hierarchical_identifier():
+    return ((escaped_hierarchical_branch + ZeroOrMore( PERIOD + simple_hierarchical_branch |
+                                                       PERIOD + escaped_hierarchical_branch ) ), )
+@Grammar
+def simple_hierarchical_branch():
+    index = unsigned_number("index")
+    index.setParseAction(lambda t: int(t[0]))
 
-    
-_simple_hierarchical_branch_part = Group( PERIOD + simple_identifier + Optional( LB + unsigned_number("index") + RB ) )
-simple_hierarchical_branch  << Group(
-    simple_identifier
-    + Optional( LB + unsigned_number("index") + RB )
-    + Group( Optional( ZeroOrMore( _simple_hierarchical_branch_part ) ) ) ("ids")
-    )
-
-escaped_hierarchical_branch << Group(
-    escaped_identifier + Optional( LB + unsigned_number + RB ) + Optional(
-        ZeroOrMore( PERIOD + escaped_identifier + Optional( LB + unsigned_number + RB ) ) ) )
-
-system_task_identifier << Regex(r"\$[a-zA-Z0-9_$][a-zA-Z0-9_$]*")
-
-hierarchical_identifier.setParseAction(OneOfAction)
-
-@Action(simple_hierarchical_identifier)
-def simpleHierarchicalIdnetifierAction(_s,loc,token):
-    ret = token.simple_hierarchical_branch
-    if token.escaped_identifier:
-        assert isinstance(ret, HierarchicalId)
-        ret.addId(ast.BasicId(token.escaped_identifier))
-    return ret
-        
-@Action(escaped_hierarchical_identifier)
-@NotImplemented
-def escapedHierarchicalIdentifier(_s,loc,token):
-    pass
-
-@Action(simple_hierarchical_branch)
-def simpleHierarchicalBranchAction(_s,loc,token):
-    if token.index:
-        headId = ast.IndexedId(token.simple_identifier.string, int(token.index))
-    else:
-        headId = token.simple_identifier
-    ids = [ headId ]
-    for id in token.ids: 
-        if id.index:
-            ids.append(ast.IndexedId(id.simple_identifier.string, int(id.index)))
+    _ = ( simple_identifier + 
+          Optional( LB + index + RB ) +
+          zeroOrMore( Group(PERIOD + simple_identifier + Optional( LB + index + RB )), "part_list" ) )
+          
+    def action(token):
+        if token.index:
+            headId = ast.IndexedId(token.simple_identifier.string, token.index)
         else:
-            ids.append(id.simple_identifier)
-    if len(ids)==1:
-        return ids[0]
-    else:
-        return ast.HierarchicalId(ids)
+            headId = token.simple_identifier
+        ids = [ headId ]
+        if token.part_list:
+            #print("={0}".format(token.part_list))
+            for part in token.part_list: 
+                #print("={0}".format(part))
+                if part.index:
+                    ids.append(ast.IndexedId(part.simple_identifier.string, part.index))
+                else:
+                    ids.append(part.simple_identifier)
+        if len(ids)==1:
+            return ids[0]
+        else:
+            return ast.HierarchicalId(ids)
+    return (_,action)
 
+@GrammarNotImplementedYet
+def escaped_hierarchical_branch():
+    return (( escaped_identifier + Optional( LB + unsigned_number + RB ) + Optional(
+                ZeroOrMore( PERIOD + escaped_identifier + Optional( LB + unsigned_number + RB ) ) ) ), )
 
-@Action(escaped_hierarchical_branch)
-@NotImplemented
-def escapedHierarchicalBranchAction(_s,loc,token):
-    pass
-
-@Action(system_task_identifier)
-def systemTaskIdentifierAction(s,l,token):
-    return ast.BasicId(token)
+@Grammar
+def system_task_identifier():
+    return (Regex(r"\$[a-zA-Z0-9_$][a-zA-Z0-9_$]*"),
+            lambda t: ast.BasicId(t[0]))
 

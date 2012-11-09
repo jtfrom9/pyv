@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, run_tests
+from test_common import testOf, run_tests, debug
 import grammar
 
 def _id_print(result):
@@ -18,7 +18,9 @@ def _id_print(result):
 
 @testOf(grammar.simple_identifier)
 def test169(self):
-    _id_print(self.check_pass("hoge"))
+    #_id_print(self.check_pass("hoge"))
+    debug(grammar.simple_identifier)
+    self.check_pass("hoge")
 
 
 @testOf(grammar.escaped_identifier)
@@ -74,7 +76,7 @@ def test185(self):
     _id_print(self.check_pass("hoge[5].foo.bar.A[10]"))
     _id_print(self.check_pass("foo.bar.hoge[5].A[1]"))
     self.check_fail("-X")
-    
+
 
 @testOf(grammar.escaped_hierarchical_identifier)
 def test186(self):
