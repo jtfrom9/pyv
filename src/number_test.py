@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, run_tests
+from test_common import testOf, _print, run_tests,debug
 import grammar
 
 @testOf(grammar.number)
@@ -18,8 +18,7 @@ def test(self):
 
 @testOf(grammar.real_number)
 def test141(self):
-    pass
-
+    _print(self.check_pass("23.5"))
 
 @testOf(grammar.exp)
 def test142(self):

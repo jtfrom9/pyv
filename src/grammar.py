@@ -1062,30 +1062,85 @@ unary_module_path_operator  << oneOf("! ~ & ~& | ~| ^ ~^ ^~                     
 binary_module_path_operator << oneOf("== != && || & | ^ ^~ ~^                                              ")
 
 # A.8.7 Numbers
-number         << Group( decimal_number ^ 
-                         octal_number   ^ 
-                         binary_number  ^ 
-                         hex_number     ^ 
-                         real_number    )
 
-_integral_part = Group(unsigned_number)("integral_part")
-_decimal_part  = Group(unsigned_number)("decimal_part")
-_expornential_part = Group(unsigned_number)("expornential_part")
-real_number    << Group( 
-    _integral_part + Optional( PERIOD + _decimal_part ) + exp + Optional( sign ) + _expornential_part |
-    _integral_part +           PERIOD + _decimal_part )
+@Grammar
+def number( _ = decimal_number ^ octal_number ^ binary_number ^ hex_number ^ real_number ):
+    return (_, lambda t: t[0])
 
-exp            << oneOf("e E")
-decimal_number << Group( Optional( size ) + decimal_base + x_digit + ZeroOrMore( USC ) |
-                         Optional( size ) + decimal_base + z_digit + ZeroOrMore( USC ) |
-                         Optional( size ) + decimal_base + unsigned_number             |
-                         unsigned_number                                               )
+_integral_part     = Group( unsigned_number )("integral_part")
+_decimal_part      = Group( unsigned_number )("decimal_part")
+_expornential_part = Group( unsigned_number )("expornential_part")
+
+@Action(_integral_part, _decimal_part, _expornential_part)
+def realNumberPartAction(s,l,token): return node(token)
+
+@Grammar
+def real_number():
+    _ = ( _integral_part + Optional( PERIOD + _decimal_part ) + exp + Optional( sign ) + _expornential_part |
+          _integral_part +           PERIOD + _decimal_part                                                 )
+    def action(token):
+        if not token.exp:
+            return ast.Float( token.integral_part + "." + token.decimal_part)
+        else:
+            return ast.Float( token.integral_part + "." + token.decimal_part + 
+                              token.exp + 
+                              (token.sign if token.sign else "") + 
+                              token.expornential_part )
+    return (_,action)
+
+@Grammar
+def decimal_number():
+    _ = ( Optional( size ) + decimal_base + x_digit + ZeroOrMore( USC ) |
+          Optional( size ) + decimal_base + z_digit + ZeroOrMore( USC ) |
+          Optional( size ) + decimal_base + unsigned_number             |
+          unsigned_number                                               )
+    def action(token):
+        def dval(vstr): 
+            return int(vstr, ast.FixedWidthValue.Decimal)
+        def i2val(width):
+            val = int(token.unsigned_number)
+            if val >= pow(2,width):
+                print("Warning: constant {0} is truncate to {1} bit value: {2}".format(
+                        token.unsigned_number, width, pow(2,width)-1))
+            return ast.Int2(token.unsigned_number,width,ast.FixedWidthValue.Decimal, val)
+        def i4val(width,v):
+            return ast.Int4(v,width,ast.FixedWidthValue.Decimal, v*width)
+
+        if len(token)==1:
+            return i2val(32)
+        else:
+            width = token.size if token.size else 32
+            if token.x_digit:
+                return i4val(width,token.x_digit)
+            if token.z_digit:
+                return i4val(width,token.z_digit)
+            if token.unsigned_number:
+                return i2val(width)
+            return (_,action)
+    return (_,action)
+
 binary_number  << Group( Optional( size ) + binary_base + binary_value )
 octal_number   << Group( Optional( size ) + octal_base  + octal_value  )
 hex_number     << Group( Optional( size ) + hex_base    + hex_value    )
 
-sign                     << oneOf("+ -")
-size                     << non_zero_unsigned_number
+def valueActions(name,vtype):
+    @GroupedAction
+    def _action(_s,loc,token):
+        width = token.size if token.size else 32
+        vstr = getattr(token,name)
+        trans = vstr.translate(None,'xXzZ?')
+        if trans==vstr:
+            return ast.Int2(vstr,width,vtype,int(vstr,vtype))
+        else:
+            return ast.Int4(vstr,width,vtype,vstr)
+    return _action
+
+binary_number.setParseAction(valueActions('binary_value' , ast.FixedWidthValue.Binary))
+octal_number.setParseAction (valueActions('octal_value'  , ast.FixedWidthValue.Octal))
+hex_number.setParseAction   (valueActions('hex_value'    , ast.FixedWidthValue.Hex))
+
+exp  << oneOf("e E")
+sign << oneOf("+ -")
 # non_zero_unsigned_number << non_zero_decimal_digit + ZeroOrMore( USC | decimal_digit )
 # unsigned_number          << decimal_digit + ZeroOrMore( USC | decimal_digit ) 
 # binary_value             << binary_digit  + ZeroOrMore( USC | binary_digit )
@@ -1100,75 +1155,30 @@ size                     << non_zero_unsigned_number
 # binary_digit             << Group( x_digit | z_digit | Suppress("0") | Suppress("1") )
 # octal_digit              << Group( x_digit | z_digit | oneOf("0 1 2 3 4 5 6 7") )
 # hex_digit                << Group( x_digit | z_digit | oneOf("0 1 2 3 4 5 6 7 8 9 a b c d ef A B C D E F") )
-x_digit                  << oneOf("x X")
-z_digit                  << oneOf("z Z ?")
+x_digit      << oneOf("x X")
+z_digit      << oneOf("z Z ?")
+decimal_base << Regex(r"'[sS]?[dD]")
+binary_base  << Regex(r"'[sS]?[bB]")
+octal_base   << Regex(r"'[sS]?[oO]")
+hex_base     << Regex(r"'[sS]?[hH]")
+
 
 non_zero_unsigned_number << Regex(r"[1-9][_0-9]*")
 unsigned_number          << Regex(r"[0-9][_0-9]*")
 binary_value             << Regex(r"[01xXzZ\?][_01xXzZ\?]*")
 octal_value              << Regex(r"[0-7xXzZ\?][_0-7xXzZ\?]*")
 hex_value                << Regex(r"[0-9a-fA-FxXzZ\?][_0-9a-fA-FxXzZ\?]*")
-decimal_base             << Regex(r"'[sS]?[dD]")
-binary_base              << Regex(r"'[sS]?[bB]")
-octal_base               << Regex(r"'[sS]?[oO]")
-hex_base                 << Regex(r"'[sS]?[hH]")
+@Action(non_zero_unsigned_number, unsigned_number, binary_value, octal_value, hex_value)
+def valueAction(s,l,t): return t
 
-number.setParseAction(OneOfAction)
+# non_zero_unsigned_number.setParseAction(lambda t: t[0])
+# unsigned_number.setParseAction         (lambda t: t[0])
+# binary_value.setParseAction            (lambda t: t[0])
+# octal_value.setParseAction             (lambda t: t[0])
+# hex_value.setParseAction               (lambda t: t[0])
 
-@Action(real_number)
-def realNumberAction(_s,l,token):
-    if not token.exp:
-        return ast.Float( node(token.integral_part) + "." + node(token.decimal_part))
-    else:
-        return ast.Float( node(token.integral_part) + "." + node(token.decimal_part) + token.exp + node(token.sign,"") + node(token.expornential_part) )
-
-@Action(decimal_number)
-def decimalNumberAction(_s, loc, token):
-    def dval(vstr): 
-        return int(vstr, ast.FixedWidthValue.Decimal)
-    def i2val(width):
-        val = int(token.unsigned_number)
-        if val >= pow(2,width):
-            print("Warning: constant {0} is truncate to {1} bit value: {2}".format(
-                    token.unsigned_number, width, pow(2,width)-1))
-        return ast.Int2(token.unsigned_number,width,ast.FixedWidthValue.Decimal, val)
-    def i4val(width,v):
-        return ast.Int4(v,width,ast.FixedWidthValue.Decimal, v*width)
-
-    if len(token)==1:
-        return i2val(32)
-    else:
-        width = token.size if token.size else 32
-        if token.x_digit:
-            return i4val(width,token.x_digit)
-        if token.z_digit:
-             return i4val(width,token.z_digit)
-        if token.unsigned_number:
-            return i2val(width)
-
-def valueActions(name,vtype):
-    @GroupedAction
-    def _action(_s,loc,token):
-        width = token.size if token.size else 32
-        vstr = getattr(token,name)
-        trans = vstr.translate(None,'xXzZ?')
-        if trans==vstr:
-            return ast.Int2(vstr,width,vtype,int(vstr,vtype))
-        else:
-            return ast.Int4(vstr,width,vtype,vstr)
-    return _action
-
-binary_number.setParseAction (valueActions('binary_value' , ast.FixedWidthValue.Binary))
-octal_number.setParseAction  (valueActions('octal_value'  , ast.FixedWidthValue.Octal))
-hex_number.setParseAction    (valueActions('hex_value'    , ast.FixedWidthValue.Hex))
-
-size.setParseAction                    (lambda t: int(t[0]))
-non_zero_unsigned_number.setParseAction(lambda t: t[0])
-unsigned_number.setParseAction         (lambda t: t[0])
-binary_value.setParseAction            (lambda t: t[0])
-octal_value.setParseAction             (lambda t: t[0])
-hex_value.setParseAction               (lambda t: t[0])
-
+@Grammar
+def size(): return (non_zero_unsigned_number, lambda t: int(t[0]))
 
 
 # A.8.8 Strings
