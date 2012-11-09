@@ -1022,41 +1022,44 @@ def module_path_primary():
 
 
 # A.8.5 Expression left-side value
-net_lvalue << Group( hierarchical_identifier + oneOrMore( LB + constant_expression + RB, "exps" ) + LB + constant_range_expression + RB  |
-                     hierarchical_identifier + oneOrMore( LB + constant_expression + RB, "exps" )                                        |
-                     hierarchical_identifier                                                      + LB + constant_range_expression + RB  |
-                     net_concatenation                                                                                                   |
-                     hierarchical_identifier                                                                                             )
 
-variable_lvalue << Group( hierarchical_identifier + oneOrMore( LB + expression + RB, "exps") + LB + range_expression + RB  |
-                          hierarchical_identifier + oneOrMore( LB + expression + RB, "exps")                               |
-                          hierarchical_identifier                                            + LB + range_expression + RB  |
-                          variable_concatenation                                                                           |
-                          hierarchical_identifier                                                                          )
+@Grammar
+def net_lvalue():
+    _ = ( hierarchical_identifier + oneOrMore( LB + constant_expression + RB, "exps" ) + LB + constant_range_expression + RB  |
+          hierarchical_identifier + oneOrMore( LB + constant_expression + RB, "exps" )                                        |
+          hierarchical_identifier                                                      + LB + constant_range_expression + RB  |
+          net_concatenation                                                                                                   |
+          hierarchical_identifier                                                                                             )
+    def action(token):
+        if token.net_concatenation:
+            return token.net_concatenation
+        else:
+            return ast.LeftSideValue( token.hierarchical_identifier,
+                                      token.exps,
+                                      token.constant_range_expression )
+    return (_,action)
 
-@Action(net_lvalue)
-def netLvalueAction(s,l,token):
-    if token.net_concatenation:
-        return token.net_concatenation
-    else:
-        return ast.LeftSideValue( token.hierarchical_identifier,
-                                  token.exps,
-                                  token.constant_range_expression )
-        
-@Action(variable_lvalue)
-def variableLvalueAction(s,l,token):
-    if token.variable_concatenation:
-        return token.variable_concatenation
-    else:
-        return ast.LeftSideValue( token.hierarchical_identifier,
-                                  token.exps,
-                                  token.range_expression )
+@Grammar
+def variable_lvalue(): 
+    _ = ( hierarchical_identifier + oneOrMore( LB + expression + RB, "exps") + LB + range_expression + RB  |
+          hierarchical_identifier + oneOrMore( LB + expression + RB, "exps")                               |
+          hierarchical_identifier                                            + LB + range_expression + RB  |
+          variable_concatenation                                                                           |
+          hierarchical_identifier                                                                          )
+    def action(token):
+        if token.variable_concatenation:
+            return token.variable_concatenation
+        else:
+            return ast.LeftSideValue( token.hierarchical_identifier,
+                                      token.exps,
+                                      token.range_expression )
+    return (_,action)
 
 # A.8.6 Operators
-unary_operator              << oneOf("+ - ! ~ & ~& | ~| ^ ~^ ^~                                            ")("unary_operator")
-binary_operator             << oneOf("+ - * / % == != === !== && || ** < <= > >= & | ^ ^~ ~^ >> << >>> <<< ")("binary_operator")
-unary_module_path_operator  << oneOf("! ~ & ~& | ~| ^ ~^ ^~                                                ")("unary_module_path_operator")
-binary_module_path_operator << oneOf("== != && || & | ^ ^~ ~^                                              ")("binary_module_path_operator")
+unary_operator              << oneOf("+ - ! ~ & ~& | ~| ^ ~^ ^~                                            ")
+binary_operator             << oneOf("+ - * / % == != === !== && || ** < <= > >= & | ^ ^~ ~^ >> << >>> <<< ")
+unary_module_path_operator  << oneOf("! ~ & ~& | ~| ^ ~^ ^~                                                ")
+binary_module_path_operator << oneOf("== != && || & | ^ ^~ ~^                                              ")
 
 # A.8.7 Numbers
 number         << Group( decimal_number ^ 

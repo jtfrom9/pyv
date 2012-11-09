@@ -37,14 +37,12 @@ def test114(self):
     _print(self.check_pass("$foo( X+1 )"))
     _print(self.check_fail("$A.b.c( X+1, -Z+1 )"))
 
-
 @testOf(grammar.conditional_expression)
 def test116(self):
     _print(self.check_pass(" 0 ? 1 : 2"))
     _print(self.check_pass(" A ? 1 : 2"))
     _print(self.check_pass(" A+1 ? X<0 : Y==1"))
     _print(self.check_pass(" 0?1:2 ? X<0 : Y==1"))
-
 
 @testOf(grammar.constant_base_expression)
 def test117(self):
