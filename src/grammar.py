@@ -716,12 +716,10 @@ def modulePathConcatenationAction(s,l,token):
 def modulePathMultipleConcatenationAction(s,l,token):
     pass
 
-
 @Action(multiple_concatenation)
 @NotImplemented
 def multipleConcatenationAction(s,l,token):
     pass
-
 
 net_concatenation << Group( LC + delim(net_concatenation_value,"exps") + RC )
 net_concatenation_value << Group( 
@@ -952,76 +950,75 @@ def width_constant_expression():
 
 
 # A.8.4 Primaries
-constant_primary << _group( number                                  |
-                            constant_concatenation                  |
-                            constant_multiple_concatenation         |
-                            constant_function_call                  |
-                            LP + constant_mintypmax_expression + RP ,
-                            err = "constant_primary" )
 
-module_path_primary << Group( number                                     |
-                              identifier                                 |
-                              module_path_concatenation                  |
-                              module_path_multiple_concatenation         |
-                              function_call                              |
-                              system_function_call                       |
-                              constant_function_call                     |
-                              LP + module_path_mintypmax_expression + RP )
+@Grammar
+def primary():
+    _ = _group( number                                                                                           |
+                function_call                                                                                    |
+                constant_function_call                                                                           |
+                system_function_call                                                                             |
+                hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" ) + LB + range_expression + RB |
+                hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" )                              |
+                hierarchical_identifier                                             + LB + range_expression + RB |
+                hierarchical_identifier                                                                          |
+                concatenation                                                                                    |
+                multiple_concatenation                                                                           |
+                LP + mintypmax_expression + RP                                                                   ,
+                err = "primary")
+    @GroupedAction
+    def action(s,l,token):
+        if token.number:
+            return ast.NumberPrimary( token.number )
+        elif token.hierarchical_identifier:
+            return ast.IdPrimary( token.hierarchical_identifier,
+                                  [ node(exp) for exp in token.exps ],
+                                  node(token.range_expression) if token.range_expression else None )
+        elif token.concatenation:
+            return token.concatenation
+        elif token.function_call:
+            return token.function_call
+        elif token.system_function_call:
+            return token.system_function_call
+        elif token.constant_function_call:
+            return token.constant_function_call
+        elif token.mintypmax_expression:
+            return token.mintypmax_expression
+        else:
+            raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
+    return (_,action)
 
-primary << _group( number                                                                                           |
-                   function_call                                                                                    |
-                   constant_function_call                                                                           |
-                   system_function_call                                                                             |
-                   hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" ) + LB + range_expression + RB |
-                   hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" )                              |
-                   hierarchical_identifier                                             + LB + range_expression + RB |
-                   hierarchical_identifier                                                                          |
-                   concatenation                                                                                    |
-                   multiple_concatenation                                                                           |
-                   LP + mintypmax_expression + RP                                                                   ,
-                   err = "primary")
+@Grammar
+def constant_primary():
+    _ = _group( number                                  |
+                constant_concatenation                  |
+                constant_multiple_concatenation         |
+                constant_function_call                  |
+                LP + constant_mintypmax_expression + RP ,
+                err = "constant_primary" )
+    @GroupedAction
+    def action(s,l,token):
+        if token.number:
+            return ast.NumberPrimary( token.number )
+        elif token.constant_function_call:
+            return token.constant_function_call
+        elif token.constant_concatenation:
+            return token.constant_concatenation
+        elif token.constant_mintypmax_expression:
+            return token.constant_mintypmax_expression
+        else:
+            raise Exception("Not Implemented completely constantPrimaryAction: token={0}".format(token))
+    return (_,action)
 
-
-
-@Action(constant_primary)
-def constantPrimaryAction(s,l,token):
-    if token.number:
-        return ast.NumberPrimary( token.number )
-    elif token.constant_function_call:
-        return token.constant_function_call
-    elif token.constant_concatenation:
-        return token.constant_concatenation
-    elif token.constant_mintypmax_expression:
-        return token.constant_mintypmax_expression
-    else:
-        raise Exception("Not Implemented completely constantPrimaryAction: token={0}".format(token))
-
-@Action(module_path_primary)
-@NotImplemented
-def modulePathPrimaryAction(s,l,token):
-    pass
-
-
-@Action(primary)
-def primaryAction(_s,l,token):
-    if token.number:
-        return ast.NumberPrimary( token.number )
-    elif token.hierarchical_identifier:
-        return ast.IdPrimary( token.hierarchical_identifier,
-                              [ node(exp) for exp in token.exps ],
-                              node(token.range_expression) if token.range_expression else None )
-    elif token.concatenation:
-        return token.concatenation
-    elif token.function_call:
-        return token.function_call
-    elif token.system_function_call:
-        return token.system_function_call
-    elif token.constant_function_call:
-        return token.constant_function_call
-    elif token.mintypmax_expression:
-        return token.mintypmax_expression
-    else:
-        raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
+@GrammarNotImplementedYet
+def module_path_primary():
+    return (( number                                     |
+              identifier                                 |
+              module_path_concatenation                  |
+              module_path_multiple_concatenation         |
+              function_call                              |
+              system_function_call                       |
+              constant_function_call                     |
+              LP + module_path_mintypmax_expression + RP ), )
 
 
 # A.8.5 Expression left-side value
