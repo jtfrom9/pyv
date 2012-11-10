@@ -350,9 +350,8 @@ class Event(AstNode):
         else: assert(False)
 
 class Trigger(AstNode):
-    def __init__(self,id):
-        self._id = id
+    def __init__(self,_id):
+        self._id = _id
     def shortName(self):
-        print("?")
-        return "->" + id.shortName()
+        return "->" + self._id.shortName()
 

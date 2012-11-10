@@ -254,11 +254,10 @@ net_decl_assignment << Group( identifier + EQUAL + expression )
 
 # A.2.5 Declaration ranges
 dimension << Group( LB + dimension_constant_expression + COLON + dimension_constant_expression + RB )
-_range    << Group( LB + msb_constant_expression       + COLON + lsb_constant_expression       + RB )
 
-@Action(_range)
-def rangeAction(_s,loc,token):
-    return ast.Range(token.msb_constant_expression, token.lsb_constant_expression)
+@Grammar
+def _range( _ = LB + msb_constant_expression + COLON + lsb_constant_expression + RB ):
+    return (_, lambda t:ast.Range(t.msb_constant_expression, t.lsb_constant_expression))
 
 
 # A.2.6 Function declarations
@@ -432,84 +431,84 @@ def seq_block():
               END ),
             lambda t: ast.Block( [item for item in t.item_decls], 
                                  [stmt for stmt in t.statements] ))
-            
+
 @Grammar
 def par_block():
     return (( FORK + 
               Optional( COLON + block_identifier  + zeroOrMore( block_item_declaration, "item_delcs" ) ) +
               zeroOrMore( statement, "statements" ) +
               JOIN ),
-            lambda t: ast.Block( node(t.item_decls, []), node(t.statements, []), seq=False))
-
+            lambda t: ast.Block( [item for item in t.item_decls], 
+                                 [stmt for stmt in t.statements], seq=False))
 
 
 # A.6.4 Statements
-statement << Group( case_statement                                |
-                    conditional_statement                         |
-                    disable_statement                             |
-                    event_trigger                                 |
-                    loop_statement                                |
-                    par_block                                     |
-                    procedural_timing_control_statement           |
-                    seq_block                                     |
-                    system_task_enable                            |
-                    task_enable                                   |
-                    wait_statement                                |
-                    nonblocking_assignment            - SEMICOLON |
-                    blocking_assignment               - SEMICOLON |
-                    procedural_continuous_assignments - SEMICOLON )
-statement.setParseAction(OneOfAction)
+@Grammar
+def statement():
+    return ((case_statement                                |
+             conditional_statement                         |
+             disable_statement                             |
+             event_trigger                                 |
+             loop_statement                                |
+             par_block                                     |
+             procedural_timing_control_statement           |
+             seq_block                                     |
+             system_task_enable                            |
+             task_enable                                   |
+             wait_statement                                |
+             nonblocking_assignment            - SEMICOLON |
+             blocking_assignment               - SEMICOLON |
+             procedural_continuous_assignments - SEMICOLON ),
+            lambda t: t)
 
-function_statement << Group( function_blocking_assignment + SEMICOLON |
-                             function_case_statement                  |
-                             function_conditional_statement           |
-                             function_loop_statement                  |
-                             function_seq_block                       |
-                             disable_statement                        |
-                             system_task_enable                       )
-function_statement.setParseAction(OneOfAction)
+@Grammar
+def function_statement():
+    return (( function_blocking_assignment + SEMICOLON |
+              function_case_statement                  |
+              function_conditional_statement           |
+              function_loop_statement                  |
+              function_seq_block                       |
+              disable_statement                        |
+              system_task_enable                       ),
+            lambda t:t )
 
-statement_or_null          << Group( SEMICOLON | alias(statement,"stmt")  )
-function_statement_or_null << Group( SEMICOLON | alias(function_statement,"stmt") )
+@Grammar
+def statement_or_null( _ = SEMICOLON | statement ):
+    return (_, lambda t: t.statement if t.statement else ast.null)
 
-@Action(statement_or_null, function_statement_or_null)
-def statementOrNullAction(_s,l,token):
-    return node(token.stmt) if token.stmt else ast.null
-
+@Grammar
+def function_statement_or_null( _ = SEMICOLON | function_statement ):
+    return (_, lambda t: t.function_statement if t.function_statement else ast.null)
 
 
 # A.6.5 Timing control statements
-delay_control          << Group( SHARP + delay_value | 
-                                 SHARP + LP + mintypmax_expression + RP )
-@Action(delay_control)
-@NotImplemented
-def delayControlAction(s,l,token): pass
+@GrammarNotImplementedYet
+def delay_control():
+    return (( SHARP + delay_value | 
+              SHARP + LP + mintypmax_expression + RP ), )
+            
+@Grammar
+def delay_or_event_control():
+    _ = ( delay_control | 
+          event_control |
+          REPEAT + LP + expression + RP + event_control )
+    def action(token):
+        if not token.expression:
+            return node(token)
+        else:
+            raise Exception("Not Implemented completely delay_or_event_control: token={0}".format(ast.nodeInfo(token)))
+    return (_,action)
 
-delay_or_event_control << Group( delay_control | 
-                                 event_control |
-                                 REPEAT + LP + expression + RP + event_control )
-
-@Action(delay_or_event_control)
-def delayOrEventControlAction(s,l,token):
-    if not token.expression:
-        return node(token)
-    else:
-        raise Exception("Not Implemented completely delay_or_event_control: token={0}".format(ast.nodeInfo(token)))
-
-disable_statement      << Group( DISABLE + hierarchical_identifier  + SEMICOLON )
-
-@Action(disable_statement)
-@NotImplemented
-def disableStatementAction(s,l,token):pass
-
+@GrammarNotImplementedYet
+def disable_statement():
+    return (( DISABLE + hierarchical_identifier  + SEMICOLON ), )
 
 @Grammar
 def event_control():
-    g = (AT + identifier                 |
+    _ = (AT + identifier                 |
          AT + LP + event_expression + RP |
          AT + ASTA                       |
          AT + LP + ASTA + RP             )
-    
     def action(token):
         if token.identifier:
             return ast.Event(ast.WaitTypeId, token.identifier)
@@ -517,12 +516,12 @@ def event_control():
             return ast.Event(ast.WaitTypeExpr, token.event_expression)
         else:
             return ast.Event(ast.WaitTypeAny, None)
-    return (g,action)
+    return (_,action)
 
 @Grammar
 def event_trigger():
     return ( TRIG + hierarchical_identifier + SEMICOLON,
-             lambda token: ast.Trigger(token.hierarchical_identifier) )
+             lambda t: ast.Trigger(t.hierarchical_identifier) )
 
 @Grammar
 def event_expression():
@@ -530,9 +529,6 @@ def event_expression():
                      NEGEDGE + expression    |
                      hierarchical_identifier |
                      expression              )
-    grammar = operatorPrecedence( ev_base_expr, [ (OR,                      2, opAssoc.LEFT),
-                                                  (Literal(",")("keyword"), 2, opAssoc.LEFT) ] )
-
     def _base_action(token):
         if token.keyword:
             ret = token.expression
@@ -544,6 +540,9 @@ def event_expression():
         return ret
     ev_base_expr.setParseAction(_base_action)
 
+    _ = operatorPrecedence( ev_base_expr, [ (OR,                      2, opAssoc.LEFT),
+                                            (Literal(",")("keyword"), 2, opAssoc.LEFT) ] )
+
     @GroupedAction
     def action(s,l,token):
         if isinstance(token, ast.Expression): 
@@ -553,21 +552,16 @@ def event_expression():
                                         [node(t) for t in token[0::2]])
         else:
             raise Exception("Not Implemented completely eventExpressionAction: token={0}".format(token))
-    return (grammar, action)
+    return (_, action)
 
+@GrammarNotImplementedYet
+def procedural_timing_control_statement():
+    return (( delay_or_event_control + statement_or_null ),)
 
+@GrammarNotImplementedYet
+def wait_statement():
+    return (( WAIT + LP + expression + RP + statement_or_null ),)
 
-procedural_timing_control_statement << Group( delay_or_event_control + statement_or_null      )
-wait_statement                      << Group( WAIT + LP + expression + RP + statement_or_null )
-
-@Action(event_trigger)
-def eventTriggerAction(_s,l,token):
-    pass
-
-@Action(procedural_timing_control_statement)
-def proceduralTimingControlStatementAction(_s,l,token):
-    pass
-    
 
 # A.6.6 Conditional statements
 conditional_statement << Group( 
@@ -759,7 +753,6 @@ def system_function_call( _ = system_task_identifier + Optional( LP + Optional(d
 def constant_base_expression(): 
     return (constant_expression, lambda t: node(t))
 
-
 @Grammar
 def constant_expression():
     basic_primary = _group( unary_operator + constant_primary |
@@ -847,7 +840,6 @@ def conditional_expression():
                                                       node(token.exp_if),
                                                       node(token.exp_else) ))
 
-    
 @Grammar
 def expression():
     basic_primary = Group( unary_operator + primary | primary | string )
