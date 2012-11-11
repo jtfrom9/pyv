@@ -19,7 +19,7 @@ def _id_print(result):
 @testOf(grammar.simple_identifier)
 def test169(self):
     #_id_print(self.check_pass("hoge"))
-    debug(grammar.simple_identifier)
+    #debug(grammar.simple_identifier)
     self.check_pass("hoge")
 
 

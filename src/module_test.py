@@ -31,10 +31,10 @@ def test_always_construct(self):
     print(self.check_pass('''always hoge=1+2;'''
 ).asXML())
     
-@testOf(grammar.procedural_timing_control_statement)
-def test_procedural_timing_control_statement(self):
-    print(self.check_pass("@hoge;").asXML())
-    print(self.check_pass("@*;").asXML())
+# @testOf(grammar.procedural_timing_control_statement)
+# def test_procedural_timing_control_statement(self):
+#     print(self.check_pass("@hoge;").asXML())
+#     print(self.check_pass("@*;").asXML())
     
 @testOf(grammar.event_control)
 def test_event_control(self):
