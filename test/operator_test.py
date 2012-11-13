@@ -2,8 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf
-import grammar
+from test_common import testOf, grammar
 
 @testOf(grammar.unary_operator)
 def test_unary_operator(self):

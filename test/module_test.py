@@ -4,8 +4,9 @@ import unittest
 import pprint
 from pyparsing import stringEnd
 
-import grammar
-from test_common import testOf
+# from test_common import testOf
+# import grammar
+from test_common import testOf, grammar
 
 @testOf(grammar.port_declaration)
 def test_port_declaration(self):

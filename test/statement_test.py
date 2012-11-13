@@ -2,9 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, _stmt_print, run_tests, debug, fail
-import pyparsing as pp
-import grammar
+from test_common import testOf, _print, _stmt_print, run_tests, debug, fail, grammar
 
 @testOf(grammar.conditional_statement)
 def test(self):

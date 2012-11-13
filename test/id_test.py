@@ -2,8 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, run_tests, debug
-import grammar
+from test_common import testOf, run_tests, debug, grammar
 
 def _id_print(result):
     print(result.asXML())

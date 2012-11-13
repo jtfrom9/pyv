@@ -2,10 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, run_tests, debug
-import grammar
-
-grammar.constant_primary.enablePackrat()
+from test_common import testOf, _print, run_tests, debug, grammar
 
 @testOf(grammar.constant_primary)
 def test131(self):

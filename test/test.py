@@ -11,6 +11,7 @@ import primary_test
 import number_test
 import value_test
 import statement_test
+import concatenation_test
 
 this = sys.modules[__name__]
 

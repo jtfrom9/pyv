@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-import sys
+import sys, os
 import unittest
 from pyparsing import stringEnd, ParseBaseException, ParseException, ParseSyntaxException, ParseFatalException, ParseResults
 
-import ast
+sys.path.insert(0, os.path.join(os.path.dirname(sys.modules[__name__].__file__),'..'))
+from src import grammar, ast
 
 class GrammarTestCase(unittest.TestCase):
     import abc

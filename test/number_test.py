@@ -2,8 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, run_tests,debug
-import grammar
+from test_common import testOf, _print, run_tests,debug, grammar
 
 @testOf(grammar.number)
 def test(self):
