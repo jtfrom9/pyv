@@ -217,7 +217,7 @@ def test88(self):
 
 @testOf(grammar.wait_statement)
 def test89(self):
-    pass
+    _stmt_print(self.check_pass("wait (X) A=1;"))
 
 
 @testOf(grammar.conditional_statement)

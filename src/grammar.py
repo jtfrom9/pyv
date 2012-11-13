@@ -536,9 +536,10 @@ def event_expression():
 def procedural_timing_control_statement():
     return (( delay_or_event_control + statement_or_null ),)
 
-@GrammarNotImplementedYet
+@Grammar
 def wait_statement():
-    return (( WAIT + LP + expression + RP + statement_or_null ),)
+    return (( WAIT + LP + expression + RP + statement_or_null ),
+            lambda t: ast.Wait(t.expression, t.statement_or_null if t.statement_or_null else ast.null))
 
 
 # A.6.6 Conditional statements

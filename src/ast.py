@@ -324,12 +324,25 @@ class Block(Statement):
 
 class Construct(Statement):
     def __init__(self, ctype, stmt):
-        self.ctype = ctype
-        self.stmt = stmt
+        self._ctype = ctype
+        self._stmt = stmt
     def shortName(self):
-        return self.ctype + ":" + self.stmt.shortName()
+        return self._ctype + ":" + self.stmt.shortName()
     def __iter__(self):
-        for x in self.stmt: yield x
+        for x in self._stmt: yield x
+
+class Trigger(Statement):
+    def __init__(self,_id):
+        self._id = _id
+    def shortName(self):
+        return "->" + self._id.shortName()
+
+class Wait(Statement):
+    def __init__(self, exp, stmt):
+        self._exp = exp
+        self._stmt = stmt
+    def shortName(self):
+        return "wait({0}){1}".format(self._exp.shortName(), self._stmt.shortName())
 
 class Delay(AstNode):
     def __init__(self):
@@ -348,10 +361,4 @@ class Event(AstNode):
         elif self._type==WaitTypeAny:
             return "@*"
         else: assert(False)
-
-class Trigger(AstNode):
-    def __init__(self,_id):
-        self._id = _id
-    def shortName(self):
-        return "->" + self._id.shortName()
 
