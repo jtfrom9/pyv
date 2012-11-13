@@ -39,7 +39,7 @@ list_of_net_decl_assignments
 list_of_real_identifiers
 net_decl_assignment
 dimension
-_range
+range_
 function_declaration
 function_item_declaration
 function_port_list

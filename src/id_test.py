@@ -56,7 +56,7 @@ def test178(self):
     _id_print(self.check_pass("hoge"))
     _id_print(self.check_pass("hoge[2:3]"))
 
-@testOf(grammar._range)
+@testOf(grammar.range_)
 def test182r(self):
     self.check_pass("[10:5]")
 

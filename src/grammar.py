@@ -167,13 +167,13 @@ non_port_module_item                << module_or_generate_item
 # A.2.1.1 Module parameter declarations
 # A.2.1.2 Port declarations
 inout_declaration  << Group(
-    INOUT + Optional( net_type ) + Optional( SIGNED ) + Optional ( _range ) + list_of_port_identifers )
+    INOUT + Optional( net_type ) + Optional( SIGNED ) + Optional ( range_ ) + list_of_port_identifers )
 input_declaration  << Group(
-    INPUT + Optional( net_type ) + Optional( SIGNED ) + Optional ( _range ) + list_of_port_identifers )
+    INPUT + Optional( net_type ) + Optional( SIGNED ) + Optional ( range_ ) + list_of_port_identifers )
 output_declaration << Group( 
-    OUTPUT + Optional(net_type) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers          |
-    OUTPUT + Optional(REG)      + Optional(SIGNED) + Optional(_range) + list_of_port_identifers          |
-    OUTPUT + REG                + Optional(SIGNED) + Optional(_range) + list_of_variable_port_identifers |
+    OUTPUT + Optional(net_type) + Optional(SIGNED) + Optional(range_) + list_of_port_identifers          |
+    OUTPUT + Optional(REG)      + Optional(SIGNED) + Optional(range_) + list_of_port_identifers          |
+    OUTPUT + REG                + Optional(SIGNED) + Optional(range_) + list_of_variable_port_identifers |
     OUTPUT + Optional( output_variable_type )                         + list_of_port_identifers          |
     OUTPUT + output_variable_type                                     + list_of_variable_port_identifers )
 
@@ -186,7 +186,7 @@ net_declaration     << Group(
 
 real_declaration     << Group(REAL                                      + list_of_real_identifiers     + SEMICOLON)
 realtime_declaration << Group(REALTIME                                  + list_of_real_identifiers     + SEMICOLON)
-reg_declaration      << Group(REG + Optional(SIGNED) + Optional(_range) + list_of_variable_identifiers + SEMICOLON)
+reg_declaration      << Group(REG + Optional(SIGNED) + Optional(range_) + list_of_variable_identifiers + SEMICOLON)
 time_declaration     << Group(TIME                                      + list_of_variable_identifiers + SEMICOLON)
 
 # A.2.2 Declaration data types
@@ -225,7 +225,7 @@ net_decl_assignment << Group( identifier + EQUAL + expression )
 dimension << Group( LB + dimension_constant_expression + COLON + dimension_constant_expression + RB )
 
 @Grammar
-def _range( _ = LB + msb_constant_expression + COLON + lsb_constant_expression + RB ):
+def range_( _ = LB + msb_constant_expression + COLON + lsb_constant_expression + RB ):
     return (_, lambda t:ast.Range(t.msb_constant_expression, t.lsb_constant_expression))
 
 
@@ -246,7 +246,7 @@ function_declaration << Group(
 
 function_item_declaration << Group( block_item_declaration | tf_input_declaration + SEMICOLON )
 function_port_list        << Group( tf_input_declaration + ZeroOrMore( CAMMA + tf_input_declaration ) )
-range_or_type             << Group( _range | INTEGER | REAL | REALTIME | TIME )
+range_or_type             << Group( range_ | INTEGER | REAL | REALTIME | TIME )
 
 # A.2.7 Task declarations
 task_declaration << Group( 
@@ -269,15 +269,15 @@ task_port_list        << Group( delimitedList( task_port_item ) )
 task_port_item        << Group( tf_inout_declaration | tf_output_declaration | tf_inout_declaration )
 
 tf_input_declaration  << Group( 
-    INPUT + Optional(REG) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers  | 
+    INPUT + Optional(REG) + Optional(SIGNED) + Optional(range_) + list_of_port_identifers  | 
     INPUT + Optional(task_port_type) + list_of_port_identifers )
 
 tf_output_declaration << Group( 
-    OUTPUT + Optional(REG) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers | 
+    OUTPUT + Optional(REG) + Optional(SIGNED) + Optional(range_) + list_of_port_identifers | 
     OUTPUT + Optional(task_port_type) + list_of_port_identifers )
 
 tf_inout_declaration  << Group( 
-    INOUT + Optional(REG) + Optional(SIGNED) + Optional(_range) + list_of_port_identifers  | 
+    INOUT + Optional(REG) + Optional(SIGNED) + Optional(range_) + list_of_port_identifers  | 
     INOUT + Optional(task_port_type) + list_of_port_identifers )
 
 task_port_type << Group( TIME | REAL | REALTIME | INTEGER )
@@ -291,7 +291,7 @@ block_item_declaration << Group(
     realtime_declaration  |
     time_declaration )
 
-block_reg_declaration              << Group( REG + Optional(SIGNED) + Optional(_range) + list_of_block_variable_identifiers + SEMICOLON )
+block_reg_declaration              << Group( REG + Optional(SIGNED) + Optional(range_) + list_of_block_variable_identifiers + SEMICOLON )
 list_of_block_variable_identifiers << Group( delimitedList( block_variable_type ) )
 block_variable_type                << Group( identifier | identifier + dimension + ZeroOrMore(dimension) )
 
@@ -301,7 +301,7 @@ block_variable_type                << Group( identifier | identifier + dimension
 # A.4.1 Module instantiation
 module_instantiation     << Group( identifier + Optional( parameter_value_assignment ) + delimitedList( module_instance ) + SEMICOLON )
 module_instance          << Group( name_of_instance + LP + Optional( list_of_port_connections ) + RP )
-name_of_instance         << Group( module_instance_identifier + Optional( _range ) )
+name_of_instance         << Group( module_instance_identifier + Optional( range_ ) )
 list_of_port_connections << Group( delimitedList ( ordered_port_connection ) |
                                    delimitedList ( named_port_connection   ) )
 ordered_port_connection  << Group( Optional( expression ) )
@@ -1122,10 +1122,10 @@ def simple_identifier():
     return (ID, lambda t: ast.BasicId(t[0]))
 
 @Grammar
-def simple_arrayed_identifier( _ = simple_identifier + Optional( _range ) ):
+def simple_arrayed_identifier( _ = simple_identifier + Optional( range_ ) ):
     def action(token):
-        if token._range:
-            return ast.RangedId(token.simple_identifier.shortName(), token._range)
+        if token.range_:
+            return ast.RangedId(token.simple_identifier.shortName(), token.range_)
         else:
             return ast.BasicId(token.simple_identifier.shortName())
     return (_, action)
@@ -1139,7 +1139,7 @@ def escaped_identifier():
 
 @GrammarNotImplementedYet
 def escaped_arrayed_identifier():
-    return (( escaped_identifier + Optional( _range ) ), )
+    return (( escaped_identifier + Optional( range_ ) ), )
 
 @Grammar
 def identifier():
