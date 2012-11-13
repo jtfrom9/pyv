@@ -34,11 +34,6 @@ def alias(grammar, name):
     else:
         return Group(grammar)
 
-def emsg(msg):
-    sym = NoMatch()
-    sym.setName(msg)
-    return sym
-
 def _group(expr, err=None):
     class WrapGroup(Group):
         def __init__(self, expr):
@@ -51,12 +46,6 @@ def _group(expr, err=None):
                 pbe.msg = "Syntax Error: " + err
                 raise
     return WrapGroup(expr)
-
-def oneOrMore(expr,name,err=""):
-    return alias(OneOrMore(expr),name)
-
-def zeroOrMore(expr,name,err=""):
-    return alias(ZeroOrMore(expr),name)
 
 def delim(expr,name=None,delimiter=','):
     g = _group( delimitedList(expr,delimiter) - NotAny(delimiter),
@@ -221,7 +210,7 @@ delay_value << ( unsigned_number | mintypmax_expression )
 
 delay_value.setParseAction(lambda t: t[0])
 
-# A.2.3 Declaration lists
+# A.2.3 Declaration listsp
 list_of_event_identifiers        << Group(delimitedList( identifier + Optional( dimension + ZeroOrMore(dimension) ) ))
 list_of_net_decl_assignments     << Group(delimitedList( net_decl_assignment                                        ))
 list_of_net_identifiers          << Group(delimitedList( identifier + Optional( dimension + ZeroOrMore(dimension) ) ))
@@ -398,8 +387,8 @@ def variable_assignment(         _ = variable_lvalue + EQUAL + expression ):
 @Grammar
 def function_seq_block():
     return (( BEGIN + 
-              Optional( COLON + block_identifier + zeroOrMore( block_item_declaration, "item_delcs" ) ) +
-              zeroOrMore( function_statement, "statements" ) +
+              Optional( COLON + block_identifier + ZeroOrMore(block_item_declaration)("item_delcs") ) +
+              ZeroOrMore(function_statement)("statements") +
               END ),
             lambda t: ast.Block( [item for item in t.item_decls], 
                                  [stmt for stmt in t.statements] ))
@@ -407,8 +396,8 @@ def function_seq_block():
 @Grammar
 def seq_block():
     return (( BEGIN + 
-              Optional( COLON + block_identifier + zeroOrMore( block_item_declaration, "item_decls") ) +
-              zeroOrMore( statement, "statements" ) +
+              Optional( COLON + block_identifier + ZeroOrMore(block_item_declaration)("item_decls") ) +
+              ZeroOrMore(statement)("statements") +
               END ),
             lambda t: ast.Block( [item for item in t.item_decls], 
                                  [stmt for stmt in t.statements] ))
@@ -416,8 +405,8 @@ def seq_block():
 @Grammar
 def par_block():
     return (( FORK + 
-              Optional( COLON + block_identifier  + zeroOrMore( block_item_declaration, "item_delcs" ) ) +
-              zeroOrMore( statement, "statements" ) +
+              Optional( COLON + block_identifier  + ZeroOrMore(block_item_declaration)("item_delcs") ) +
+              ZeroOrMore(statement)("statements") +
               JOIN ),
             lambda t: ast.Block( [item for item in t.item_decls], 
                                  [stmt for stmt in t.statements], seq=False))
@@ -547,11 +536,11 @@ conditional_statement << Group(
     IF + LP + alias(expression,"condition") + RP + alias(statement_or_null,"statement_if") + 
     Optional( ELSE + alias(statement_or_null,"statement_else") ) )
 
-_else_if_part = Group( ELSE + IF + LP + expression("condition_elseif") + RP + statement_or_null("statement_elseif") )
+_else_if_part = Group( ELSE + IF + LP + alias(expression,"condition_elseif") + RP + alias(statement_or_null,"statement_elseif") )
 if_else_if_statement << Group( 
-    IF + LP + expression("condition") + RP + statement_or_null("statement_if") + 
-    zeroOrMore(_else_if_part,"elseif_blocks") +
-    Optional( ELSE + statement_or_null("statement_else") ) )
+    IF + LP + alias(expression, "condition") + RP + alias(statement_or_null, "statement_if") + 
+    ZeroOrMore( _else_if_part )("elseif_blocks") +
+    Optional( ELSE + alias(statement_or_null, "statement_else") ) )
 
 function_conditional_statement << Group(
     IF + LP + expression + RP + function_statement_or_null +
@@ -674,18 +663,18 @@ def multiple_concatenation():
 
 net_concatenation << LC + delim(net_concatenation_value,"con_values") + RC 
 net_concatenation_value << ( 
-    hierarchical_identifier + oneOrMore(LB + expression + RB, "exps") + LB + range_expression + RB |
-    hierarchical_identifier + oneOrMore(LB + expression + RB, "exps")                              |
-    hierarchical_identifier +                                           LB + range_expression + RB |
-    hierarchical_identifier                                                                        |
+    hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps") + LB + range_expression + RB |
+    hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps")                              |
+    hierarchical_identifier +                                           LB + range_expression + RB        |
+    hierarchical_identifier                                                                               |
     net_concatenation )
 
 variable_concatenation <<  LC + delim(variable_concatenation_value,"con_values") + RC 
 variable_concatenation_value << (
-    hierarchical_identifier + oneOrMore(LB + expression + RB, "exps") + LB + range_expression + RB |
-    hierarchical_identifier + oneOrMore(LB + expression + RB, "exps")                              |
-    hierarchical_identifier +                                           LB + range_expression + RB |
-    hierarchical_identifier                                                                        |
+    hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps") + LB + range_expression + RB |
+    hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps")                              |
+    hierarchical_identifier +                                           LB + range_expression + RB        |
+    hierarchical_identifier                                                                               |
     variable_concatenation )
 
 @Action(net_concatenation, variable_concatenation)
@@ -704,7 +693,7 @@ def _NetVariableConcatenationValueAction(s,l,token):
         return token.variable_concatenation
     else:
         return ast.IdPrimary(token.hierarchical_identifier,
-                             [ e for e in token.exps ],
+                             [ e.expression for e in token.exps ],
                              token.range_expression if token.range_expression else None )
 
 
@@ -902,17 +891,17 @@ def width_constant_expression():
 
 @Grammar
 def primary():
-    _ = _group( number                                                                                           |
-                function_call                                                                                    |
-                constant_function_call                                                                           |
-                system_function_call                                                                             |
-                hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" ) + LB + range_expression + RB |
-                hierarchical_identifier + oneOrMore( LB + expression + RB, "exps" )                              |
-                hierarchical_identifier                                             + LB + range_expression + RB |
-                hierarchical_identifier                                                                          |
-                concatenation                                                                                    |
-                multiple_concatenation                                                                           |
-                LP + mintypmax_expression + RP                                                                   ,
+    _ = _group( number                                                                                                |
+                function_call                                                                                         |
+                constant_function_call                                                                                |
+                system_function_call                                                                                  |
+                hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps") + LB + range_expression + RB |
+                hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps")                              |
+                hierarchical_identifier                                           + LB + range_expression + RB        |
+                hierarchical_identifier                                                                               |
+                concatenation                                                                                         |
+                multiple_concatenation                                                                                |
+                LP + mintypmax_expression + RP                                                                        ,
                 err = "primary")
     @GroupedAction
     def action(s,l,_token):
@@ -921,7 +910,7 @@ def primary():
             return ast.NumberPrimary( token.number )
         elif token.hierarchical_identifier:
             return ast.IdPrimary( token.hierarchical_identifier,
-                                  [ exp for exp in token.exps ],
+                                  [ e.expression for e in token.exps ],
                                   token.range_expression if token.range_expression else None )
         elif (token.concatenation or token.function_call or 
               token.system_function_call or token.constant_function_call or
@@ -969,33 +958,33 @@ def module_path_primary():
 
 @Grammar
 def net_lvalue():
-    _ = ( hierarchical_identifier + oneOrMore( LB + constant_expression + RB, "exps" ) + LB + constant_range_expression + RB  |
-          hierarchical_identifier + oneOrMore( LB + constant_expression + RB, "exps" )                                        |
-          hierarchical_identifier                                                      + LB + constant_range_expression + RB  |
-          net_concatenation                                                                                                   |
-          hierarchical_identifier                                                                                             )
+    _ = ( hierarchical_identifier + OneOrMore(Group(LB + constant_expression + RB))("exps") + LB + constant_range_expression + RB |
+          hierarchical_identifier + OneOrMore(Group(LB + constant_expression + RB))("exps")                                       |
+          hierarchical_identifier                                                           + LB + constant_range_expression + RB |
+          net_concatenation                                                                                                       |
+          hierarchical_identifier                                                                                                 )
     def action(token):
         if token.net_concatenation:
             return token.net_concatenation
         else:
             return ast.LeftSideValue( token.hierarchical_identifier,
-                                      [ e for e in token.exps ],
+                                      [ e.constant_expression for e in token.exps ],
                                       token.constant_range_expression )
     return (_,action)
 
 @Grammar
 def variable_lvalue(): 
-    _ = ( hierarchical_identifier + oneOrMore( LB + expression + RB, "exps") + LB + range_expression + RB  |
-          hierarchical_identifier + oneOrMore( LB + expression + RB, "exps")                               |
-          hierarchical_identifier                                            + LB + range_expression + RB  |
-          variable_concatenation                                                                           |
-          hierarchical_identifier                                                                          )
+    _ = ( hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps") + LB + range_expression + RB |
+          hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps")                              |
+          hierarchical_identifier                                                  + LB + range_expression + RB |
+          variable_concatenation                                                                                |
+          hierarchical_identifier                                                                               )
     def action(token):
         if token.variable_concatenation:
             return token.variable_concatenation
         else:
             return ast.LeftSideValue( token.hierarchical_identifier,
-                                      [ e for e in token.exps ],
+                                      [ e.expression for e in token.exps ],
                                       token.range_expression )
     return (_,action)
 
@@ -1197,7 +1186,7 @@ def simple_hierarchical_branch():
 
     _ = ( simple_identifier + 
           Optional( LB + index + RB ) +
-          zeroOrMore( Group(PERIOD + simple_identifier + Optional( LB + index + RB )), "part_list" ) )
+          ZeroOrMore( Group(PERIOD + simple_identifier + Optional( LB + index + RB )))("part_list") )
           
     def action(token):
         if token.index:
