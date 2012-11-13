@@ -962,12 +962,11 @@ def constant_primary():
         token = _token[0]
         if token.number:
             return ast.NumberPrimary( token.number )
-        elif token.constant_function_call:
-            return token.constant_function_call
-        elif token.constant_concatenation:
-            return token.constant_concatenation
-        elif token.constant_mintypmax_expression:
-            return token.constant_mintypmax_expression
+        elif (token.constant_concatenation or 
+              token.constant_multiple_concatenation or 
+              token.constant_function_call or 
+              token.constant_mintypmax_expression):
+            return token[0]
         else:
             raise Exception("Not Implemented completely constantPrimaryAction: token={0}".format(token))
     return (_,action)
@@ -1181,11 +1180,11 @@ def escaped_arrayed_identifier():
 
 @Grammar
 def identifier():
-    return (( simple_identifier | escaped_identifier ), lambda t: t)
+    return (( simple_identifier | escaped_identifier ), lambda t: t[0])
 
 @Grammar
 def arrayed_identifier():
-    return (( simple_arrayed_identifier | escaped_arrayed_identifier ), lambda t: t)
+    return (( simple_arrayed_identifier | escaped_arrayed_identifier ), lambda t: t[0])
 
 @Grammar
 def module_instance_identifier():
@@ -1193,7 +1192,7 @@ def module_instance_identifier():
 
 @Grammar
 def hierarchical_identifier():
-    return (( simple_hierarchical_identifier | escaped_hierarchical_identifier ), lambda t: t)
+    return (( simple_hierarchical_identifier | escaped_hierarchical_identifier ), lambda t: t[0])
 
 @Grammar
 def simple_hierarchical_identifier():
