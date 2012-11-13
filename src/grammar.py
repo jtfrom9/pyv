@@ -103,7 +103,8 @@ def Grammar(expr_def):
     expr, action = expr_def()
     grammar = getattr(sys.modules[__name__], expr_def.__name__)
     grammar << expr
-    grammar.setParseAction(action)
+    if action:
+        grammar.setParseAction(action)
     return grammar
 
 def GrammarNotImplementedYet(expr_def):
@@ -676,7 +677,7 @@ net_concatenation << LC + delim(net_concatenation_value,"con_values") + RC
 net_concatenation_value << ( 
     hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps") + LB + range_expression + RB |
     hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps")                              |
-    hierarchical_identifier +                                           LB + range_expression + RB        |
+    hierarchical_identifier +                                                  LB + range_expression + RB |
     hierarchical_identifier                                                                               |
     net_concatenation )
 
@@ -684,7 +685,7 @@ variable_concatenation <<  LC + delim(variable_concatenation_value,"con_values")
 variable_concatenation_value << (
     hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps") + LB + range_expression + RB |
     hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps")                              |
-    hierarchical_identifier +                                           LB + range_expression + RB        |
+    hierarchical_identifier +                                                  LB + range_expression + RB |
     hierarchical_identifier                                                                               |
     variable_concatenation )
 
@@ -756,7 +757,7 @@ def constant_expression():
     basic_expr           << operatorPrecedence( basic_primary, [ (binary_operator, 2, opAssoc.LEFT) ] )
     _constant_expression  = operatorPrecedence( expr,          [ (binary_operator, 2, opAssoc.LEFT) ] )
 
-    @actionOf(basic_expr, ungroup=True)
+    @actionOf(basic_expr, _constant_expression, ungroup=True)
     def action(token):
         if isinstance(token, ast.Expression):
             return token
@@ -766,7 +767,7 @@ def constant_expression():
         else:
             raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
 
-    return (_constant_expression, action)
+    return (_constant_expression, None)
 
 
 @Grammar
@@ -826,7 +827,7 @@ def expression():
     basic_expr << operatorPrecedence( basic_primary,  [ (binary_operator, 2, opAssoc.LEFT) ])
     _expression = operatorPrecedence( term,           [ (binary_operator, 2, opAssoc.LEFT) ])
 
-    @actionOf(basic_expr, ungroup=True)
+    @actionOf(basic_expr, _expression, ungroup=True)
     def action(token):
         if isinstance(token, ast.Expression):
             return token
@@ -835,8 +836,7 @@ def expression():
                                         [t for t in token[0::2]])
         else:
             raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
-    
-    return (_expression, action)
+    return (_expression, None)
 
 @Grammar
 def lsb_constant_expression(): return (constant_expression, lambda t: t)
@@ -875,8 +875,7 @@ def range_expression():
           expression                                                )
 #                           expression + alias(PLUS, "sign") + COLON + width_constant_expression ^
 #                           expression + alias(MINUS,"sign") + COLON + width_constant_expression |
-
-    def action(s,l,token):
+    def action(token):
         if token.expression:
             return token.expression
         elif token.expression:
@@ -909,8 +908,8 @@ def primary():
                 multiple_concatenation                                                                                |
                 LP + mintypmax_expression + RP                                                                        ,
                 err = "primary")
-    def action(_token):
-        token = ungroup(_token)
+    @actionOf(_, ungroup=True)
+    def action(token):
         if token.number:
             return ast.NumberPrimary( token.number )
         elif token.hierarchical_identifier:
@@ -923,7 +922,7 @@ def primary():
             return token[0]
         else:
             raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
-    return (_,action)
+    return (_,None)
 
 @Grammar
 def constant_primary():
@@ -933,8 +932,8 @@ def constant_primary():
                 constant_function_call                  |
                 LP + constant_mintypmax_expression + RP ,
                 err = "constant_primary" )
-    def action(_token):
-        token = ungroup(_token)
+    @actionOf(_, ungroup=True)
+    def action(token):
         if token.number:
             return ast.NumberPrimary( token.number )
         elif (token.constant_concatenation or 
@@ -944,7 +943,7 @@ def constant_primary():
             return token[0]
         else:
             raise Exception("Not Implemented completely constantPrimaryAction: token={0}".format(token))
-    return (_,action)
+    return (_,None)
 
 @GrammarNotImplementedYet
 def module_path_primary():
