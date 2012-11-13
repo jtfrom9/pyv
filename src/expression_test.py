@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, run_tests
+from test_common import testOf, _print, run_tests, debug
 import grammar
 
 

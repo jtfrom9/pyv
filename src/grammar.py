@@ -674,18 +674,18 @@ def multiple_concatenation():
 
 net_concatenation << LC + delim(net_concatenation_value,"con_values") + RC 
 net_concatenation_value << ( 
-    hierarchical_identifier + oneOrMore( LB + expression + RB, "exps") + LB + range_expression + RB |
-    hierarchical_identifier + oneOrMore( LB + expression + RB, "exps")                              |
-    hierarchical_identifier +                                            LB + range_expression + RB |
-    hierarchical_identifier                                                                         |
+    hierarchical_identifier + oneOrMore(LB + expression + RB, "exps") + LB + range_expression + RB |
+    hierarchical_identifier + oneOrMore(LB + expression + RB, "exps")                              |
+    hierarchical_identifier +                                           LB + range_expression + RB |
+    hierarchical_identifier                                                                        |
     net_concatenation )
 
 variable_concatenation <<  LC + delim(variable_concatenation_value,"con_values") + RC 
 variable_concatenation_value << (
-    hierarchical_identifier + oneOrMore( LB + expression + RB,"exps" ) + LB + range_expression + RB |
-    hierarchical_identifier + oneOrMore( LB + expression + RB,"exps" )                              |
-    hierarchical_identifier +                                            LB + range_expression + RB |
-    hierarchical_identifier                                                                         |
+    hierarchical_identifier + oneOrMore(LB + expression + RB, "exps") + LB + range_expression + RB |
+    hierarchical_identifier + oneOrMore(LB + expression + RB, "exps")                              |
+    hierarchical_identifier +                                           LB + range_expression + RB |
+    hierarchical_identifier                                                                        |
     variable_concatenation )
 
 @Action(net_concatenation, variable_concatenation)
@@ -791,10 +791,10 @@ def constant_range_expression():
 # constant_base_expression + alias(MINUS,"sign") + COLON + width_constant_expression |
 
     def action(token):
-        if token.constant_expression:
-            return token.constant_expression
-        else:
+        if token.msb_constant_expression or token.lsb_constant_expression:
             return ast.Range(token.msb_constant_expression, token.lsb_constant_expression)
+        else:
+            return token.constant_expression
     return (_, action)
 
 @Grammar
@@ -979,7 +979,7 @@ def net_lvalue():
             return token.net_concatenation
         else:
             return ast.LeftSideValue( token.hierarchical_identifier,
-                                      token.exps,
+                                      [ e for e in token.exps ],
                                       token.constant_range_expression )
     return (_,action)
 
@@ -995,7 +995,7 @@ def variable_lvalue():
             return token.variable_concatenation
         else:
             return ast.LeftSideValue( token.hierarchical_identifier,
-                                      token.exps,
+                                      [ e for e in token.exps ],
                                       token.range_expression )
     return (_,action)
 

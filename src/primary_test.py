@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, run_tests
+from test_common import testOf, _print, run_tests, debug
 import grammar
 
 grammar.constant_primary.enablePackrat()
@@ -37,6 +37,8 @@ def test133(self):
 
 @testOf(grammar.net_lvalue)
 def test134(self):
+    # debug(grammar.constant_expression)
+    # debug(grammar.constant_range_expression)
     _print(self.check_pass("A"))
     _print(self.check_pass("A[1:0]"))
     _print(self.check_pass("A[1]"))
