@@ -63,14 +63,8 @@ def delim(expr,name=None,delimiter=','):
                 err = "invalid ','" )
     return g(name) if name else g
 
-def node(token, fail_ret=ast.null):
-    if token:
-        if isinstance(token,ParseResults):
-            return token[0]
-        else:
-            return token
-    else:
-        return fail_ret
+def unalias(token): return token[0]
+def ungroup(token): return token[0]
 
 def GroupedAction(action):
     import inspect
@@ -337,7 +331,7 @@ named_port_connection    << Group( PERIOD + identifier + LP + Optional( expressi
 # A.6.1 Continuous assignment statements
 @Grammar
 def net_assignment( _ = net_lvalue + EQUAL + expression ):
-    return (_, lambda t: ast.Assignment( node(t.net_lvalue), None, node(t.expression) ))
+    return (_, lambda t: ast.Assignment( t.net_lvalue, None, t.expression ))
 
 @Grammar
 def list_of_net_assignment( _ = delim( net_assignment, "list" ) ):
@@ -384,10 +378,10 @@ def procedural_continuous_assignments():
           RELEASE  + alias(net_lvalue,"lvalue")              )
     def action(token):
         if token.keyword in ['deassign','release']:
-            return ast.ReleaseLeftValue(token.keyword,node(token.lvalue))
+            return ast.ReleaseLeftValue(token.keyword, unalias(token.lvalue))
         else:
-            node(token.assignment).setContinuous(token.keyword)
-            return node(token.assignment)
+            unalias(token.assignment).setContinuous(token.keyword)
+            return unalias(token.assignment)
     return (_,action)
     
 @Grammar     
@@ -474,17 +468,12 @@ def delay_control():
     return (( SHARP + delay_value | 
               SHARP + LP + mintypmax_expression + RP ), )
             
-@Grammar
+@GrammarNotImplementedYet
 def delay_or_event_control():
     _ = ( delay_control | 
           event_control |
           REPEAT + LP + expression + RP + event_control )
-    def action(token):
-        if not token.expression:
-            return node(token)
-        else:
-            raise Exception("Not Implemented completely delay_or_event_control: token={0}".format(ast.nodeInfo(token)))
-    return (_,action)
+    return (_,)
 
 @GrammarNotImplementedYet
 def disable_statement():
@@ -532,12 +521,12 @@ def event_expression():
 
     @GroupedAction
     def action(s,l,_token):
-        token = _token[0]
+        token = ungroup(_token)
         if isinstance(token, ast.Expression): 
             return token
         elif token.keyword:
             return ast.BinaryExpression(token.keyword,
-                                        [node(t) for t in token[0::2]])
+                                        [t for t in token[0::2]])
         else:
             raise Exception("Not Implemented completely eventExpressionAction: token={0}".format(token))
     return (_, action)
@@ -578,20 +567,16 @@ function_if_else_if_statement << Group(
 @Action(conditional_statement)
 def conditionalStatementAction(_s,l,token):
     if not token.if_else_if_statement:
-        print("<1>")
         print(token.statement_if)
-        return ast.Conditional( [(node(token.condition), node(token.statement_if))], node(token.statement_else) )
+        return ast.Conditional( [(token.condition, token.statement_if)], token.statement_else )
     else:
-        print("<2>")
-        return node( token )
+        return token[0]
                         
 @Action(if_else_if_statement)
 def ifElseIfStatementAction(_s,l,token):
-    # print("condi:{0}".format(dir(token)))
-    # print("condi:{0}".format(token.condition))
-    return ast.Conditional( [ (node(token.condition), node(token.statement_if)) ] +
-                            [ (node(block.condition_elseif), node(block.statement_elseif)) for block in token.elseif_blocks ],
-                            node(token.statement_else) )
+    return ast.Conditional( [ (token.condition, token.statement_if) ] +
+                            [ (block.condition_elseif, block.statement_elseif) for block in token.elseif_blocks ],
+                            token.statement_else )
 
 
 # A.6.7 Case statements
@@ -634,13 +619,11 @@ loop_statement << Group(
 def loopStatementAction(_s,l,token):
     print("loopStatementAction: {0}".format(token.keyword))
     if token.keyword != 'for':
-        #return ast.Loop( node(token.expression),node(token.statement) )
         pass
     else:
         print("init={0}".format(token.init))
         print("exp={0}".format(token.expression))
         print("next={0}".format(token.next))
-        #return ast.ForLoop( node(token.init), node(token.expression), node(token.next) )
                             
         
 # A.6.9 Task enable statements
@@ -689,7 +672,7 @@ def multiple_concatenation():
     return ( LC + constant_expression + concatenation + RC, )
 
 
-net_concatenation << LC + delim(net_concatenation_value,"exps") + RC 
+net_concatenation << LC + delim(net_concatenation_value,"con_values") + RC 
 net_concatenation_value << ( 
     hierarchical_identifier + oneOrMore( LB + expression + RB, "exps") + LB + range_expression + RB |
     hierarchical_identifier + oneOrMore( LB + expression + RB, "exps")                              |
@@ -697,7 +680,7 @@ net_concatenation_value << (
     hierarchical_identifier                                                                         |
     net_concatenation )
 
-variable_concatenation <<  LC + delim(variable_concatenation_value,"exps") + RC 
+variable_concatenation <<  LC + delim(variable_concatenation_value,"con_values") + RC 
 variable_concatenation_value << (
     hierarchical_identifier + oneOrMore( LB + expression + RB,"exps" ) + LB + range_expression + RB |
     hierarchical_identifier + oneOrMore( LB + expression + RB,"exps" )                              |
@@ -707,19 +690,22 @@ variable_concatenation_value << (
 
 @Action(net_concatenation, variable_concatenation)
 def _NetVariableConcatenationAction(s,l,token):
-    el = [e for e in token.exps]
-    return el[0] if len(el)==1 else ast.Concatenation(el)
+    vlist = [e for e in token.con_values]
+    if len(vlist)==1: 
+        return vlist[0]
+    else:
+        return ast.Concatenation(vlist)
 
 @Action(net_concatenation_value, variable_concatenation_value)
 def _NetVariableConcatenationValueAction(s,l,token):
     if token.net_concatenation:
-        return node(token.net_concatenation)
+        return token.net_concatenation
     elif token.variable_concatenation:
-        return node(token.variable_concatenation)
+        return token.variable_concatenation
     else:
         return ast.IdPrimary(token.hierarchical_identifier,
-                             [ node(e) for e in token.exps ],
-                             node(token.range_expression) if token.range_expression else None )
+                             [ e for e in token.exps ],
+                             token.range_expression if token.range_expression else None )
 
 
 # A.8.2 Function calls
@@ -739,7 +725,7 @@ def system_function_call( _ = system_task_identifier + Optional( LP + Optional(d
 # A.8.3 Expressions
 @Grammar
 def constant_base_expression(): 
-    return (constant_expression, lambda t: node(t))
+    return (constant_expression, lambda t: t[0])
 
 @Grammar
 def constant_expression():
@@ -750,7 +736,7 @@ def constant_expression():
 
     @Action(basic_primary)
     def basicPrimaryAction(s,l,_token):
-        token = _token[0]
+        token = ungroup(_token)
         if token.unary_operator:
             return ast.UnaryExpression(token.unary_operator, token.constant_primary)
         elif token.constant_primary:
@@ -762,26 +748,23 @@ def constant_expression():
 
     cond_expr = ( alias(basic_expr,"exp_cond") + Q + 
                   alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") )
-    @Action(cond_expr)
-    def condExprActoin(s,l,token):
-        return ast.ConditionalExpression( node(token.exp_cond), 
-                                          node(token.exp_if),
-                                          node(token.exp_else) )
+    cond_expr.setParseAction(lambda t: 
+                             ast.ConditionalExpression(unalias(t.exp_cond), unalias(t.exp_if), unalias(t.exp_else)))
 
     expr = cond_expr | basic_primary 
-    expr.setParseAction(lambda t: node(t))
+    expr.setParseAction(lambda t: t[0])
 
     basic_expr           << operatorPrecedence( basic_primary, [ (binary_operator, 2, opAssoc.LEFT) ] )
     _constant_expression  = operatorPrecedence( expr,          [ (binary_operator, 2, opAssoc.LEFT) ] )
 
     @GroupedAction
     def action(s,l,_token):
-        token = _token[0]
+        token = ungroup(_token)
         if isinstance(token, ast.Expression):
             return token
         elif token.binary_operator:
             return ast.BinaryExpression(token.binary_operator, 
-                                        [node(t) for t in token[0::2]])
+                                        [t for t in token[0::2]])
         else:
             raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
     basic_expr.setParseAction(action)
@@ -795,7 +778,7 @@ def constant_mintypmax_expression():
           constant_expression + COLON + constant_expression + COLON + constant_expression )
     def action(token):
         if token.exp:
-            return node(token.exp)
+            return token.exp
         else:
             raise Exception("Not Implemented completely constantMintypmaxExpressionAction: token={0}".format(token))
     return (_,action)
@@ -809,15 +792,14 @@ def constant_range_expression():
 
     def action(token):
         if token.constant_expression:
-            return node(token.constant_expression)
+            return token.constant_expression
         else:
-            return ast.Range(node(token.msb_constant_expression),
-                             node(token.lsb_constant_expression))
+            return ast.Range(token.msb_constant_expression, token.lsb_constant_expression)
     return (_, action)
 
 @Grammar
 def dimension_constant_expression( _ = constant_expression ):
-    return (_, lambda t: node(t))
+    return (_, lambda t: t)
 
 
 basic_expr = Forward()
@@ -825,9 +807,9 @@ basic_expr = Forward()
 @Grammar
 def conditional_expression():
     return ( alias(basic_expr,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else"),
-             lambda token: ast.ConditionalExpression( node(token.exp_cond),
-                                                      node(token.exp_if),
-                                                      node(token.exp_else) ))
+             lambda token: ast.ConditionalExpression( unalias(token.exp_cond),
+                                                      unalias(token.exp_if),
+                                                      unalias(token.exp_else) ))
 
 @Grammar
 def expression():
@@ -842,19 +824,19 @@ def expression():
             raise Exception("Not Implemented completely _expWithoutCondAction: token={0}".format(token))
 
     term = conditional_expression | basic_primary
-    term.setParseAction(lambda t: node(t))
+    term.setParseAction(lambda t: t)
 
     basic_expr << operatorPrecedence( basic_primary,  [ (binary_operator, 2, opAssoc.LEFT) ])
     _expression = operatorPrecedence( term,           [ (binary_operator, 2, opAssoc.LEFT) ])
 
     @GroupedAction
     def action(_s,l,_token):
-        token = _token[0]
+        token = ungroup(_token)
         if isinstance(token, ast.Expression):
             return token
         elif token.binary_operator:
             return ast.BinaryExpression(token.binary_operator, 
-                                        [node(t) for t in token[0::2]])
+                                        [t for t in token[0::2]])
         else:
             raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
     basic_expr.setParseAction(action)
@@ -862,10 +844,10 @@ def expression():
     return (_expression, action)
 
 @Grammar
-def lsb_constant_expression(): return (constant_expression, lambda t: node(t))
+def lsb_constant_expression(): return (constant_expression, lambda t: t)
 
 @Grammar
-def msb_constant_expression(): return (constant_expression, lambda t: node(t))
+def msb_constant_expression(): return (constant_expression, lambda t: t)
 
 @Grammar
 def mintypmax_expression():
@@ -934,13 +916,13 @@ def primary():
                 err = "primary")
     @GroupedAction
     def action(s,l,_token):
-        token = _token[0]
+        token = ungroup(_token)
         if token.number:
             return ast.NumberPrimary( token.number )
         elif token.hierarchical_identifier:
             return ast.IdPrimary( token.hierarchical_identifier,
-                                  [ node(exp) for exp in token.exps ],
-                                  node(token.range_expression) if token.range_expression else None )
+                                  [ exp for exp in token.exps ],
+                                  token.range_expression if token.range_expression else None )
         elif (token.concatenation or token.function_call or 
               token.system_function_call or token.constant_function_call or
               token.mintypmax_expression):
@@ -959,7 +941,7 @@ def constant_primary():
                 err = "constant_primary" )
     @GroupedAction
     def action(s,l,_token):
-        token = _token[0]
+        token = ungroup(_token)
         if token.number:
             return ast.NumberPrimary( token.number )
         elif (token.constant_concatenation or 
@@ -1035,7 +1017,7 @@ _expornential_part = Group( unsigned_number )("expornential_part")
 
 @Action(_integral_part, _decimal_part, _expornential_part)
 def realNumberPartAction(s,l,token): 
-    return token[0].unsigned_number
+    return ungroup(token).unsigned_number
 
 @Grammar
 def real_number():
