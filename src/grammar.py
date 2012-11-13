@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import sys
-from pyparsing import *
+from pyparsing import (Keyword, Literal, Regex, CharsNotIn, Suppress, 
+                       Forward, MatchFirst, NotAny, Group, Optional, ZeroOrMore, OneOrMore, 
+                       delimitedList, operatorPrecedence, opAssoc, oneOf,
+                       ParseBaseException, ParseResults)
 import ast
 
 self = sys.modules[__name__]
