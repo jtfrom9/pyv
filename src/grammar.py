@@ -87,11 +87,16 @@ def ungroup(token): return token[0]
 #         return result
 #     return _decorator
 
-def actionOf(*argv):
+def actionOf(*argv,**kw):
     def _decorator(action):
+        if kw.get('ungroup',False):
+            print(action.__name__)
+            func = lambda t: action(ungroup(t))
+        else:
+            func = lambda t: action(t)
         for grammar in argv:
-            grammar.setParseAction(action)
-        return action
+            grammar.setParseAction(func)
+        return func
     return _decorator
 
 def Grammar(expr_def):
@@ -560,7 +565,7 @@ function_if_else_if_statement << Group(
     Optional   ( ELSE + function_statement_or_null ) )
 
 @actionOf(conditional_statement)
-def conditionalStatementAction(_s,l,token):
+def conditionalStatementAction(token):
     if not token.if_else_if_statement:
         print(token.statement_if)
         return ast.Conditional( [(token.condition, token.statement_if)], token.statement_else )
@@ -568,7 +573,7 @@ def conditionalStatementAction(_s,l,token):
         return token[0]
                         
 @actionOf(if_else_if_statement)
-def ifElseIfStatementAction(_s,l,token):
+def ifElseIfStatementAction(token):
     return ast.Conditional( [ (token.condition, token.statement_if) ] +
                             [ (block.condition_elseif, block.statement_elseif) for block in token.elseif_blocks ],
                             token.statement_else )
@@ -589,7 +594,7 @@ function_case_item      << Group( delimitedList( expression ) + COLON + function
 
 
 @actionOf(case_statement)
-def caseStatementAction(_s,l,token):
+def caseStatementAction(token):
     pass
 
 
@@ -611,7 +616,7 @@ loop_statement << Group(
     statement )
 
 @actionOf(loop_statement)
-def loopStatementAction(_s,l,token):
+def loopStatementAction(token):
     print("loopStatementAction: {0}".format(token.keyword))
     if token.keyword != 'for':
         pass
@@ -684,7 +689,7 @@ variable_concatenation_value << (
     variable_concatenation )
 
 @actionOf(net_concatenation, variable_concatenation)
-def _NetVariableConcatenationAction(s,l,token):
+def _NetVariableConcatenationAction(token):
     vlist = [e for e in token.con_values]
     if len(vlist)==1: 
         return vlist[0]
@@ -692,7 +697,7 @@ def _NetVariableConcatenationAction(s,l,token):
         return ast.Concatenation(vlist)
 
 @actionOf(net_concatenation_value, variable_concatenation_value)
-def _NetVariableConcatenationValueAction(s,l,token):
+def _NetVariableConcatenationValueAction(token):
     if token.net_concatenation:
         return token.net_concatenation
     elif token.variable_concatenation:
@@ -729,9 +734,8 @@ def constant_expression():
                             string                            ,
                             "basic_primary")
 
-    @actionOf(basic_primary)
-    def basicPrimaryAction(s,l,_token):
-        token = ungroup(_token)
+    @actionOf(basic_primary, ungroup=True)
+    def basicPrimaryAction(token):
         if token.unary_operator:
             return ast.UnaryExpression(token.unary_operator, token.constant_primary)
         elif token.constant_primary:
@@ -752,9 +756,8 @@ def constant_expression():
     basic_expr           << operatorPrecedence( basic_primary, [ (binary_operator, 2, opAssoc.LEFT) ] )
     _constant_expression  = operatorPrecedence( expr,          [ (binary_operator, 2, opAssoc.LEFT) ] )
 
-    @actionOf(basic_expr)
-    def action(_token):
-        token = ungroup(_token)
+    @actionOf(basic_expr, ungroup=True)
+    def action(token):
         if isinstance(token, ast.Expression):
             return token
         elif token.binary_operator:
@@ -809,7 +812,7 @@ def conditional_expression():
 def expression():
     basic_primary = unary_operator + primary | primary | string 
     @actionOf(basic_primary)
-    def basicPrimaryAction(_s,l,token):
+    def basicPrimaryAction(token):
         if token.unary_operator:
             return ast.UnaryExpression(token.unary_operator, token.primary)
         elif token.primary:
@@ -823,9 +826,8 @@ def expression():
     basic_expr << operatorPrecedence( basic_primary,  [ (binary_operator, 2, opAssoc.LEFT) ])
     _expression = operatorPrecedence( term,           [ (binary_operator, 2, opAssoc.LEFT) ])
 
-    @actionOf(basic_expr)
-    def action(_s,l,_token):
-        token = ungroup(_token)
+    @actionOf(basic_expr, ungroup=True)
+    def action(token):
         if isinstance(token, ast.Expression):
             return token
         elif token.binary_operator:
@@ -1002,16 +1004,16 @@ binary_module_path_operator << oneOf("== != && || & | ^ ^~ ~^                   
 def number( _ = decimal_number ^ octal_number ^ binary_number ^ hex_number ^ real_number ):
     return (_, lambda t: t[0])
 
-_integral_part     = Group( unsigned_number )("integral_part")
-_decimal_part      = Group( unsigned_number )("decimal_part")
-_expornential_part = Group( unsigned_number )("expornential_part")
-
-@actionOf(_integral_part, _decimal_part, _expornential_part)
-def realNumberPartAction(s,l,token): 
-    return ungroup(token).unsigned_number
-
 @Grammar
 def real_number():
+    _integral_part     = Group( unsigned_number )("integral_part")
+    _decimal_part      = Group( unsigned_number )("decimal_part")
+    _expornential_part = Group( unsigned_number )("expornential_part")
+
+    @actionOf(_integral_part, _decimal_part, _expornential_part, ungroup=True)
+    def realNumberPartAction(token): 
+        return token.unsigned_number
+
     _ = ( _integral_part + Optional( PERIOD + _decimal_part ) + exp + Optional( sign ) + _expornential_part |
           _integral_part +           PERIOD + _decimal_part                                                 )
     def action(token):
@@ -1103,14 +1105,8 @@ unsigned_number          << Regex(r"[0-9][_0-9]*")
 binary_value             << Regex(r"[01xXzZ\?][_01xXzZ\?]*")
 octal_value              << Regex(r"[0-7xXzZ\?][_0-7xXzZ\?]*")
 hex_value                << Regex(r"[0-9a-fA-FxXzZ\?][_0-9a-fA-FxXzZ\?]*")
-@actionOf(non_zero_unsigned_number, unsigned_number, binary_value, octal_value, hex_value)
-def valueAction(s,l,t): return t[0]
-
-# non_zero_unsigned_number.setParseAction(lambda t: t[0])
-# unsigned_number.setParseAction         (lambda t: t[0])
-# binary_value.setParseAction            (lambda t: t[0])
-# octal_value.setParseAction             (lambda t: t[0])
-# hex_value.setParseAction               (lambda t: t[0])
+@actionOf(non_zero_unsigned_number, unsigned_number, binary_value, octal_value, hex_value, ungroup=True)
+def valueAction(t): return t
 
 @Grammar
 def size(): return (non_zero_unsigned_number, lambda t: int(t[0]))
