@@ -55,35 +55,34 @@ def delim(expr,name=None,delimiter=','):
 def unalias(token): return token[0]
 def ungroup(token): return token[0]
 
-def GroupedAction(action):
-    import inspect
-    try:
-        frame = inspect.currentframe(2)
-    except ValueError as e:
-        return None
-    else:
-        filename = frame.f_code.co_filename
-        lineno   = frame.f_lineno
-    def _decorator(_s,loc,token):
-        result = None
-        try:
-            result = action(_s, loc, token)
-        except Exception as e:
-            raise ParseFatalException(_s, loc, 
-                                      "\n  File \"{filename}\", line {lineno}\n    {reason}".
-                                      format(action   = action.__name__,
-                                             filename = filename,
-                                             lineno   = lineno,
-                                             reason   = e))
-        return result
-    return _decorator
+# def GroupedAction(action):
+#     import inspect
+#     try:
+#         frame = inspect.currentframe(2)
+#     except ValueError as e:
+#         return None
+#     else:
+#         filename = frame.f_code.co_filename
+#         lineno   = frame.f_lineno
+#     def _decorator(_s,loc,token):
+#         result = None
+#         try:
+#             result = action(_s, loc, token)
+#         except Exception as e:
+#             raise ParseFatalException(_s, loc, 
+#                                       "\n  File \"{filename}\", line {lineno}\n    {reason}".
+#                                       format(action   = action.__name__,
+#                                              filename = filename,
+#                                              lineno   = lineno,
+#                                              reason   = e))
+#         return result
+#     return _decorator
 
-def Action(*argv):
+def actionOf(*argv):
     def _decorator(action):
-        func = GroupedAction(action)
         for grammar in argv:
-            grammar.setParseAction(func)
-        return func
+            grammar.setParseAction(action)
+        return action
     return _decorator
 
 def Grammar(expr_def):
@@ -507,8 +506,6 @@ def event_expression():
 
     _ = operatorPrecedence( ev_base_expr, [ (OR,                      2, opAssoc.LEFT),
                                             (Literal(",")("keyword"), 2, opAssoc.LEFT) ] )
-
-    @GroupedAction
     def action(s,l,_token):
         token = ungroup(_token)
         if isinstance(token, ast.Expression): 
@@ -553,7 +550,7 @@ function_if_else_if_statement << Group(
     ZeroOrMore ( ELSE + IF + LP + expression + RP + function_statement_or_null ) +
     Optional   ( ELSE + function_statement_or_null ) )
 
-@Action(conditional_statement)
+@actionOf(conditional_statement)
 def conditionalStatementAction(_s,l,token):
     if not token.if_else_if_statement:
         print(token.statement_if)
@@ -561,7 +558,7 @@ def conditionalStatementAction(_s,l,token):
     else:
         return token[0]
                         
-@Action(if_else_if_statement)
+@actionOf(if_else_if_statement)
 def ifElseIfStatementAction(_s,l,token):
     return ast.Conditional( [ (token.condition, token.statement_if) ] +
                             [ (block.condition_elseif, block.statement_elseif) for block in token.elseif_blocks ],
@@ -582,7 +579,7 @@ function_case_item      << Group( delimitedList( expression ) + COLON + function
                                   DEFAULT + Optional( COLON ) + function_statement_or_null         )
 
 
-@Action(case_statement)
+@actionOf(case_statement)
 def caseStatementAction(_s,l,token):
     pass
 
@@ -604,7 +601,7 @@ loop_statement << Group(
     FOR + LP + variable_assignment("init") + SEMICOLON + expression + SEMICOLON + variable_assignment("next") + RP +
     statement )
 
-@Action(loop_statement)
+@actionOf(loop_statement)
 def loopStatementAction(_s,l,token):
     print("loopStatementAction: {0}".format(token.keyword))
     if token.keyword != 'for':
@@ -677,7 +674,7 @@ variable_concatenation_value << (
     hierarchical_identifier                                                                               |
     variable_concatenation )
 
-@Action(net_concatenation, variable_concatenation)
+@actionOf(net_concatenation, variable_concatenation)
 def _NetVariableConcatenationAction(s,l,token):
     vlist = [e for e in token.con_values]
     if len(vlist)==1: 
@@ -685,7 +682,7 @@ def _NetVariableConcatenationAction(s,l,token):
     else:
         return ast.Concatenation(vlist)
 
-@Action(net_concatenation_value, variable_concatenation_value)
+@actionOf(net_concatenation_value, variable_concatenation_value)
 def _NetVariableConcatenationValueAction(s,l,token):
     if token.net_concatenation:
         return token.net_concatenation
@@ -723,7 +720,7 @@ def constant_expression():
                             string                            ,
                             "basic_primary")
 
-    @Action(basic_primary)
+    @actionOf(basic_primary)
     def basicPrimaryAction(s,l,_token):
         token = ungroup(_token)
         if token.unary_operator:
@@ -746,8 +743,8 @@ def constant_expression():
     basic_expr           << operatorPrecedence( basic_primary, [ (binary_operator, 2, opAssoc.LEFT) ] )
     _constant_expression  = operatorPrecedence( expr,          [ (binary_operator, 2, opAssoc.LEFT) ] )
 
-    @GroupedAction
-    def action(s,l,_token):
+    @actionOf(basic_expr)
+    def action(_token):
         token = ungroup(_token)
         if isinstance(token, ast.Expression):
             return token
@@ -756,7 +753,6 @@ def constant_expression():
                                         [t for t in token[0::2]])
         else:
             raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
-    basic_expr.setParseAction(action)
 
     return (_constant_expression, action)
 
@@ -803,7 +799,7 @@ def conditional_expression():
 @Grammar
 def expression():
     basic_primary = unary_operator + primary | primary | string 
-    @Action(basic_primary)
+    @actionOf(basic_primary)
     def basicPrimaryAction(_s,l,token):
         if token.unary_operator:
             return ast.UnaryExpression(token.unary_operator, token.primary)
@@ -818,7 +814,7 @@ def expression():
     basic_expr << operatorPrecedence( basic_primary,  [ (binary_operator, 2, opAssoc.LEFT) ])
     _expression = operatorPrecedence( term,           [ (binary_operator, 2, opAssoc.LEFT) ])
 
-    @GroupedAction
+    @actionOf(basic_expr)
     def action(_s,l,_token):
         token = ungroup(_token)
         if isinstance(token, ast.Expression):
@@ -828,7 +824,6 @@ def expression():
                                         [t for t in token[0::2]])
         else:
             raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
-    basic_expr.setParseAction(action)
     
     return (_expression, action)
 
@@ -903,8 +898,7 @@ def primary():
                 multiple_concatenation                                                                                |
                 LP + mintypmax_expression + RP                                                                        ,
                 err = "primary")
-    @GroupedAction
-    def action(s,l,_token):
+    def action(_token):
         token = ungroup(_token)
         if token.number:
             return ast.NumberPrimary( token.number )
@@ -928,8 +922,7 @@ def constant_primary():
                 constant_function_call                  |
                 LP + constant_mintypmax_expression + RP ,
                 err = "constant_primary" )
-    @GroupedAction
-    def action(s,l,_token):
+    def action(_token):
         token = ungroup(_token)
         if token.number:
             return ast.NumberPrimary( token.number )
@@ -1004,7 +997,7 @@ _integral_part     = Group( unsigned_number )("integral_part")
 _decimal_part      = Group( unsigned_number )("decimal_part")
 _expornential_part = Group( unsigned_number )("expornential_part")
 
-@Action(_integral_part, _decimal_part, _expornential_part)
+@actionOf(_integral_part, _decimal_part, _expornential_part)
 def realNumberPartAction(s,l,token): 
     return ungroup(token).unsigned_number
 
@@ -1058,8 +1051,7 @@ octal_number   << Optional( size ) + octal_base  + octal_value
 hex_number     << Optional( size ) + hex_base    + hex_value 
 
 def valueActions(name,vtype):
-    @GroupedAction
-    def _action(_s,loc,token):
+    def action(token):
         width = token.size if token.size else 32
         vstr = getattr(token,name)
         trans = vstr.translate(None,'xXzZ?')
@@ -1067,7 +1059,7 @@ def valueActions(name,vtype):
             return ast.Int2(vstr,width,vtype,int(vstr,vtype))
         else:
             return ast.Int4(vstr,width,vtype,vstr)
-    return _action
+    return action
 
 binary_number.setParseAction(valueActions('binary_value' , ast.FixedWidthValue.Binary))
 octal_number.setParseAction (valueActions('octal_value'  , ast.FixedWidthValue.Octal))
@@ -1102,7 +1094,7 @@ unsigned_number          << Regex(r"[0-9][_0-9]*")
 binary_value             << Regex(r"[01xXzZ\?][_01xXzZ\?]*")
 octal_value              << Regex(r"[0-7xXzZ\?][_0-7xXzZ\?]*")
 hex_value                << Regex(r"[0-9a-fA-FxXzZ\?][_0-9a-fA-FxXzZ\?]*")
-@Action(non_zero_unsigned_number, unsigned_number, binary_value, octal_value, hex_value)
+@actionOf(non_zero_unsigned_number, unsigned_number, binary_value, octal_value, hex_value)
 def valueAction(s,l,t): return t[0]
 
 # non_zero_unsigned_number.setParseAction(lambda t: t[0])
