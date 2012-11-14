@@ -327,7 +327,7 @@ class Construct(Statement):
         self._ctype = ctype
         self._stmt = stmt
     def shortName(self):
-        return self._ctype + ":" + self.stmt.shortName()
+        return self._ctype + ":" + self._stmt.shortName()
     def __iter__(self):
         for x in self._stmt: yield x
 

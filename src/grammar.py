@@ -10,10 +10,10 @@ from pyparsing import (Keyword, Literal, Regex, Regex, MatchFirst, NotAny, Chars
 
 import ast
 
-self = sys.modules[__name__]
+this_mod = sys.modules[__name__]
 
-_keywords_file = path.join(path.dirname(self.__file__), "keywords.txt")
-_non_terminal_symbols_file = path.join(path.dirname(self.__file__), "non_terminal_symbols.txt")
+_keywords_file = path.join(path.dirname(this_mod.__file__), "keywords.txt")
+_non_terminal_symbols_file = path.join(path.dirname(this_mod.__file__), "non_terminal_symbols.txt")
 
 with open(_keywords_file,"r") as f:
     _keywords = [line.strip() for line in f]
@@ -28,14 +28,17 @@ TRIG = Suppress(Literal("->"))
 #LB/RB : left/right bracket        []
 #LC/RC : left/right curly bracket  {}
 
+# setup keywords
 for kw in _keywords:
-    setattr(self, kw.swapcase(), Keyword(kw)("keyword"))
+    setattr(this_mod, kw.swapcase(), Keyword(kw)("keyword"))
 
+# setup non-terminal-symbols
 with open(_non_terminal_symbols_file,"r") as f:
     for name in (line.strip() for line in f):
         sym = Forward()(name)
         sym.enablePackrat()
-        setattr(self, name, sym)
+        setattr(this_mod, name, sym)
+
 
 def alias(grammar, name):
     if name: 
@@ -56,10 +59,9 @@ def _group(expr, err=None):
                 raise
     return WrapGroup(expr)
 
-def delim(expr,name=None,delimiter=','):
-    g = _group( delimitedList(expr,delimiter) - NotAny(delimiter),
-                err = "invalid ','" )
-    return g(name) if name else g
+def delim(expr, delimiter=','):
+    return _group( delimitedList(expr,delimiter) - NotAny(delimiter),
+                   err = "invalid ','" )
 
 def unalias(token): return token[0]
 def ungroup(token): return token[0]
@@ -87,34 +89,34 @@ def ungroup(token): return token[0]
 #         return result
 #     return _decorator
 
-def actionOf(*argv,**kw):
-    def _decorator(action):
+def Action(*argv,**kw):
+    def deco_func(action):
         if kw.get('ungroup',False):
             print(action.__name__)
-            func = lambda t: action(ungroup(t))
+            new_func = lambda t: action(ungroup(t))
         else:
-            func = lambda t: action(t)
+            new_func = action
         for grammar in argv:
-            grammar.setParseAction(func)
-        return func
-    return _decorator
+            grammar.setParseAction(new_func)
+        return new_func
+    return deco_func
 
-def Grammar(expr_def):
-    expr, action = expr_def()
-    grammar = getattr(sys.modules[__name__], expr_def.__name__)
-    grammar << expr
+def Grammar(grammar_def_func):
+    grammar_def, action = grammar_def_func()
+    symbol = getattr(this_mod, grammar_def_func.__name__)
+    symbol << grammar_def
     if action:
-        grammar.setParseAction(action)
-    return grammar
+        symbol.setParseAction(action)
+    return symbol
 
-def GrammarNotImplementedYet(expr_def):
-    expr = expr_def()[0]
+def GrammarNotImplementedYet(grammar_def_func):
+    grammar_def = grammar_def_func()[0]
     def _error():
-        raise Exception("Not Implemented: " + expr_def.__name__)
-    grammar = getattr(sys.modules[__name__], expr_def.__name__)
-    grammar << expr
-    grammar.setParseAction(_error)
-    return grammar
+        raise Exception("Not Implemented: " + grammar_def_func.__name__)
+    symbol = getattr(this_mod, grammar_def_func.__name__)
+    symbol << grammar_def
+    symbol.setParseAction(_error)
+    return symbol
     
 
 # A.1 Source text2
@@ -337,7 +339,7 @@ def net_assignment( _ = net_lvalue + EQUAL + expression ):
     return (_, lambda t: ast.Assignment( t.net_lvalue, None, t.expression ))
 
 @Grammar
-def list_of_net_assignment( _ = delim( net_assignment, "list" ) ):
+def list_of_net_assignment( _ = delim(net_assignment)("list") ):
     return (_, lambda t: ParseResults([ x for x in t.list ]))
 
 @Grammar
@@ -498,9 +500,8 @@ def event_control():
     return (_,action)
 
 @Grammar
-def event_trigger():
-    return ( TRIG + hierarchical_identifier + SEMICOLON,
-             lambda t: ast.Trigger(t.hierarchical_identifier) )
+def event_trigger( _ = TRIG + hierarchical_identifier + SEMICOLON ):
+    return (_, lambda t: ast.Trigger(t.hierarchical_identifier) )
 
 @Grammar
 def event_expression():
@@ -566,7 +567,7 @@ function_if_else_if_statement << Group(
     ZeroOrMore ( ELSE + IF + LP + expression + RP + function_statement_or_null ) +
     Optional   ( ELSE + function_statement_or_null ) )
 
-@actionOf(conditional_statement)
+@Action(conditional_statement)
 def conditionalStatementAction(token):
     if not token.if_else_if_statement:
         print(token.statement_if)
@@ -574,7 +575,7 @@ def conditionalStatementAction(token):
     else:
         return token[0]
                         
-@actionOf(if_else_if_statement)
+@Action(if_else_if_statement)
 def ifElseIfStatementAction(token):
     return ast.Conditional( [ (token.condition, token.statement_if) ] +
                             [ (block.condition_elseif, block.statement_elseif) for block in token.elseif_blocks ],
@@ -595,7 +596,7 @@ function_case_item      << Group( delimitedList( expression ) + COLON + function
                                   DEFAULT + Optional( COLON ) + function_statement_or_null         )
 
 
-@actionOf(case_statement)
+@Action(case_statement)
 def caseStatementAction(token):
     pass
 
@@ -617,7 +618,7 @@ loop_statement << Group(
     FOR + LP + variable_assignment("init") + SEMICOLON + expression + SEMICOLON + variable_assignment("next") + RP +
     statement )
 
-@actionOf(loop_statement)
+@Action(loop_statement)
 def loopStatementAction(token):
     print("loopStatementAction: {0}".format(token.keyword))
     if token.keyword != 'for':
@@ -650,11 +651,11 @@ task_enable << Group(
 # A.8 Expressions
 # A.8.1 Concatenations
 @Grammar
-def concatenation( _ = LC + delim(expression,"exps") + RC ):
+def concatenation( _ = LC + delim(expression)("exps") + RC ):
     return (_, lambda token: ast.Concatenation([e for e in token.exps]))
 
 @Grammar
-def constant_concatenation( _ = LC + delim(constant_expression,"exps") + RC ):
+def constant_concatenation( _ = LC + delim(constant_expression)("exps") + RC ):
     return (_, lambda token: ast.Concatenation([e for e in token.exps]))
 
 @GrammarNotImplementedYet
@@ -674,7 +675,7 @@ def multiple_concatenation():
     return ( LC + constant_expression + concatenation + RC, )
 
 
-net_concatenation << LC + delim(net_concatenation_value,"con_values") + RC 
+net_concatenation << LC + delim(net_concatenation_value)("con_values") + RC 
 net_concatenation_value << ( 
     hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps") + LB + range_expression + RB |
     hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps")                              |
@@ -682,7 +683,7 @@ net_concatenation_value << (
     hierarchical_identifier                                                                               |
     net_concatenation )
 
-variable_concatenation <<  LC + delim(variable_concatenation_value,"con_values") + RC 
+variable_concatenation <<  LC + delim(variable_concatenation_value)("con_values") + RC 
 variable_concatenation_value << (
     hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps") + LB + range_expression + RB |
     hierarchical_identifier + OneOrMore(Group(LB + expression + RB))("exps")                              |
@@ -690,7 +691,7 @@ variable_concatenation_value << (
     hierarchical_identifier                                                                               |
     variable_concatenation )
 
-@actionOf(net_concatenation, variable_concatenation)
+@Action(net_concatenation, variable_concatenation)
 def _NetVariableConcatenationAction(token):
     vlist = [e for e in token.con_values]
     if len(vlist)==1: 
@@ -698,7 +699,7 @@ def _NetVariableConcatenationAction(token):
     else:
         return ast.Concatenation(vlist)
 
-@actionOf(net_concatenation_value, variable_concatenation_value)
+@Action(net_concatenation_value, variable_concatenation_value)
 def _NetVariableConcatenationValueAction(token):
     if token.net_concatenation:
         return token.net_concatenation
@@ -712,15 +713,15 @@ def _NetVariableConcatenationValueAction(token):
 
 # A.8.2 Function calls
 @Grammar
-def constant_function_call( _ = identifier + LP + Optional(delim(constant_expression,"args")) + RP ):
+def constant_function_call( _ = identifier + LP + Optional(delim(constant_expression)("args")) + RP ):
     return (_, lambda token: ast.FunctionCall(token.identifier, [arg for arg in token.args]))
 
 @Grammar
-def function_call( _ = hierarchical_identifier + LP + Optional(delim(expression,"args")) + RP ):
+def function_call( _ = hierarchical_identifier + LP + Optional(delim(expression)("args")) + RP ):
     return (_, lambda token: ast.FunctionCall(token.hierarchical_identifier, [arg for arg in token.args]))
 
 @Grammar
-def system_function_call( _ = system_task_identifier + Optional( LP + Optional(delim(expression,"args")) + RP ) ):
+def system_function_call( _ = system_task_identifier + Optional( LP + Optional(delim(expression)("args")) + RP ) ):
     return (_, lambda token: ast.FunctionCall(token.system_task_identifier, [arg for arg in token.args]))
 
 
@@ -736,7 +737,7 @@ def constant_expression():
                             string                            ,
                             "basic_primary")
 
-    @actionOf(basic_primary, ungroup=True)
+    @Action(basic_primary, ungroup=True)
     def basicPrimaryAction(token):
         if token.unary_operator:
             return ast.UnaryExpression(token.unary_operator, token.constant_primary)
@@ -758,7 +759,7 @@ def constant_expression():
     basic_expr           << operatorPrecedence( basic_primary, [ (binary_operator, 2, opAssoc.LEFT) ] )
     _constant_expression  = operatorPrecedence( expr,          [ (binary_operator, 2, opAssoc.LEFT) ] )
 
-    @actionOf(basic_expr, _constant_expression, ungroup=True)
+    @Action(basic_expr, ungroup=True)
     def action(token):
         if isinstance(token, ast.Expression):
             return token
@@ -768,7 +769,7 @@ def constant_expression():
         else:
             raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
 
-    return (_constant_expression, None)
+    return (_constant_expression, action)
 
 
 @Grammar
@@ -813,7 +814,8 @@ def conditional_expression():
 @Grammar
 def expression():
     basic_primary = unary_operator + primary | primary | string 
-    @actionOf(basic_primary)
+
+    @Action(basic_primary)
     def basicPrimaryAction(token):
         if token.unary_operator:
             return ast.UnaryExpression(token.unary_operator, token.primary)
@@ -828,7 +830,7 @@ def expression():
     basic_expr << operatorPrecedence( basic_primary,  [ (binary_operator, 2, opAssoc.LEFT) ])
     _expression = operatorPrecedence( term,           [ (binary_operator, 2, opAssoc.LEFT) ])
 
-    @actionOf(basic_expr, _expression, ungroup=True)
+    @Action(basic_expr, ungroup=True)
     def action(token):
         if isinstance(token, ast.Expression):
             return token
@@ -837,7 +839,7 @@ def expression():
                                         [t for t in token[0::2]])
         else:
             raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
-    return (_expression, None)
+    return (_expression, action)
 
 @Grammar
 def lsb_constant_expression(): return (constant_expression, lambda t: t)
@@ -909,7 +911,7 @@ def primary():
                 multiple_concatenation                                                                                |
                 LP + mintypmax_expression + RP                                                                        ,
                 err = "primary")
-    @actionOf(_, ungroup=True)
+    @Action(ungroup=True)
     def action(token):
         if token.number:
             return ast.NumberPrimary( token.number )
@@ -923,7 +925,7 @@ def primary():
             return token[0]
         else:
             raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
-    return (_,None)
+    return (_,action)
 
 @Grammar
 def constant_primary():
@@ -933,7 +935,7 @@ def constant_primary():
                 constant_function_call                  |
                 LP + constant_mintypmax_expression + RP ,
                 err = "constant_primary" )
-    @actionOf(_, ungroup=True)
+    @Action(ungroup=True)
     def action(token):
         if token.number:
             return ast.NumberPrimary( token.number )
@@ -944,7 +946,7 @@ def constant_primary():
             return token[0]
         else:
             raise Exception("Not Implemented completely constantPrimaryAction: token={0}".format(token))
-    return (_,None)
+    return (_,action)
 
 @GrammarNotImplementedYet
 def module_path_primary():
@@ -1010,7 +1012,7 @@ def real_number():
     _decimal_part      = Group( unsigned_number )("decimal_part")
     _expornential_part = Group( unsigned_number )("expornential_part")
 
-    @actionOf(_integral_part, _decimal_part, _expornential_part, ungroup=True)
+    @Action(_integral_part, _decimal_part, _expornential_part, ungroup=True)
     def realNumberPartAction(token): 
         return token.unsigned_number
 
@@ -1105,7 +1107,7 @@ unsigned_number          << Regex(r"[0-9][_0-9]*")
 binary_value             << Regex(r"[01xXzZ\?][_01xXzZ\?]*")
 octal_value              << Regex(r"[0-7xXzZ\?][_0-7xXzZ\?]*")
 hex_value                << Regex(r"[0-9a-fA-FxXzZ\?][_0-9a-fA-FxXzZ\?]*")
-@actionOf(non_zero_unsigned_number, unsigned_number, binary_value, octal_value, hex_value, ungroup=True)
+@Action(non_zero_unsigned_number, unsigned_number, binary_value, octal_value, hex_value, ungroup=True)
 def valueAction(t): return t
 
 @Grammar
