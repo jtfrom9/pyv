@@ -3,12 +3,10 @@ import collections
 import pyparsing as pp
 
 class AstNode(object):
-    def shortName(self):
+    def __str__(self):
         return self.__class__.__name__
-    def longName(self):
-        return self.shortName()
     def __repr__(self):
-        return self.longName()
+        return self.__str__();
 
 def nodeInfo(node):
     if isinstance(node,str):
@@ -16,280 +14,304 @@ def nodeInfo(node):
     if isinstance(node,pp.ParseResults):
         return "pr: {0}".format([prop for prop in dir(node) if not prop.startswith("__")])
     if isinstance(node,AstNode):
-        return "ast: {0}({1})".format(node.longName(), node.shortName())
+        return "ast: {0}({1})".format(repr(node))
     return type(node)
     
 class Null(AstNode):
     pass
 null = Null()
 
+class Range(AstNode):
+    def __init__(self,left,right):
+        self._left_expr  = left
+        self._right_expr = right
+    def __str__(self):
+        return "[{l}:{r}]".format(l= str(self._left_expr), r=str(self._right_expr))
+
+
+WaitTypeId   = 0
+WaitTypeExpr = 1
+WaitTypeAny  = 2
+class EventControl(AstNode):
+    def __init__(self, type, obj):
+        self._type = type
+        self._wait_obj = obj
+    def __str__(self):
+        if self._type==WaitTypeId or self._type==WaitTypeExpr:
+            return "@(" + str(self._wait_obj) + ")"
+        elif self._type==WaitTypeAny:
+            return "@*"
+        else: assert(False)
+
+class DelayControl(AstNode):
+    def __init__(self, exp):
+        self._delay_exp = exp
+    def __str__(self):
+        return "#({0})".format(self._delay_exp)
+
+
+# Numeric
 class Numeric(AstNode):
+    '''TODO: to be a child of numbers.Number abc class'''
     def __init__(self, string):
-        self.string = string
-    def longName(self):
-        return "(" + self.__class__.__name__ + ":" + self.string + ")"
-    def value(self):
-        pass
+        self._string = string
+    def __str__(self):
+        return self._string
+    def __repr__(self):
+        return self.__class__.__name__ + "(" + self._string + ")"
 
 class FixedWidthValue(Numeric):
-    Binary = 2
-    Octal  = 8
-    Hex    = 16
+    Binary  = 2
+    Octal   = 8
+    Hex     = 16
     Decimal = 10
 
-    def __init__(self, string, width, vtype):
-        self.string = string
-        self.width  = width
-        self.vtype  = vtype
+    def __init__(self, string, bit_width, val_type):
+        super(FixedWidthValue,self).__init__(string)
+        self._bit_width = bit_width
+        self._val_type  = val_type
 
     @staticmethod
     def type2str(vtype):
-        tab = { FixedWidthValue.Binary: "b", 
-                FixedWidthValue.Octal : "o", 
-                FixedWidthValue.Hex : "h", 
+        tab = { FixedWidthValue.Binary  : "b", 
+                FixedWidthValue.Octal   : "o", 
+                FixedWidthValue.Hex     : "h", 
                 FixedWidthValue.Decimal : "d" }
         return tab[vtype]
 
 
 class Int2(FixedWidthValue):
-    def __init__(self, string, width, vtype, value):
-        super(Int2,self).__init__(string, width, vtype)
-        self.value = value
-    def shortName(self):
-        return "(I2:{0}:{1})".format(FixedWidthValue.type2str(self.vtype), self.value)
-    def longName(self):
-        return "(I2:{value}({vtype}:{string} [{left}:{right}]))".format(
-            clsname = self.__class__.__name__,
-            vtype   = FixedWidthValue.type2str(self.vtype),
-            left    = self.width-1,
-            right   = 0,
-            value   = self.value,
-            string  = self.string)
+    def __init__(self, string, bit_width, val_type, value):
+        super(Int2,self).__init__(string, bit_width, val_type)
+        self._value = value
+    def __repr__(self):
+        return self.__class__.__name__ + "({string}, {bit_width}, {val_type}, {value})".format(
+            string    = self._string,
+            bit_width = self._bit_width,
+            val_type  = FixedWidthValue.type2str(self._val_type),
+            value     = self._value)
 
 class Int4(FixedWidthValue):
-    def __init__(self, string, width, vtype, bits):
-        super(Int4,self).__init__(string,width,vtype)
-        self.bits = bits
-    def shortName(self):
-        return "(S4V:{vtype}:{string})".format(
-            vtype   = FixedWidthValue.type2str(self.vtype),
-            string  = self.string)
-    def longName(self):
-        return "(S4V:{vtype}:{string} [{left}:{right}])".format(
-            clsname = self.__class__.__name__,
-            vtype   = FixedWidthValue.type2str(self.vtype),
-            left    = self.width-1,
-            right   = 0,
-            string  = self.string)
+    def __init__(self, string, bit_width, val_type, bits):
+        super(Int4,self).__init__(string, bit_width, val_type)
+        self._bits = bits
+    def __repr__(self):
+        return self.__class__.__name__ + "({string}, {bit_width}, {val_type}, {bits})".format(
+            string    = self._string,
+            bit_width = self._bit_width,
+            val_type  = FixedWidthValue.type2str(self._val_type),
+            bits      = self._bits)
         
 class Float(Numeric):
     def __init__(self, string):
         super(Float,self).__init__(string)
-        self.value = float(string)
-    def shortName(self):
-        return "(F:{0})".format(self.string)
-    def longName(self):
-        return self.shortName()
+        self._value = float(string)
+    def __repr__(self):
+        return self.__class__.__name__ + "({0})".format(self._string)
 
+
+# Id
 class Id(AstNode):
     def hasRange(self):
-        return getattr(self,'range',False)
+        return False
     def hasIndex(self):
-        return getattr(self,'index',False)
+        return False
     def isHierachical(self): 
         return False
 
 class BasicId(Id):
-    def __init__(self,string):
-        assert isinstance(string,str)
-        self.string = string
-    def shortName(self):
-        return "(i:{0})".format(self.string)
-    def longName(self):
-        return "({cls} {s})".format(cls=self.__class__.__name__, s=self.string)
+    def __init__(self, string):
+        self._string = string
+    def __str__(self):
+        return self._string
+    def __repr__(self):
+        return self.__class__.__name__ + "({0})".format(self._string)
 
 class RangedId(BasicId):
-    def __init__(self,string,_range):
+    def __init__(self, string, brange):
         super(RangedId,self).__init__(string)
-        self.range = _range
-    def shortName(self):
-        return "(i:{0}{1})".format(self.string, self.range.shortName())
-    def longName(self):
-        return "({cls} {s}{r})".format(cls=self.__class__.__name__, s=self.string, r=str(self.range))
+        self._brange = brange
+    def hasRange(self):
+        return True
+    def getRange(self):
+        return self._brange
+    def __str__(self):
+        return self._string + str(self._brange)
+    def __repr__(self):
+        return self.__class__.__name__ + "({0}, {1})".format(self._string, repr(self._brange))
 
 class IndexedId(BasicId):
-    def __init__(self,string,index):
+    def __init__(self, string, index):
         super(IndexedId,self).__init__(string)
-        self.index = index
-    def shortName(self):
-        return "(i:{0}[{1}])".format(self.string, self.index)
-    def longName(self):
-        return "({cls} {s}[{i}])".format(cls=self.__class__.__name__, s=self.string, i=self.index)
+        self._index = index
+    def hasIndex(self):
+        return True
+    def getIndex(self):
+        return self._index
+    def __str__(self):
+        return self._string + "[" + str(self._index) + "]"
+    def __repr__(self):
+        return self.__class__.__name__ + "({0}, {1})".format(self._string, repr(self._index))
         
 class HierarchicalId(Id):
     def __init__(self, ids):
-        self.ids = []
-        if isinstance(ids, collections.Iterable):
-            self.ids = [x for x in ids]
-        elif isinstance(ids, list):
-            self.ids = ids
+        self._ids = []
+        if isinstance(ids, list):
+            self._ids = ids
+        elif isinstance(ids, collections.Iterable):
+            self._ids = [x for x in ids]
         else:
-            raise Exception("Invalid ids")
-
+            raise Exception("HierarchicalId: Invalid ids")
     def isHierachical(self): 
         return True
-
     def addId(self,id):
-        self.ids.append(id)
+        self._ids.append(id)
+    def __str__(self):
+        return ".".join(str(i) for i in self._ids)
+    def __repr__(self):
+        return self.__class__.__name__ + "({0})".format(self._ids)
+    def each_id(self):
+        for i in self._ids:
+            yield i
 
-    def shortName(self):
-        return "(i:{0})".format(".".join(id.shortName() for id in self.ids))
-
-    def longName(self):
-        return "({cls} {str})".format(cls = self.__class__.__name__,
-                                      str = "".join(id.longName() for id in self.ids))
-
-    
+# Expression
 class Expression(AstNode):
-    def __init__(self):
+    def eval(self):
         pass
-    def setEvent(self, etype):
-        self._event_type = etype
-    
+
 class Primary(Expression):
-    def primaryLongInfo():
-        return ""
-    def primaryShortInfo():
-        return ""
-    def longName(self):
-        return "(Primary {0})".format(self.primaryLongInfo())
-    def shortName(self):
-        return "(Primary {0})".format(self.primaryShortInfo())
+    pass
 
 class NumberPrimary(Primary):
     def __init__(self, number):
-        self.number = number
-    def primaryLongInfo(self):
-        return self.number.longName()
-    def primaryShortInfo(self):
-        return self.number.shortName()
+        self._number = number
+    def __str__(self):
+        return str(self._number) 
+    def __repr__(self):
+        return repr(self._number)
 
 class IdPrimary(Primary):
-    def __init__(self, id, exps=[], range=None):
-        self.id    = id
-        self.exps  = exps
-        self.range = range
-    def primaryLongInfo(self):
-        return self.id.longName() \
-            + "".join("[" + e.longName() + "]" for e in self.exps ) \
-            + (("[" + self.range.longName() + "]") if self.range else "")
-    def primaryShortInfo(self):
-        return self.id.longName() \
-            + "".join("[" + e.shortName() + "]" for e in self.exps ) \
-            + (("[" + self.range.shortName() + "]") if self.range else "")
+    def __init__(self, headid, index_exprs=[], range_expr=None):
+        self._headid      = headid
+        self._index_exprs = index_exprs
+        self._range_exprs = range_expr
+    def _each_symbols(self):
+        yield self._headid
+        for e in self._index_exprs: 
+            yield e
+        if self._range_exprs: 
+            yield self._range_exprs
+    def __str__(self):
+        return ".".join(str(x) for x in self._each_symbols())
+    def __rstr__(self):
+        return ".".join("(" + repr(x) +")" for x in self._each_symbols())
 
-class UnaryExpression(Expression):
-    def __init__(self, op, exp):
-        self.op = op
-        self.exp = exp
-    def longName(self):
-        return "({0} {1})".format(self.op, self.exp)
+class UnaryExpression(Expression):   # fixme. some types for op must be defined
+    def __init__(self, op, expr):
+        self._op   = op
+        self._expr = expr
+    def __str__(self):
+        return "({0}({1}))".format(self._op, self._expr)
 
-class BinaryExpression(Expression):
-    def __init__(self,op,exps):
-        print("Bin: {0}".format([e for e in exps]))
-        self.op   =op
-        self.exps = exps
-    def longName(self):
-        return "({0} {1})".format(self.op, 
-                                  "".join(exp.longName() for exp in self.exps))
-
-class LeftSideValue(Expression):
-    def __init__(self, id, indexes, range):
-        self.id      = id
-        self.indexes = indexes
-        self.range   = range
-    def shortName(self):
-        return self.id.shortName() + \
-            "".join("["+i.shortName()+"]" for i in self.indexes) + \
-            ("[" +self.range.shortName() + "]" if self.range else "")
+class BinaryExpression(Expression):  # fixme. not considered well for more than 3 exprs
+    def __init__(self, op, exprs):
+        self._op    = op
+        self._exprs = exprs
+    def __str__(self):
+        return "(" + str(self._op).join( str(e) for e in self._exprs ) + ")"
 
 class ConditionalExpression(Expression):
-    def __init__(self,exp_cond,exp_if,exp_else):
-        self.exp_cond = exp_cond
-        self.exp_if   = exp_if
-        self.exp_else = exp_else
-    def shortName(self):
-        return "(ConditionalExp:({cond}?{eif}:{eelse}))".format(
-            cond=self.exp_cond.shortName(),
-            eif =self.exp_if.shortName(),
-            eelse=self.exp_else.shortName())
-    def longName(self):
-        return self.shortName()
-
-class Range(Expression):
-    def __init__(self,left,right):
-        #print("left={0}, right={0}".format(nodeInfo(left),nodeInfo(right)))
-        self.left   = left
-        self.right  = right
-    def shortName(self):
-        return "{l}:{r}".format(l=self.left, r=self.right)
-    def longName(self):
-        return "(Range {l}:{r})".format(l=self.left, r=self.right)
+    def __init__(self, cond_expr, then_expr, else_expr):
+        self._cond_expr = cond_expr
+        self._then_expr = then_expr
+        self._else_expr = else_expr
+    def __str__(self):
+        return "({cond})?({then}):({_else})".format(
+            cond = str(self._cond_expr),
+            then = str(self._then_expr),
+            _else = str(self._else_expr))
 
 class Concatenation(Expression):
-    def __init__(self, exps):
-        self.exps = exps
-    def shortName(self):
-        return "{" + ",".join(exp.shortName() for exp in self.exps) + "}"
-    def longName(self):
-        return "{" + ",".join(exp.longName() for exp in self.exps) + "}"
+    def __init__(self, exprs):
+        self._exprs = exprs
+    def __str__(self):
+        return "{" + ",".join(str(exp) for exp in self._exprs) + "}"
 
 class FunctionCall(Expression):
-    def __init__(self, fid, args):
-        self.fid = fid
-        self.args = args
-    def shortName(self):
-        return "(call {0}({1}))".format(self.fid.shortName(),
-                                        ",".join(arg.shortName() for arg in self.args))
+    def __init__(self, func_id, args):
+        self._func_id = func_id
+        self._args    = args
+    def __str__(self):
+        return "{func}({args})".format(
+            func = self._func_id,
+            args = ",".join(str(arg) for arg in self._args))
 
-class IterableAstNode(AstNode, collections.Iterable):
-    def asList(self):
-        children = [ c.asList() for c in self ]
-        if children == []:
-            return [ self ]
-        else:
-            return [ self, children ]
+class EdgeExpression(Expression):
+    def __init__(self, edge_type, expr):
+        ''' 
+        - edge_type : str ( 'posedge' | 'negedge' )
+        - expr      : Expression
+        '''
+        self._edge_type = edge_type 
+        self._expr      = expr
+    def __str__(self):
+        return "(" + self._edge_type + str(self._expr) + ")"
 
-class Statement(IterableAstNode):
+
+
+# Statement
+
+# class IterableAstNode(AstNode, collections.Iterable):
+#     def asList(self):
+#         children = [ c.asList() for c in self ]
+#         if children == []:
+#             return [ self ]
+#         else:
+#             return [ self, children ]
+
+class Statement(AstNode):
     def __iter__(self):
         for x in []: yield x
 
 class Assignment(Statement):
     def __init__(self, left, delay_event, right, blocking=True):
-        self.left        = left
-        self.delay_event = delay_event
-        self.right       = right
-        self.blocking    = blocking
-        self._continuous = ""
-    def shortName(self):
-        return self._continuous + self.left.shortName() + ("=" if self.blocking else "<=") + self.right.shortName()
-    def isContinuous(self):
-        '''if with assign or not'''
-        return self._continuous is not None
-    def setContinuous(self, con):
-        self._continuous = con
-    
+        self._left_expr   = left
+        self._delay_event = delay_event
+        self._right_expr  = right
+        self._blocking    = blocking
+        self._continuous  = ""          # fixme
+    def __str__(self):
+        return "{conti}{left}{eq}{right}".format(
+            conti = self._continuous+" " if self._continuous else "",
+            left  = str(self._left_expr),
+            eq    = "=" if self._blocking else "<=",
+            right = str(self._right_expr))
+    def isBlocking(self):
+        return self._blocking
+
+class ContinuousAssignment(Statement):
+    def __init__(self, continuous_type, stmt):
+        """
+        - continuous_type : str ('assign' | 'force' )
+        - stmt : Statement
+        """
+        if not stmt.isBlocking(): raise Exception('ContinuousAssignment must be blocking')
+        self._stmt            = stmt
+        self._continuous_type = continuous_type
+    def __str__(self):
+        return "{type} {stmt}".format(
+            type = self._continuous_type,
+            stmt = str(self._stmt))
+
 class ReleaseLeftValue(Statement):
     def __init__(self, _type, lvalue):
         self._type   = _type
         self._lvalue = lvalue
-    def shortName(self):
-        return self._type + "(" + self._lvalue.shortName() + ")"
+    def __str__(self):
+        return self._type + "(" + str(self._lvalue) + ")"
 
-class Conditional(Statement):
+class ConditionalStatement(Statement):
     def __init__(self, cond_stmt_list, else_stmt):
-        assert len(cond_stmt_list) > 0
         self._cond_stmt_list = cond_stmt_list
         self._else_stmt      = else_stmt
     def longName(self):
@@ -303,46 +325,50 @@ class Conditional(Statement):
                                                             else_s  = "else:{0}".format(self._else_stmt.longName() if self._else_stmt else ""))
     
 
-class Case(Statement):
+class CaseStatement(Statement):
     pass
 
-class Loop(Statement):
+class LoopStatement(Statement):
     pass
 
 class Block(Statement):
     def __init__(self, item_decls, statements, seq=True):
-        self.item_decls = item_decls
-        self.statements = statements
-        self.seq       = seq
-    def __iter__(self):
-        for s in self.statements:
-            yield s
-    def shortName(self):
-        if self.seq: return "Block(begin-end)"
+        self._item_decls = item_decls
+        self._statements = statements
+        self._seq        = seq
+    def __str__(self):
+        if self._seq: return "Block(begin-end)"
         else: return "Block(fork-join)"
+    def __iter__(self):
+        for s in self._statements:
+            yield s
 
-
-class Construct(Statement):
-    def __init__(self, ctype, stmt):
-        self._ctype = ctype
-        self._stmt = stmt
-    def shortName(self):
-        return self._ctype + ":" + self._stmt.shortName()
+class ConstructStatement(Statement):
+    def __init__(self, construct_type, stmt):
+        """
+        - construct_type : str ( 'always' | 'initial' )
+        - stmt           : Statement
+        """
+        self._construct_type = construct_type
+        self._stmt           = stmt
+    def __str__(self):
+        return self._construct_type + ":" + str(self._stmt)
     def __iter__(self):
         for x in self._stmt: yield x
+
 
 class Trigger(Statement):
     def __init__(self,_id):
         self._id = _id
-    def shortName(self):
-        return "->" + self._id.shortName()
+    def __str__(self):
+        return "->" + str(self._id)
 
 class Wait(Statement):
     def __init__(self, exp, stmt):
         self._exp = exp
         self._stmt = stmt
-    def shortName(self):
-        return "(wait @{0} {1})".format(self._exp.shortName(), self._stmt.shortName())
+    def __str__(self):
+        return "(wait @{0} {1})".format(self._exp, self._stmt)
 
 class Timing(Statement):
     def __init__(self, timing, stmt):
@@ -350,26 +376,6 @@ class Timing(Statement):
         self._stmt   = stmt
     def __iter__(self):
         for s in self._stmt: yield s
-    def shortName(self):
-        return "{0}{1}".format(self._timing.shortName(), self._stmt.shortName())
-
-WaitTypeId   = 0
-WaitTypeExpr = 1
-WaitTypeAny  = 2
-class Event(AstNode):
-    def __init__(self, type, obj):
-        self._type = type
-        self._wait_obj = obj
-    def shortName(self):
-        if self._type==WaitTypeId or self._type==WaitTypeExpr:
-            return "@(" + self._wait_obj.shortName() + ")"
-        elif self._type==WaitTypeAny:
-            return "@*"
-        else: assert(False)
-
-class Delay(AstNode):
-    def __init__(self, exp):
-        self._delay_exp = exp
-    def shortName(self):
-        return "#({0})".format(self._delay_exp.shortName())
+    def __str__(self):
+        return "{0}{1}".format(self._timing, self._stmt)
 

@@ -17,7 +17,7 @@ class GrammarTestCase(unittest.TestCase):
     def do_parse(self, text):
         return (self.grammar() + stringEnd).parseString(text)
 
-    def check_pass(self, text, expect=None):
+    def check_pass(self, text, expect=None, msg=None):
         print("\ncheck_pass: \"{0}\"".format(text))
         try:
             result = self.do_parse(text)
@@ -27,8 +27,10 @@ class GrammarTestCase(unittest.TestCase):
             
         print("parse OK.")
         if expect:
-            self.assertEqual(result, expect, 
-                             "input = \"{0}\", expect = {1}, result = {2}".format(text, expect, result))
+            errmsg = "input = \"{0}\", expect = {1}, result = {2}".format(text, expect, result)
+            if msg: 
+                errmsg += "\n   " + msg
+            self.assertEqual(result, expect, errmsg)
         else:
             self.assertTrue(result)
         return result
@@ -81,13 +83,11 @@ def _print(result):
 def _id_print(result):
     print(result.asXML())
     idAst = result[0]
-    print("shortName={0}".format(idAst.shortName()))
-    print("longName={0}".format(idAst.longName()))
-    if idAst.hasIndex(): print("Index={0}".format(idAst.index))
-    if idAst.hasRange(): print("Range={0}".format(idAst.range))
+    if idAst.hasIndex(): print("Index={0}".format(idAst.getIndex()))
+    if idAst.hasRange(): print("Range={0}".format(idAst.getRange()))
     if idAst.isHierachical():
-        for index,id in enumerate(idAst.ids):
-            print("  name[{0}] short={1}, long={2}".format(index,id.shortName(),id.longName()))
+        for index,id in enumerate(idAst.each_id()):
+            print("  name[{0}] str={1}, repr={2}".format(index,str(id),repr(id)))
 
 def _stmt_print(obj, level=0, indent=3, out=sys.stdout, debug=False):
     if debug:

@@ -370,13 +370,13 @@ def continuous_assign(_ = ASSIGN + Optional( delay3 ) + list_of_net_assignment )
 
 
 # A.6.2 Procedural blocks and assigments
-@Grammar
-def initial_construct( _= INITIAL + statement ):
-    return (_, lambda t: ast.Construct(t.keyword, t.statement))
 
-@Grammar
-def always_construct( _ = ALWAYS  + statement ):
-    return (_, lambda t: ast.Construct(t.keyword, t.statement))
+initial_construct << INITIAL + statement 
+always_construct  << ALWAYS  + statement
+
+@Action(initial_construct, always_construct)
+def constructAction(token):
+    return (_, lambda t: ast.ConstructStatement(t.keyword, t.statement))
 
 @Grammar
 def blocking_assignment( _ = variable_lvalue + EQUAL + Optional( delay_or_event_control ) + expression ):
@@ -403,8 +403,7 @@ def procedural_continuous_assignments():
         if token.keyword in ['deassign','release']:
             return ast.ReleaseLeftValue(token.keyword, unalias(token.lvalue))
         else:
-            unalias(token.assignment).setContinuous(token.keyword)
-            return unalias(token.assignment)
+            return ast.ContinuousAssignment(token.keyword, unalias(token.assignment))
     return (_,action)
     
 @Grammar     
@@ -492,7 +491,7 @@ def delay_control():
           SHARP + LP + mintypmax_expression + RP )
     def action(token):
         v = token.delay_value if token.delay_value else token.mintypmax_expression
-        return ast.Delay(v)
+        return ast.DelayControl(v)
     return (_,action)
             
 @Grammar
@@ -517,11 +516,11 @@ def event_control():
          AT + LP + ASTA + RP             )
     def action(token):
         if token.identifier:
-            return ast.Event(ast.WaitTypeId, token.identifier)
+            return ast.EventControl(ast.WaitTypeId, token.identifier)
         elif token.event_expression:
-            return ast.Event(ast.WaitTypeExpr, token.event_expression)
+            return ast.EventControl(ast.WaitTypeExpr, token.event_expression)
         else:
-            return ast.Event(ast.WaitTypeAny, None)
+            return ast.EventControl(ast.WaitTypeAny, None)
     return (_,action)
 
 @Grammar
@@ -534,16 +533,14 @@ def event_expression():
                      NEGEDGE + expression    |
                      hierarchical_identifier |
                      expression              )
-    def _base_action(token):
+    @Action(ev_base_expr)
+    def ev_base_expr_action(token):
         if token.keyword:
-            ret = token.expression
-            ret.setEvent(token.keyword)
+            return ast.EdgeExpression(token.keyword, token.expression)
         elif token.hierarchical_identifier:
-            ret = ast.IdPrimary(token.hierarchical_identifier)
+            return ast.IdPrimary(token.hierarchical_identifier)
         else:
-            ret = token.expression
-        return ret
-    ev_base_expr.setParseAction(_base_action)
+            return token.expression
 
     _ = operatorPrecedence( ev_base_expr, [ (OR,                      2, opAssoc.LEFT),
                                             (Literal(",")("keyword"), 2, opAssoc.LEFT) ] )
@@ -582,7 +579,7 @@ def conditional_statement():
             print("cond={0}".format(token.expression))
             print("stmt={0}".format(token.statement_or_null))
             print("else={0}".format(token.statement_else))
-            return ast.Conditional( [(token.expression, token.statement_or_null)], token.statement_else )
+            return ast.ConditionalStatement( [(token.expression, token.statement_or_null)], token.statement_else )
     return (_,action)
 
 @Grammar
@@ -591,7 +588,7 @@ def if_else_if_statement():
           ZeroOrMore( Group(ELSE + IF + LP + expression + RP + statement_or_null) )("elseif_blocks") +
           Optional( ELSE + alias(statement_or_null, "stmt_else") ) )
     def action(token):
-        return ast.Conditional( [ (token.expression, token.statement_or_null) ] +
+        return ast.ConditionalStatement( [ (token.expression, token.statement_or_null) ] +
                                 [ (block.expression, block.statement_or_null) for block in token.elseif_blocks ],
                                 token.statement_else )
     return (_,action)
@@ -1001,9 +998,9 @@ def net_lvalue():
         if token.net_concatenation:
             return token.net_concatenation
         else:
-            return ast.LeftSideValue( token.hierarchical_identifier,
-                                      [ e.constant_expression for e in token.exps ],
-                                      token.constant_range_expression )
+            return ast.IdPrimary( token.hierarchical_identifier,
+                                  [ e.constant_expression for e in token.exps ],
+                                  token.constant_range_expression )
     return (_,action)
 
 @Grammar
@@ -1017,9 +1014,9 @@ def variable_lvalue():
         if token.variable_concatenation:
             return token.variable_concatenation
         else:
-            return ast.LeftSideValue( token.hierarchical_identifier,
-                                      [ e.expression for e in token.exps ],
-                                      token.range_expression )
+            return ast.IdPrimary( token.hierarchical_identifier,
+                                  [ e.expression for e in token.exps ],
+                                  token.range_expression )
     return (_,action)
 
 # A.8.6 Operators
@@ -1160,9 +1157,9 @@ def simple_identifier():
 def simple_arrayed_identifier( _ = simple_identifier + Optional( range_ ) ):
     def action(token):
         if token.range_:
-            return ast.RangedId(token.simple_identifier.shortName(), token.range_)
+            return ast.RangedId(str(token.simple_identifier), token.range_)
         else:
-            return ast.BasicId(token.simple_identifier.shortName())
+            return ast.BasicId(str(token.simple_identifier))
     return (_, action)
 
 
@@ -1217,7 +1214,7 @@ def simple_hierarchical_branch():
           
     def action(token):
         if token.index:
-            headId = ast.IndexedId(token.simple_identifier.string, token.index)
+            headId = ast.IndexedId(str(token.simple_identifier), token.index)
         else:
             headId = token.simple_identifier
         ids = [ headId ]
@@ -1226,7 +1223,7 @@ def simple_hierarchical_branch():
             for part in token.part_list: 
                 #print("={0}".format(part))
                 if part.index:
-                    ids.append(ast.IndexedId(part.simple_identifier.string, part.index))
+                    ids.append(ast.IndexedId(str(part.simple_identifier), part.index))
                 else:
                     ids.append(part.simple_identifier)
         if len(ids)==1:

@@ -2,18 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, run_tests, debug, grammar
-
-def _id_print(result):
-    print(result.asXML())
-    idAst = result[0]
-    print("shortName={0}".format(idAst.shortName()))
-    print("longName={0}".format(idAst.longName()))
-    if idAst.hasIndex(): print("Index={0}".format(idAst.index))
-    if idAst.hasRange(): print("Range={0}".format(idAst.range))
-    if idAst.isHierachical():
-        for index,id in enumerate(idAst.ids):
-            print("  name[{0}] short={1}, long={2}".format(index,id.shortName(),id.longName()))
+from test_common import testOf, run_tests, debug, grammar, _id_print
 
 @testOf(grammar.simple_identifier)
 def test169(self):
