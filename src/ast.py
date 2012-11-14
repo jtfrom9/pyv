@@ -288,19 +288,19 @@ class ReleaseLeftValue(Statement):
         return self._type + "(" + self._lvalue.shortName() + ")"
 
 class Conditional(Statement):
-    def __init__(self, cs_list, else_s):
-        assert len(cs_list) > 0
-        self.cs_list = cs_list
-        self.else_s  = else_s
+    def __init__(self, cond_stmt_list, else_stmt):
+        assert len(cond_stmt_list) > 0
+        self._cond_stmt_list = cond_stmt_list
+        self._else_stmt      = else_stmt
     def longName(self):
-        first_exp, first_s = self.cs_list[0]
+        cond, stmt = self._cond_stmt_list[0]
         rest_if_ccs = ""
         # for statements longName() method no longer makes no sense.
         # Statement classes should has multi-line pretty print functionality
         return "({cls} {if_cs}{rest_if_cs}{else_s})".format(cls=self.__class__.__name__,
-                                                            if_cs = "cond:{0}, then:{1}".format(first_exp, first_s.longName()),
+                                                            if_cs = "cond:{0}, then:{1}".format(cond.longName(), stmt.longName()),
                                                             rest_if_cs = "...",
-                                                            else_s  = "else:{0}".format(self.else_s.longName() if self.else_s else ""))
+                                                            else_s  = "else:{0}".format(self._else_stmt.longName() if self._else_stmt else ""))
     
 
 class Case(Statement):

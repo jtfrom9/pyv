@@ -570,17 +570,32 @@ def wait_statement():
 
 
 # A.6.6 Conditional statements
-conditional_statement << Group( 
-    if_else_if_statement
-    |
-    IF + LP + alias(expression,"condition") + RP + alias(statement_or_null,"statement_if") + 
-    Optional( ELSE + alias(statement_or_null,"statement_else") ) )
+@Grammar
+def conditional_statement():
+    _ = (IF + LP + expression + RP + statement_or_null + Optional( ELSE + alias(statement_or_null,"statement_else") )
+         |
+         if_else_if_statement)
+    def action(token):
+        if token.if_else_if_statement:
+            return token.if_else_if_statement
+        else:
+            print("cond={0}".format(token.expression))
+            print("stmt={0}".format(token.statement_or_null))
+            print("else={0}".format(token.statement_else))
+            return ast.Conditional( [(token.expression, token.statement_or_null)], token.statement_else )
+    return (_,action)
 
-_else_if_part = Group( ELSE + IF + LP + alias(expression,"condition_elseif") + RP + alias(statement_or_null,"statement_elseif") )
-if_else_if_statement << Group( 
-    IF + LP + alias(expression, "condition") + RP + alias(statement_or_null, "statement_if") + 
-    ZeroOrMore( _else_if_part )("elseif_blocks") +
-    Optional( ELSE + alias(statement_or_null, "statement_else") ) )
+@Grammar
+def if_else_if_statement():
+    _ = ( IF + LP + expression + RP + statement_or_null + 
+          ZeroOrMore( Group(ELSE + IF + LP + expression + RP + statement_or_null) )("elseif_blocks") +
+          Optional( ELSE + alias(statement_or_null, "stmt_else") ) )
+    def action(token):
+        return ast.Conditional( [ (token.expression, token.statement_or_null) ] +
+                                [ (block.expression, block.statement_or_null) for block in token.elseif_blocks ],
+                                token.statement_else )
+    return (_,action)
+
 
 function_conditional_statement << Group(
     IF + LP + expression + RP + function_statement_or_null +
@@ -593,19 +608,6 @@ function_if_else_if_statement << Group(
     ZeroOrMore ( ELSE + IF + LP + expression + RP + function_statement_or_null ) +
     Optional   ( ELSE + function_statement_or_null ) )
 
-@Action(conditional_statement)
-def conditionalStatementAction(token):
-    if not token.if_else_if_statement:
-        print(token.statement_if)
-        return ast.Conditional( [(token.condition, token.statement_if)], token.statement_else )
-    else:
-        return token[0]
-                        
-@Action(if_else_if_statement)
-def ifElseIfStatementAction(token):
-    return ast.Conditional( [ (token.condition, token.statement_if) ] +
-                            [ (block.condition_elseif, block.statement_elseif) for block in token.elseif_blocks ],
-                            token.statement_else )
 
 
 # A.6.7 Case statements

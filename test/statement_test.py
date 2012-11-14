@@ -238,12 +238,23 @@ def test89(self):
 
 @testOf(grammar.conditional_statement)
 def test90(self):
-    pass
+    # debug(grammar.conditional_statement)
+    # debug(grammar.if_else_if_statement)
+    # debug(grammar.expression)
+    # debug(grammar.statement_or_null)
+    _stmt_print(self.check_pass("""
+ if (X > 0)  A = B;
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 0)  foo();
+ """))
 
 
 @testOf(grammar.if_else_if_statement)
 def test91(self):
-    pass
+    debug(grammar.conditional_statement)
+    debug(grammar.if_else_if_statement)
+
 
 
 @testOf(grammar.function_conditional_statement)
