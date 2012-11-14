@@ -175,18 +175,25 @@ def test80(self):
 
 @testOf(grammar.delay_control)
 def test82(self):
-    pass
-
+    _print(self.check_pass("#10"))
+    _print(self.check_pass("#X+1"))
+    _print(self.check_pass("#(X+1)"))
+    _print(self.check_pass("#X +1"))
 
 @testOf(grammar.delay_or_event_control)
 def test83(self):
-    pass
-
+    _stmt_print(self.check_pass("@A"))
+    _stmt_print(self.check_pass("#A"))
 
 @testOf(grammar.disable_statement)
 def test84(self):
     pass
 
+@testOf(grammar.delay_value)
+def _test(self):
+    debug(grammar.delay_value)
+    _print(self.check_pass("10"))
+    _print(self.check_pass("X+2"))
 
 @testOf(grammar.event_control)
 def test85(self):
@@ -212,12 +219,21 @@ def test87(self):
 
 @testOf(grammar.procedural_timing_control_statement)
 def test88(self):
-    pass
+    _stmt_print(self.check_pass("#10 A<=1;"))
+    _stmt_print(self.check_pass("@clk A=1;"))
+    _stmt_print(self.check_pass("#X+2 A=1;"))
+    _stmt_print(self.check_pass("@(posedge clk or negedge reset) A=1;"))
+    _stmt_print(self.check_pass("""@(posedge clk or negedge reset) begin 
+ A<=1;
+ B<=func(A,B);
+end
+"""))
 
 
 @testOf(grammar.wait_statement)
 def test89(self):
     _stmt_print(self.check_pass("wait (X) A=1;"))
+    _stmt_print(self.check_pass("wait (X) ;"))
 
 
 @testOf(grammar.conditional_statement)

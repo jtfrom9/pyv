@@ -92,7 +92,6 @@ def ungroup(token): return token[0]
 def Action(*argv,**kw):
     def deco_func(action):
         if kw.get('ungroup',False):
-            print(action.__name__)
             new_func = lambda t: action(ungroup(t))
         else:
             new_func = action
@@ -222,9 +221,18 @@ delay3      << Group( SHARP + delay_value |
                       SHARP + LP + delay_value + Optional( CAMMA + delay_value + Optional ( CAMMA + delay_value ) ) + RP )
 delay2      << Group( SHARP + delay_value | 
                       SHARP + LP + delay_value + Optional( CAMMA + delay_value ) + RP )
+
 delay_value << ( unsigned_number | mintypmax_expression )
 
-delay_value.setParseAction(lambda t: t[0])
+@Action(delay_value)
+def delayValueAction(token):
+    if token.unsigned_number:
+        return ast.NumberPrimary(ast.Int2(token.unsigned_number, 
+                                          32, 
+                                          ast.FixedWidthValue.Decimal,
+                                          int(token.unsigned_number)))
+    else:
+        return token[0]
 
 # A.2.3 Declaration listsp
 list_of_event_identifiers        << Group(delimitedList( identifier + Optional( dimension + ZeroOrMore(dimension) ) ))
@@ -468,17 +476,24 @@ def function_statement_or_null( _ = SEMICOLON | function_statement ):
 
 
 # A.6.5 Timing control statements
-@GrammarNotImplementedYet
+@Grammar
 def delay_control():
-    return (( SHARP + delay_value | 
-              SHARP + LP + mintypmax_expression + RP ), )
+    _ = ( SHARP + delay_value | 
+          SHARP + LP + mintypmax_expression + RP )
+    def action(token):
+        v = token.delay_value if token.delay_value else token.mintypmax_expression
+        return ast.Delay(v)
+    return (_,action)
             
-@GrammarNotImplementedYet
+@Grammar
 def delay_or_event_control():
     _ = ( delay_control | 
           event_control |
           REPEAT + LP + expression + RP + event_control )
-    return (_,)
+    def action(token):
+        if not token.expression: return token[0]
+        else: raise Exception("Not Implemented completely delay_or_event_control");
+    return (_,action)
 
 @GrammarNotImplementedYet
 def disable_statement():
@@ -533,10 +548,11 @@ def event_expression():
             raise Exception("Not Implemented completely eventExpressionAction: token={0}".format(token))
     return (_, action)
 
-@GrammarNotImplementedYet
+@Grammar
 def procedural_timing_control_statement():
-    return (( delay_or_event_control + statement_or_null ),)
-
+    return ((delay_or_event_control + statement_or_null),
+            lambda t: ast.Timing(t.delay_or_event_control, t.statement_or_null))
+        
 @Grammar
 def wait_statement():
     return (( WAIT + LP + expression + RP + statement_or_null ),
@@ -849,10 +865,10 @@ def msb_constant_expression(): return (constant_expression, lambda t: t)
 
 @Grammar
 def mintypmax_expression():
-    _ = ( expression("exp") | 
+    _ = ( alias(expression, "exp") | 
           expression + COLON + expression + COLON + expression )
     def action(token):
-        if token.exp: return token.exp
+        if token.exp: return unalias(token.exp)
         else: raise Exception("Not Implemented completely mintypmaxExpressionAction: token={0}".format(token))
     return (_,action)
 

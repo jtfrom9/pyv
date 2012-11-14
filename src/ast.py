@@ -342,11 +342,16 @@ class Wait(Statement):
         self._exp = exp
         self._stmt = stmt
     def shortName(self):
-        return "wait({0}){1}".format(self._exp.shortName(), self._stmt.shortName())
+        return "(wait @{0} {1})".format(self._exp.shortName(), self._stmt.shortName())
 
-class Delay(AstNode):
-    def __init__(self):
-        pass
+class Timing(Statement):
+    def __init__(self, timing, stmt):
+        self._timing = timing
+        self._stmt   = stmt
+    def __iter__(self):
+        for s in self._stmt: yield s
+    def shortName(self):
+        return "{0}{1}".format(self._timing.shortName(), self._stmt.shortName())
 
 WaitTypeId   = 0
 WaitTypeExpr = 1
@@ -361,4 +366,10 @@ class Event(AstNode):
         elif self._type==WaitTypeAny:
             return "@*"
         else: assert(False)
+
+class Delay(AstNode):
+    def __init__(self, exp):
+        self._delay_exp = exp
+    def shortName(self):
+        return "#({0})".format(self._delay_exp.shortName())
 
