@@ -116,7 +116,17 @@ def GrammarNotImplementedYet(grammar_def_func):
     symbol << grammar_def
     symbol.setParseAction(_error)
     return symbol
-    
+
+class NotImplementedCompletelyAction(Exception):
+    def __init__(self, token=None):
+        import inspect
+        frame = inspect.currentframe(1)
+        msg = "Error at {0}:{1}".format(
+            frame.f_code.co_filename,
+            frame.f_lineno)
+        if token:
+            msg += "\n    token={0}".format(ast.nodeInfo(token))
+        super(Exception,self).__init__(msg)
 
 # A.1 Source text2
 # A.1.1 Library source text
@@ -492,7 +502,7 @@ def delay_or_event_control():
           REPEAT + LP + expression + RP + event_control )
     def action(token):
         if not token.expression: return token[0]
-        else: raise Exception("Not Implemented completely delay_or_event_control");
+        else: raise NotImplementedCompletelyAction(token)
     return (_,action)
 
 @GrammarNotImplementedYet
@@ -545,7 +555,7 @@ def event_expression():
             return ast.BinaryExpression(token.keyword,
                                         [t for t in token[0::2]])
         else:
-            raise Exception("Not Implemented completely eventExpressionAction: token={0}".format(token))
+            raise NotImplementedCompletelyAction(token)
     return (_, action)
 
 @Grammar
@@ -760,7 +770,7 @@ def constant_expression():
         elif token.constant_primary:
             return token.constant_primary
         else:
-            raise Exception("Not Implemented completely basic_primaryAction: token={0}".format(ast.nodeInfo(token)))
+            raise NotImplementedCompletelyAction(token)
     
     basic_expr = Forward()
 
@@ -783,7 +793,7 @@ def constant_expression():
             return ast.BinaryExpression(token.binary_operator, 
                                         [t for t in token[0::2]])
         else:
-            raise Exception("Not Implemented completely constantExpressionAction: token={0}".format(token))
+            raise NotImplementedCompletelyAction(token)
 
     return (_constant_expression, action)
 
@@ -796,7 +806,7 @@ def constant_mintypmax_expression():
         if token.exp:
             return token.exp
         else:
-            raise Exception("Not Implemented completely constantMintypmaxExpressionAction: token={0}".format(token))
+            raise NotImplementedCompletelyAction(token)
     return (_,action)
 
 @Grammar
@@ -838,7 +848,7 @@ def expression():
         elif token.primary:
             return token.primary
         else:
-            raise Exception("Not Implemented completely _expWithoutCondAction: token={0}".format(token))
+            raise NotImplementedCompletelyAction(token)
 
     term = conditional_expression | basic_primary
     term.setParseAction(lambda t: t)
@@ -854,7 +864,7 @@ def expression():
             return ast.BinaryExpression(token.binary_operator, 
                                         [t for t in token[0::2]])
         else:
-            raise Exception("Not Implemented completely expressionAction: token={0}".format(token))
+            raise NotImplementedCompletelyAction(token)
     return (_expression, action)
 
 @Grammar
@@ -869,7 +879,7 @@ def mintypmax_expression():
           expression + COLON + expression + COLON + expression )
     def action(token):
         if token.exp: return unalias(token.exp)
-        else: raise Exception("Not Implemented completely mintypmaxExpressionAction: token={0}".format(token))
+        else: raise NotImplementedCompletelyAction(token)
     return (_,action)
 
 @GrammarNotImplementedYet
@@ -901,7 +911,7 @@ def range_expression():
             if token.sign=="+":
                 return ast.Range( token.base_expression, token.width_constant_expression )
             else:
-                raise Exception("Not Implemented completely rangeExpressionAction: token={0}".format(token))
+                raise NotImplementedCompletelyAction(token)
         else:
             return ast.Range(token.msb_constant_expression, token.lsb_constant_expression)
     return (_,action)
@@ -940,7 +950,7 @@ def primary():
               token.mintypmax_expression):
             return token[0]
         else:
-            raise Exception("Not Implemented completely primaryAction: token={0}".format(token))
+            raise NotImplementedCompletelyAction(token)
     return (_,action)
 
 @Grammar
@@ -961,7 +971,7 @@ def constant_primary():
               token.constant_mintypmax_expression):
             return token[0]
         else:
-            raise Exception("Not Implemented completely constantPrimaryAction: token={0}".format(token))
+            raise NotImplementedCompletelyAction(token)
     return (_,action)
 
 @GrammarNotImplementedYet
