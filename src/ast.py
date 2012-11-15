@@ -10,6 +10,17 @@ class AstNode(object):
     def __repr__(self):
         return self.__str__();
 
+class Traversable(AstNode):
+    __metaclass__ = ABCMeta
+    @abstractmethod
+    def traverse(self,handler,arg):
+        pass
+
+class Null(Traversable):
+    def traverse(self,handler,arg): 
+        handler(self,arg)
+null = Null()
+
 def nodeInfo(node):
     if isinstance(node,str):
         return "str: {0}".format(node)
@@ -19,10 +30,6 @@ def nodeInfo(node):
         return "ast: {0}".format(repr(node))
     return type(node)
     
-class Null(AstNode):
-    pass
-null = Null()
-
 class Range(AstNode):
     def __init__(self,left,right):
         self._left_expr  = left
@@ -263,12 +270,6 @@ class EdgeExpression(Expression):
 
 # Statement
 
-class Traversable(AstNode):
-    __metaclass__ = ABCMeta
-    @abstractmethod
-    def traverse(self,handler,arg):
-        pass
-
 class NodeList(Traversable):
     def __init__(self, nodes):
         self._nodes = nodes
@@ -331,13 +332,11 @@ class ConditionalStatement(Statement):
     
     def traverse(self, handler, arg):
         handler(self, arg)
-        for index, cond_stmt in enumerate(self._cond_stmt_list):
-            cond, stmt = cond_stmt
+        for index, (cond, stmt) in enumerate(self._cond_stmt_list):
             stmt.traverse(handler, 
-                          visitor.Arg(self,arg)({ 'cond': cond, 'index': index, 'last': False }))
+                          visitor.Arg(self,arg)(cond=cond, index=index, last=False))
         if self._else_stmt:
-            self._else_stmt.traverse(handler,
-                                     visitor.Arg(self,arg)({'cond':None, 'last':True}))
+            self._else_stmt.traverse(handler, visitor.Arg(self,arg)(last=True))
             
 
 class CaseStatement(Statement):
@@ -356,10 +355,10 @@ class Block(Statement):
         else: return "Block(fork-join)"
     def traverse(self, handler, arg):
         handler(self, arg)
-        decl_arg = visitor.Arg(self,arg)( { 'decl':True, } )
+        decl_arg = visitor.Arg(self,arg)( decl=True )
         for decl in self._item_decls:
             decl.traverse(handler, decl_arg)
-        stmt_arg = visitor.Arg(self,arg)( { 'decl':False, } )
+        stmt_arg = visitor.Arg(self,arg)( decl=False )
         for stmt in self._statements:
             stmt.traverse(handler, stmt_arg)
 

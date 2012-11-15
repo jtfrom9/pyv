@@ -31,15 +31,25 @@ class GenericVisitorMixin(object):
 
 class Arg(object):
     def __init__(self, parent, arg=None, init_level=None):
-        self.parent = parent
+        self._dict = {}
+        self.add_prop('parent',parent)
         if init_level:
-            self.level = init_level
+            self.add_prop('level',init_level)
         else:
-            self.level = arg.level + 1 if arg else 0
+            self.add_prop('level',arg.level + 1 if arg else 0)
 
-    def __call__(self, arg_dict):
-        for key,value in arg_dict.items():
-            setattr(self,key,value)
+    def __contains__(self, key):
+        return key in self._dict
+
+    def add_prop(self, key, value):
+        if key in self._dict:
+            raise Exception("already has key '{0}' in self._dict".format(key))
+        self._dict[ key ] = value
+        setattr(self, key, value)
+
+    def __call__(self, **kws):
+        for key, value in kws.items():
+            self.add_prop(key,value)
         return self
 
 root_arg = Arg(None)
@@ -54,11 +64,24 @@ class BasicPrinterVisitor(GenericVisitorMixin, Visitor):
 
     def default_handler(self,node,arg):
         #print("lv={0} : {1}".format(arg.level, node.__class__.__name__))
-        self.out.write("{spc}{data}\n".format(spc  = " " * arg.level * self.indent,
-                                              data = str(node)))
+        if isinstance(arg.parent, ast.ConditionalStatement):
+            if not arg.last:
+                self.out.write("{spc}{key} {cond} then:\n{spc2}{stmt}\n".format(
+                        spc  = " " * arg.level * self.indent,
+                        spc2 = " " * (arg.level * self.indent + 2),
+                        key  = "if" if arg.index==0 else "else if",
+                        cond = str(arg.cond),
+                        stmt = str(node)))
+            else:
+                self.out.write("{spc}else:\n{spc2}{stmt}\n".format(
+                        spc  = " " * arg.level * self.indent,
+                        spc2 = " " * (arg.level * self.indent + 2),
+                        stmt = str(node)))
+        else:
+            self.out.write("{spc}{data}\n".format(spc  = " " * arg.level * self.indent,
+                                                  data = str(node)))
 
-
-
+        
 
 # # visit.py
 

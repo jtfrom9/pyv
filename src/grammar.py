@@ -572,10 +572,8 @@ def conditional_statement():
         if token.if_else_if_statement:
             return token.if_else_if_statement
         else:
-            print("cond={0}".format(token.expression))
-            print("stmt={0}".format(token.statement_or_null))
-            print("else={0}".format(token.statement_else))
-            return ast.ConditionalStatement( [(token.expression, token.statement_or_null)], token.statement_else )
+            return ast.ConditionalStatement( [(token.expression, token.statement_or_null)], 
+                                             unalias(token.statement_else) if token.statement_else else None )
     return (_,action)
 
 @Grammar

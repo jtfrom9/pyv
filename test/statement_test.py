@@ -244,11 +244,47 @@ def test90(self):
     # debug(grammar.function_call)
     # debug(grammar.statement_or_null)
     _stmt_print(self.check_pass("""
+ if (X > 0)  ;
+ """))
+    _stmt_print(self.check_pass("""
  if (X > 0)  A = B;
  """))
     _stmt_print(self.check_pass("""
- if (X > 0) foo(); 
+ if (X > 0) a = foo(); 
  """))
+    _stmt_print(self.check_pass("""
+ if (X > 0) a = foo(); else b = 1;
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 3) a = 1;
+ else if (X > 2) a = 2;
+ else a = 3;
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 3) begin a = 1; end
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 3) begin a = 1; end
+ else begin b = 2; end
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 3) begin a = 1; end
+ else begin 
+    b = 2; 
+    if ( a==0 ) x = 1;
+ end
+ """))
+ #    _stmt_print(self.check_pass("""
+ # if (X > 3) a = 1;
+ # else begin
+ #    if (X > 2) begin 
+ #       a = 2;
+ #    end else begin
+ #       X = 1;
+ #       Y = 1;
+ #    end
+ # else a = 3;
+ # """))
 
 
 @testOf(grammar.if_else_if_statement)
