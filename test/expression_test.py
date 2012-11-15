@@ -16,6 +16,7 @@ def test112(self):
 
 @testOf(grammar.function_call)
 def test113(self):
+    _print(self.check_pass("foo()"))
     _print(self.check_pass("foo(0)"))
     _print(self.check_pass("foo(0,1,2)"))
     _print(self.check_pass("foo(bar(0))"))

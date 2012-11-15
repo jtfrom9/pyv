@@ -3,8 +3,8 @@ import sys, os
 import unittest
 from pyparsing import stringEnd, ParseBaseException, ParseException, ParseSyntaxException, ParseFatalException, ParseResults
 
-sys.path.insert(0, os.path.join(os.path.dirname(sys.modules[__name__].__file__),'..'))
-from src import grammar, ast
+sys.path.append(os.path.join(os.path.dirname(__file__),os.pardir))
+from src import grammar, ast, visitor
 
 class GrammarTestCase(unittest.TestCase):
     import abc
@@ -89,7 +89,7 @@ def _id_print(result):
         for index,id in enumerate(idAst.each_id()):
             print("  name[{0}] str={1}, repr={2}".format(index,str(id),repr(id)))
 
-def _stmt_print(obj, level=0, indent=3, out=sys.stdout, debug=False):
+def ___stmt_print(obj, level=0, indent=3, out=sys.stdout, debug=False):
     if debug:
         print("_stmt_print: level={0}, obj={1} ({2})".format(level, ast.nodeInfo(obj), type(obj)))
     if isinstance(obj, ParseResults):
@@ -107,6 +107,21 @@ def _stmt_print(obj, level=0, indent=3, out=sys.stdout, debug=False):
         out.write(str(obj)+'\n')
     else:
         pass # if None
+
+
+def _stmt_print(result, out=sys.stdout, debug=False):
+    if not result:
+        return
+
+    if debug:
+        print("_stmt_print: level={0}, obj={1} ({2})".format(level, ast.nodeInfo(obj), type(obj)))
+
+    out.write("{0}:\n".format(result.keys()[0]))
+    node = result[0]
+    if isinstance(node,ast.Traversable):
+        node.traverse(visitor.BasicPrinterVisitor(out),visitor.Arg(None,init_level=1))
+    else:
+        print("  " + str(node))
 
 # def _defaultStartDebugAction( instring, loc, expr ):
 #     print ("Match " + _ustr(expr) + " at loc " + _ustr(loc) + "(%d,%d)" % ( lineno(loc,instring), col(loc,instring) ))

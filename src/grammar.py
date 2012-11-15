@@ -358,15 +358,11 @@ def net_assignment( _ = net_lvalue + EQUAL + expression ):
 
 @Grammar
 def list_of_net_assignment( _ = delim(net_assignment)("list") ):
-    return (_, lambda t: ParseResults([ x for x in t.list ]))
+    return (_, lambda t: ast.NodeList([ x for x in t.list ]))
 
 @Grammar
 def continuous_assign(_ = ASSIGN + Optional( delay3 ) + list_of_net_assignment ):
-    def action(token):
-        for asgn in token.list_of_net_assignment:
-            asgn.setContinuous(token.keyword)
-        return ParseResults([ x for x in token.list_of_net_assignment ])
-    return (_,action)
+    return (_, lambda t: ast.ContinuousAssignmentItems(t.keyword,t.list_of_net_assignment))
 
 
 # A.6.2 Procedural blocks and assigments
@@ -376,7 +372,7 @@ always_construct  << ALWAYS  + statement
 
 @Action(initial_construct, always_construct)
 def constructAction(token):
-    return (_, lambda t: ast.ConstructStatement(t.keyword, t.statement))
+    return ast.ConstructStatementItem(token.keyword, token.statement)
 
 @Grammar
 def blocking_assignment( _ = variable_lvalue + EQUAL + Optional( delay_or_event_control ) + expression ):
@@ -403,7 +399,7 @@ def procedural_continuous_assignments():
         if token.keyword in ['deassign','release']:
             return ast.ReleaseLeftValue(token.keyword, unalias(token.lvalue))
         else:
-            return ast.ContinuousAssignment(token.keyword, unalias(token.assignment))
+            return ast.ContinuousAssignmentItems(token.keyword, ast.NodeList([ unalias(token.assignment) ]))
     return (_,action)
     
 @Grammar     
@@ -558,7 +554,7 @@ def event_expression():
 @Grammar
 def procedural_timing_control_statement():
     return ((delay_or_event_control + statement_or_null),
-            lambda t: ast.Timing(t.delay_or_event_control, t.statement_or_null))
+            lambda t: ast.TimingControlStatement(t.delay_or_event_control, t.statement_or_null))
         
 @Grammar
 def wait_statement():

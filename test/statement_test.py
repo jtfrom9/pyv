@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, _stmt_print, run_tests, debug, fail, grammar
+from test_common import testOf, _print, _stmt_print, run_tests, debug, fail, grammar, ast
 
 @testOf(grammar.conditional_statement)
 def test(self):
@@ -241,12 +241,13 @@ def test90(self):
     # debug(grammar.conditional_statement)
     # debug(grammar.if_else_if_statement)
     # debug(grammar.expression)
+    # debug(grammar.function_call)
     # debug(grammar.statement_or_null)
     _stmt_print(self.check_pass("""
  if (X > 0)  A = B;
  """))
     _stmt_print(self.check_pass("""
- if (X > 0)  foo();
+ if (X > 0) foo(); 
  """))
 
 

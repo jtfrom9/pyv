@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import collections
+from abc import abstractmethod, ABCMeta
 import pyparsing as pp
+import visitor
 
 class AstNode(object):
     def __str__(self):
@@ -14,7 +16,7 @@ def nodeInfo(node):
     if isinstance(node,pp.ParseResults):
         return "pr: {0}".format([prop for prop in dir(node) if not prop.startswith("__")])
     if isinstance(node,AstNode):
-        return "ast: {0}({1})".format(repr(node))
+        return "ast: {0}".format(repr(node))
     return type(node)
     
 class Null(AstNode):
@@ -218,7 +220,7 @@ class BinaryExpression(Expression):  # fixme. not considered well for more than 
         self._op    = op
         self._exprs = exprs
     def __str__(self):
-        return "(" + str(self._op).join( str(e) for e in self._exprs ) + ")"
+        return "(" + str(" " + self._op + " ").join( str(e) for e in self._exprs ) + ")"
 
 class ConditionalExpression(Expression):
     def __init__(self, cond_expr, then_expr, else_expr):
@@ -255,23 +257,40 @@ class EdgeExpression(Expression):
         self._edge_type = edge_type 
         self._expr      = expr
     def __str__(self):
-        return "(" + self._edge_type + str(self._expr) + ")"
+        return "(" + self._edge_type + ":" + str(self._expr) + ")"
 
 
 
 # Statement
 
-# class IterableAstNode(AstNode, collections.Iterable):
-#     def asList(self):
-#         children = [ c.asList() for c in self ]
-#         if children == []:
-#             return [ self ]
-#         else:
-#             return [ self, children ]
+class Traversable(AstNode):
+    __metaclass__ = ABCMeta
+    @abstractmethod
+    def traverse(self,handler,arg):
+        pass
 
-class Statement(AstNode):
+class NodeList(Traversable):
+    def __init__(self, nodes):
+        self._nodes = nodes
+    def __str__(self):
+        other = ""
+        if len(self._nodes)==1:
+            other="({0})".format(str(self._nodes[0]))
+        elif len(self._nodes)>1:
+            other="({0},..)".format(str(self._nodes[0]))
+        return self.__class__.__name__ + other
     def __iter__(self):
-        for x in []: yield x
+        for n in self._nodes: yield n
+
+    def traverse(self, handler, arg):
+        handler(self,arg)
+        newarg = visitor.Arg(self,arg)
+        for node in self._nodes:
+            node.traverse(handler, newarg)
+
+class Statement(Traversable):
+    def traverse(self,handler,arg):
+        handler(self, arg)
 
 class Assignment(Statement):
     def __init__(self, left, delay_event, right, blocking=True):
@@ -288,27 +307,13 @@ class Assignment(Statement):
             right = str(self._right_expr))
     def isBlocking(self):
         return self._blocking
-
-class ContinuousAssignment(Statement):
-    def __init__(self, continuous_type, stmt):
-        """
-        - continuous_type : str ('assign' | 'force' )
-        - stmt : Statement
-        """
-        if not stmt.isBlocking(): raise Exception('ContinuousAssignment must be blocking')
-        self._stmt            = stmt
-        self._continuous_type = continuous_type
-    def __str__(self):
-        return "{type} {stmt}".format(
-            type = self._continuous_type,
-            stmt = str(self._stmt))
-
+    
 class ReleaseLeftValue(Statement):
     def __init__(self, _type, lvalue):
         self._type   = _type
         self._lvalue = lvalue
     def __str__(self):
-        return self._type + "(" + str(self._lvalue) + ")"
+        return self._type + ":" + str(self._lvalue)
 
 class ConditionalStatement(Statement):
     def __init__(self, cond_stmt_list, else_stmt):
@@ -324,6 +329,16 @@ class ConditionalStatement(Statement):
                                                             rest_if_cs = "...",
                                                             else_s  = "else:{0}".format(self._else_stmt.longName() if self._else_stmt else ""))
     
+    def traverse(self, handler, arg):
+        handler(self, arg)
+        for index, cond_stmt in enumerate(self._cond_stmt_list):
+            cond, stmt = cond_stmt
+            stmt.traverse(handler, 
+                          visitor.Arg(self,arg)({ 'cond': cond, 'index': index, 'last': False }))
+        if self._else_stmt:
+            self._else_stmt.traverse(handler,
+                                     visitor.Arg(self,arg)({'cond':None, 'last':True}))
+            
 
 class CaseStatement(Statement):
     pass
@@ -339,22 +354,14 @@ class Block(Statement):
     def __str__(self):
         if self._seq: return "Block(begin-end)"
         else: return "Block(fork-join)"
-    def __iter__(self):
-        for s in self._statements:
-            yield s
-
-class ConstructStatement(Statement):
-    def __init__(self, construct_type, stmt):
-        """
-        - construct_type : str ( 'always' | 'initial' )
-        - stmt           : Statement
-        """
-        self._construct_type = construct_type
-        self._stmt           = stmt
-    def __str__(self):
-        return self._construct_type + ":" + str(self._stmt)
-    def __iter__(self):
-        for x in self._stmt: yield x
+    def traverse(self, handler, arg):
+        handler(self, arg)
+        decl_arg = visitor.Arg(self,arg)( { 'decl':True, } )
+        for decl in self._item_decls:
+            decl.traverse(handler, decl_arg)
+        stmt_arg = visitor.Arg(self,arg)( { 'decl':False, } )
+        for stmt in self._statements:
+            stmt.traverse(handler, stmt_arg)
 
 
 class Trigger(Statement):
@@ -370,7 +377,7 @@ class Wait(Statement):
     def __str__(self):
         return "(wait @{0} {1})".format(self._exp, self._stmt)
 
-class Timing(Statement):
+class TimingControlStatement(Statement):
     def __init__(self, timing, stmt):
         self._timing = timing
         self._stmt   = stmt
@@ -378,4 +385,43 @@ class Timing(Statement):
         for s in self._stmt: yield s
     def __str__(self):
         return "{0}{1}".format(self._timing, self._stmt)
+    def traverse(self, handler, arg):
+        handler(self,arg)
+        self._stmt.traverse(handler,visitor.Arg(self,arg))
+
+# ModuleGenerateItem
+
+class ConstructStatementItem(Statement):
+    def __init__(self, construct_type, stmt):
+        """
+        - construct_type : str ( 'always' | 'initial' )
+        - stmt           : Statement
+        """
+        assert(isinstance(stmt,Statement))
+        self._construct_type = construct_type
+        self._stmt           = stmt
+    def __str__(self):
+        return self._construct_type + ":" + str(self._stmt)
+    def traverse(self, handler, arg):
+        handler(self, arg)
+        self._stmt.traverse(handler,visitor.Arg(self,arg))
+
+class ContinuousAssignmentItems(Statement):
+    def __init__(self, continuous_type, stmt_list):
+        """
+        - continuous_type : str ('assign' | 'force' )
+        - stmt_list       : NodeList
+        """
+        assert(isinstance(stmt_list, NodeList))
+        for s in stmt_list:
+            if not s.isBlocking(): raise Exception('contents of ContinuousAssignmentItems must be blocking assignment')
+
+        self._stmt_list       = stmt_list
+        self._continuous_type = continuous_type
+
+    def __str__(self):
+        return self._continuous_type + ":" + str(self._stmt_list)
+    def traverse(self, handler, arg):
+        handler(self, arg)
+        self._stmt_list.traverse(handler,visitor.Arg(self,arg))
 

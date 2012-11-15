@@ -1,107 +1,64 @@
 # -*- coding: utf-8 -*-
 from abc import abstractmethod, ABCMeta
+import ast
 
 class Visitor(object):
     __metaclass__ = ABCMeta
-    @abstractmethod
-    def visit(self, node):
-        pass
-
-class BaseNode(object):
-    __metaclass__ = ABCMeta
 
     @abstractmethod
-    def traverse(self,visitor):
+    def __call__(self, node, arg):
         pass
-
-class A(BaseNode):
-    def __init__(self, children):
-        self.children = children
-    def traverse(self,visitor):
-        visitor.visit(self)
-        for c in self.children:
-            c.traverse(visitor)
-
-class B(BaseNode):
-    def __init__(self,name):
-        self.name = name
-    def traverse(self,visitor):
-        print("traverse: B({0})".format(self.name))
-        visitor.visit(self)
-
-class C(BaseNode):
-    def traverse(self,visitor):
-        print("traverse: C")
-        visitor.visit(self)
 
 class GenericVisitorMixin(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def dispatch(self):
+    def dispatch(self, node):
+        """ must return handler function for node """
         pass
 
     @abstractmethod
-    def default_handler(self):
+    def default_handler(self, node, arg):
+        """ called if no handler dispatched (when dispatch returned None) """
         pass
 
-    def visit(self, node):
+    def __call__(self, node, arg):
         func = self.dispatch(node)
         if func:
-            return func(node)
+            return func(node, arg)
         else:
-            return self.default_handler(node)
+            return self.default_handler(node, arg)
 
-
-class TestVisitor(GenericVisitorMixin, Visitor):
-    def dispatch(self, node):
-        return { A: self.visitA,
-                 B: self.visitB }.get(type(node),None)
-
-    def default_handler(self, node):
-        print("TestVisitor::default")
-
-    def visitA(self, node):
-        print("TestVisitor::visitA")
-
-    def visitB(self, node):
-        print("TestVisitor::visitB")
-
-
-class HogeVisitor(GenericVisitorMixin, Visitor):
-    def dispatch(self, node):
-        if type(node) is C:
-            return self.handler
+class Arg(object):
+    def __init__(self, parent, arg=None, init_level=None):
+        self.parent = parent
+        if init_level:
+            self.level = init_level
         else:
-            return None
+            self.level = arg.level + 1 if arg else 0
 
-    def handler(self, node):
-        print("hoge::handler")
+    def __call__(self, arg_dict):
+        for key,value in arg_dict.items():
+            setattr(self,key,value)
+        return self
 
-    def default_handler(self,node):
-        print("HogeVisitor")
+root_arg = Arg(None)
 
+class BasicPrinterVisitor(GenericVisitorMixin, Visitor):
+    def __init__(self, out, indent=2):
+        self.out = out
+        self.indent = indent
 
-class CompositVisitor(GenericVisitorMixin, Visitor):
-    def __init__(self):
-        self._visitors = ( HogeVisitor(), TestVisitor() )
-        
     def dispatch(self, node):
-        for v in self._visitors:
-            f = v.dispatch(node)
-            if f: return f
         return None
 
-    def default_handler(self,node):
-        print("CompositVisitor")
+    def default_handler(self,node,arg):
+        #print("lv={0} : {1}".format(arg.level, node.__class__.__name__))
+        self.out.write("{spc}{data}\n".format(spc  = " " * arg.level * self.indent,
+                                              data = str(node)))
 
 
-blist = [ B("hoge"), B("foo"), B("bar"), C() ]
-a = A(blist)
 
-#v = TestVisitor()
-v = CompositVisitor()
-a.traverse(v)
 
 # # visit.py
 
