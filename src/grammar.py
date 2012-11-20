@@ -1200,7 +1200,7 @@ def escaped_hierarchical_identifier():
 @Grammar
 def simple_hierarchical_branch():
     index = unsigned_number("index")
-    index.setParseAction(lambda t: int(t[0]))
+    index.setParseAction(lambda t: t[0])
 
     _ = ( simple_identifier + 
           Optional( LB + index + RB ) +
@@ -1208,16 +1208,17 @@ def simple_hierarchical_branch():
           
     def action(token):
         if token.index:
-            headId = ast.IndexedId(str(token.simple_identifier), token.index)
+            headId = ast.IndexedId(str(token.simple_identifier), int(token.index))
         else:
             headId = token.simple_identifier
         ids = [ headId ]
         if token.part_list:
-            #print("={0}".format(token.part_list))
+            #print("part_list={0}".format(token.part_list))
             for part in token.part_list: 
-                #print("={0}".format(part))
+                # print("part={0}".format(ast.nodeInfo(part)))
+                # print("has index = {0}".format(part.index))
                 if part.index:
-                    ids.append(ast.IndexedId(str(part.simple_identifier), part.index))
+                    ids.append(ast.IndexedId(str(part.simple_identifier), int(part.index)))
                 else:
                     ids.append(part.simple_identifier)
         if len(ids)==1:

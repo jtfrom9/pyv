@@ -54,6 +54,12 @@ def test182(self):
 
 @testOf(grammar.hierarchical_identifier)
 def test185(self):
+    # debug(grammar.hierarchical_identifier)
+    # debug(grammar.simple_hierarchical_identifier)
+    # debug(grammar.simple_hierarchical_branch)
+    _id_print(self.check_pass("x.abc[0]"))
+    _id_print(self.check_pass("x.abc[1]"))
+    _id_print(self.check_pass("hoge[5].foo[1]"))
     _id_print(self.check_pass("hoge[5]"))
     _id_print(self.check_pass("hoge[5].a"))
     _id_print(self.check_pass("hoge[5].foo[1]"))
