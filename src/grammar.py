@@ -563,43 +563,42 @@ def wait_statement():
 
 
 # A.6.6 Conditional statements
-@Grammar
-def conditional_statement():
-    _ = (if_else_if_statement
-         |
-         IF + LP + expression + RP + statement_or_null + Optional( ELSE + alias(statement_or_null,"statement_else") ))
 
-    def action(token):
-        if not token.if_else_if_statement:
-            return ast.ConditionalStatement( [(token.expression, token.statement_or_null)], 
-                                             unalias(token.statement_else) if token.statement_else else None )
-        else:
-            return token.if_else_if_statement
-    return (_,action)
-
-@Grammar
-def if_else_if_statement():
-    _ = ( IF + LP + expression + RP + statement_or_null + 
-          ZeroOrMore( Group(ELSE + IF + LP + expression + RP + statement_or_null) )("elseif_blocks") +
-          Optional( ELSE + alias(statement_or_null, "statement_else") ) )
-    def action(token):
-        return ast.ConditionalStatement( [ (token.expression, token.statement_or_null) ] +
-                                         [ (elseif.expression, elseif.statement_or_null) for elseif in token.elseif_blocks ],
-                                         unalias(token.statement_else) if token.statement_else else None )
-    return (_,action)
-
-
-function_conditional_statement << Group(
-    IF + LP + expression + RP + function_statement_or_null +
-    Optional( ELSE + function_statement_or_null )
+conditional_statement << ( 
+    alias(if_else_if_statement,"if_else_stmt")
     |
-    function_if_else_if_statement )
+    IF + LP + expression + RP + alias(statement_or_null,"stmt")          + Optional( ELSE + alias(statement_or_null,"else_stmt") ) )
 
-function_if_else_if_statement << Group(
-    IF + LP + expression + RP + function_statement_or_null +
-    ZeroOrMore ( ELSE + IF + LP + expression + RP + function_statement_or_null ) +
-    Optional   ( ELSE + function_statement_or_null ) )
+function_conditional_statement << ( 
+    alias(function_if_else_if_statement,"if_else_stmt")
+    |
+    IF + LP + expression + RP + alias(function_statement_or_null,"stmt") + Optional( ELSE + alias(function_statement_or_null,"else_stmt" ) ) )
 
+@Action(conditional_statement, function_conditional_statement)
+def conditionalStatementAction(token):
+    if token.if_else_stmt:
+        return unalias(token.if_else_stmt)
+    else:
+        return ast.ConditionalStatement( [(token.expression, unalias(token.stmt))], 
+                                         unalias(token.else_stmt) if token.else_stmt else None )
+
+
+if_else_if_statement << ( 
+    IF + LP + expression + RP + alias(statement_or_null,"stmt") + 
+    ZeroOrMore( Group(ELSE + IF + LP + expression + RP + alias(statement_or_null,"stmt")) )("elseif_blocks") +
+    Optional( ELSE + alias(statement_or_null, "else_stmt") ) )
+
+function_if_else_if_statement << (
+    IF + LP + expression + RP + alias(function_statement_or_null,"stmt") +
+    ZeroOrMore( Group(ELSE + IF + LP + expression + RP + alias(function_statement_or_null,"stmt")) )("elseif_blocks") +
+    Optional( ELSE + alias(function_statement_or_null,"else_stmt") ) )
+
+
+@Action(if_else_if_statement, function_if_else_if_statement)
+def ifElseifStatementAction(token):
+    return ast.ConditionalStatement( [ (token.expression, unalias(token.stmt)) ] +
+                                     [ (elseif.expression, unalias(elseif.stmt)) for elseif in token.elseif_blocks ],
+                                     unalias(token.else_stmt) if token.else_stmt else None )
 
 
 # A.6.7 Case statements

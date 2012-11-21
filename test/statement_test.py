@@ -304,7 +304,55 @@ def test91(self):
 
 @testOf(grammar.function_conditional_statement)
 def test92(self):
-    pass
+    _stmt_print(self.check_pass("""
+ if (X > 0)  ;
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 0)  A = B;
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 0) a = foo(); 
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 0) a = foo(); else b = 1;
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 3) a = 1;
+ else if (X > 2) a = 2;
+ else a = 3;
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 3) begin a = 1; end
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 3) begin a = 1; end
+ else begin b = 2; end
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 3) begin a = 1; end
+ else begin 
+    b = 2; 
+    if ( a==0 ) x = 1;
+ end
+ """))
+    _stmt_print(self.check_pass("""
+ if (X > 3) a = 1;
+ else begin
+    if (X > 2) begin 
+       a = 2;
+    end else begin
+       X = 1;
+       Y = 1;
+    end
+ end
+ """))
+    _stmt_print(self.check_pass("""
+ if (A > 0) a = 1;
+ else if (B > 0) begin
+    b = 1;
+ end else 
+    c = 1;
+ """))
 
 
 @testOf(grammar.function_if_else_if_statement)
