@@ -744,18 +744,75 @@ def system_function_call( _ = system_task_identifier + Optional( LP + Optional(d
 
 
 # A.8.3 Expressions
-@Grammar
-def constant_base_expression(): 
-    return (constant_expression, lambda t: t[0])
+
+def binaryOperatorPrecedence(term):
+    def precedence(op):
+        op_groups = ( ["**"],
+                      ["*", "/", "%"],
+                      ["+", "-"], 
+                      ["<<", ">>", "<<<", ">>>"],
+                      ["<", "<=", ">", ">="],
+                      ["==", "!=", "===", "!=="],
+                      ["&", "~&"],
+                      ["^", "^~", "~^"], 
+                      ["|", "~|"],
+                      ["&&"],     
+                      ["||"] )
+        for level, ops in enumerate(op_groups):
+            if op in ops:
+                return level
+
+    # @Action(ungroup=True)
+    # def action(token):
+    #     return ast.BinaryExpression(token[1], token[0::2])
+
+    @Action(ungroup=True)
+    def action(token):
+        tlist = [t for t in token]
+        #print(tlist)
+
+        #count = 0
+        while(True):
+            highest_p = None
+            for index, op in enumerate(tlist[1::2]):
+                p = precedence(op)
+                if not highest_p or p < highest_p:
+                    #print("high: op = {0} : {1} < {2}".format(op, p, highest_p))
+                    highest_p = p
+                    pos  = 2 * index + 1
+
+            bexpr = ast.BinaryExpression(tlist[pos], [ tlist[pos-1], tlist[pos+1] ])
+            del(tlist[pos-1:pos+2])
+            tlist.insert(pos-1, bexpr)
+
+            # print(count, tlist)
+            # count += 1
+
+            if len(tlist)==1:
+                #print("\n")
+                return tlist[0]
+
+    # return operatorPrecedence( term, [ (oneOf("**"),            2, opAssoc.LEFT, action),
+    #                                    (oneOf("* / %"),         2, opAssoc.LEFT, action),
+    #                                    (oneOf("+ -"),           2, opAssoc.LEFT, action),
+    #                                    (oneOf("<< >> <<< >>>"), 2, opAssoc.LEFT, action),
+    #                                    (oneOf("< <= > >="),     2, opAssoc.LEFT, action),
+    #                                    (oneOf("== != === !=="), 2, opAssoc.LEFT, action),
+    #                                    (oneOf("& ~&"),          2, opAssoc.LEFT, action),
+    #                                    (oneOf("^ ^~ ~^"),       2, opAssoc.LEFT, action),
+    #                                    (oneOf("| ~|"),          2, opAssoc.LEFT, action),
+    #                                    (oneOf("&&"),            2, opAssoc.LEFT, action),
+    #                                    (oneOf("||"),            2, opAssoc.LEFT, action),
+    #                                    ] )
+    return operatorPrecedence( term, [ (binary_operator, 2, opAssoc.LEFT, action) ] )
 
 @Grammar
 def constant_expression():
-    basic_primary = _group( unary_operator + constant_primary |
-                            constant_primary                  |
-                            string                            ,
-                            "basic_primary")
+    basic_primary = ( unary_operator + constant_primary |
+                      constant_primary                  |
+                      string                            )
 
-    @Action(basic_primary, ungroup=True)
+    @Action(basic_primary)
     def basicPrimaryAction(token):
         if token.unary_operator:
             return ast.UnaryExpression(token.unary_operator, token.constant_primary)
@@ -764,31 +821,30 @@ def constant_expression():
         else:
             raise NotImplementedCompletelyAction(token)
     
-    basic_expr = Forward()
+    constant_basic_expr = binaryOperatorPrecedence( basic_primary )
 
-    cond_expr = ( alias(basic_expr,"exp_cond") + Q + 
+    cond_expr = ( alias(constant_basic_expr,"exp_cond") + Q + 
                   alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") )
     cond_expr.setParseAction(lambda t: 
                              ast.ConditionalExpression(unalias(t.exp_cond), unalias(t.exp_if), unalias(t.exp_else)))
 
+    cond_expr.setName("cond_expr")
+    cond_expr.setDebug()
+
     expr = cond_expr | basic_primary 
     expr.setParseAction(lambda t: t[0])
 
-    basic_expr           << operatorPrecedence( basic_primary, [ (binary_operator, 2, opAssoc.LEFT) ] )
-    _constant_expression  = operatorPrecedence( expr,          [ (binary_operator, 2, opAssoc.LEFT) ] )
+    return (binaryOperatorPrecedence(expr), None)
 
-    @Action(basic_expr, ungroup=True)
-    def action(token):
-        if isinstance(token, ast.Expression):
-            return token
-        elif token.binary_operator:
-            return ast.BinaryExpression(token.binary_operator, 
-                                        [t for t in token[0::2]])
-        else:
-            raise NotImplementedCompletelyAction(token)
+@Grammar
+def constant_base_expression(): 
+    return (constant_expression, lambda t: t[0])
 
-    return (_constant_expression, action)
+@Grammar
+def lsb_constant_expression(): return (constant_expression, lambda t: t)
 
+@Grammar
+def msb_constant_expression(): return (constant_expression, lambda t: t)
 
 @Grammar
 def constant_mintypmax_expression():
@@ -845,25 +901,8 @@ def expression():
     term = conditional_expression | basic_primary
     term.setParseAction(lambda t: t)
 
-    basic_expr << operatorPrecedence( basic_primary,  [ (binary_operator, 2, opAssoc.LEFT) ])
-    _expression = operatorPrecedence( term,           [ (binary_operator, 2, opAssoc.LEFT) ])
-
-    @Action(basic_expr, ungroup=True)
-    def action(token):
-        if isinstance(token, ast.Expression):
-            return token
-        elif token.binary_operator:
-            return ast.BinaryExpression(token.binary_operator, 
-                                        [t for t in token[0::2]])
-        else:
-            raise NotImplementedCompletelyAction(token)
-    return (_expression, action)
-
-@Grammar
-def lsb_constant_expression(): return (constant_expression, lambda t: t)
-
-@Grammar
-def msb_constant_expression(): return (constant_expression, lambda t: t)
+    basic_expr << binaryOperatorPrecedence( basic_primary )
+    return (binaryOperatorPrecedence( term ), None)
 
 @Grammar
 def mintypmax_expression():
@@ -873,22 +912,6 @@ def mintypmax_expression():
         if token.exp: return unalias(token.exp)
         else: raise NotImplementedCompletelyAction(token)
     return (_,action)
-
-@GrammarNotImplementedYet
-def module_path_conditional_expression():
-    return (module_path_expression + Q + module_path_expression + COLON + module_path_expression, )
-
-@GrammarNotImplementedYet
-def module_path_expression():
-    return (( module_path_primary                                                           |
-              unary_module_path_operator + module_path_primary                              |
-              module_path_expression + binary_module_path_operator + module_path_expression |
-              module_path_conditional_expression                                            ), )
-
-@GrammarNotImplementedYet
-def module_path_mintypmax_expression():
-    return (( module_path_expression | 
-              module_path_expression + COLON + module_path_expression + COLON + module_path_expression ), )
 
 @Grammar
 def range_expression():
@@ -907,6 +930,22 @@ def range_expression():
         else:
             return ast.Range(token.msb_constant_expression, token.lsb_constant_expression)
     return (_,action)
+
+@GrammarNotImplementedYet
+def module_path_conditional_expression():
+    return (module_path_expression + Q + module_path_expression + COLON + module_path_expression, )
+
+@GrammarNotImplementedYet
+def module_path_expression():
+    return (( module_path_primary                                                           |
+              unary_module_path_operator + module_path_primary                              |
+              module_path_expression + binary_module_path_operator + module_path_expression |
+              module_path_conditional_expression                                            ), )
+
+@GrammarNotImplementedYet
+def module_path_mintypmax_expression():
+    return (( module_path_expression | 
+              module_path_expression + COLON + module_path_expression + COLON + module_path_expression ), )
 
 @GrammarNotImplementedYet
 def width_constant_expression(): 
