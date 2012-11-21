@@ -529,6 +529,10 @@ def event_expression():
                      NEGEDGE + expression    |
                      hierarchical_identifier |
                      expression              )
+
+    # ev_base_expr.setName("ev_base")
+    # ev_base_expr.setDebug()
+
     @Action(ev_base_expr)
     def ev_base_expr_action(token):
         if token.keyword:
@@ -538,13 +542,16 @@ def event_expression():
         else:
             return token.expression
 
-    _ = operatorPrecedence( ev_base_expr, [ (OR,                      2, opAssoc.LEFT),
-                                            (Literal(",")("keyword"), 2, opAssoc.LEFT) ] )
-    def action(s,l,_token):
-        token = ungroup(_token)
-        if isinstance(token, ast.Expression): 
+    _ = operatorPrecedence( ev_base_expr, [ (oneOf("or ,")("keyword"), 2, opAssoc.LEFT) ] )
+
+    @Action(ungroup=True)
+    def action(token):
+        if isinstance(token,ast.Expression):
             return token
         elif token.keyword:
+            for i, t in enumerate(token):
+                print("[{0}] = {1}:{2}".format(i,t,type(t)))
+
             return ast.BinaryExpression(token.keyword,
                                         [t for t in token[0::2]])
         else:

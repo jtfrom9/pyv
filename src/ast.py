@@ -2,7 +2,6 @@
 import collections
 from abc import abstractmethod, ABCMeta
 import pyparsing as pp
-import visitor
 
 class AstNode(object):
     def __str__(self):
@@ -10,18 +9,18 @@ class AstNode(object):
     def __repr__(self):
         return self.__str__();
 
-    def traverseChildren(self,handler,arg):
+    def traverseChildren(self,visitor,arg):
         pass
 
-    def traverse(self,handler,arg):
-        children = handler(self, arg)
+    def traverse(self,visitor,arg):
+        children = visitor.visit(self, arg)
         if children:
-            newarg = arg.clone()
+            newarg = arg.createChild(self)
             for c in children:
-                c.traverse(handler,newarg)
+                c.traverse(visitor,newarg)
         else:
-            self.traverseChildren(handler,arg)
-        return handler
+            self.traverseChildren(visitor,arg)
+        return visitor
 
 class Null(AstNode):
     pass
@@ -35,6 +34,11 @@ def nodeInfo(node):
     if isinstance(node,AstNode):
         return "ast: {0}".format(repr(node))
     return type(node)
+
+def repr_(inst, *kws):
+    return "{cls}({props})".format(
+        cls = inst.__class__.__name__,
+        props = kws)
     
 class Range(AstNode):
     def __init__(self,left,right):
@@ -42,7 +46,8 @@ class Range(AstNode):
         self._right_expr = right
     def __str__(self):
         return "[{l}:{r}]".format(l= str(self._left_expr), r=str(self._right_expr))
-
+    def __repr__(self):
+        return repr_(self,{'left':self._left_expr, 'right':self._right_expr})
 
 WaitTypeId   = 0
 WaitTypeExpr = 1
@@ -234,6 +239,11 @@ class BinaryExpression(Expression):  # fixme. not considered well for more than 
         self._exprs = exprs
     def __str__(self):
         return "(" + str(" " + self._op + " ").join( str(e) for e in self._exprs ) + ")"
+    def traverseChildren(self,visitor,arg):
+        for index, term in enumerate(self._exprs):
+            print("index={0}".format(index))
+            print("term={0}".format(nodeInfo(term)))
+            term.traverse(visitor, arg.createChild(self, index=index))
 
 class ConditionalExpression(Expression):
     def __init__(self, cond_expr, then_expr, else_expr):
@@ -289,10 +299,10 @@ class NodeList(AstNode):
     def __iter__(self):
         for n in self._nodes: yield n
 
-    def traverseChildren(self,handler,arg):
-        newarg = arg.clone()
-        for n in self:
-            n.traverse(handler,newarg)
+    def traverseChildren(self,visitor,arg):
+        newarg = arg.createChild(self)
+        for n in self._nodes:
+            n.traverse(visitor,newarg)
 
 class Statement(AstNode):
     pass
@@ -304,15 +314,36 @@ class Assignment(Statement):
         self._right_expr  = right
         self._blocking    = blocking
         self._continuous  = ""          # fixme
+
+    isBlocking = property(lambda self: self._blocking)
+
     def __str__(self):
         return "{conti}{left}{eq}{right}".format(
             conti = self._continuous+" " if self._continuous else "",
             left  = str(self._left_expr),
             eq    = "=" if self._blocking else "<=",
             right = str(self._right_expr))
-    def isBlocking(self):
-        return self._blocking
-    
+
+    def __repr__(self):
+        return repr_(self,{'left':self._left_expr, 
+                           'right':self._right_expr, 
+                           'blocking':self._blocking})
+
+    def traverse(self,visitor,arg):
+        children = visitor.visit(self, arg)
+        if children:
+            newarg = arg.createChild(self)
+            for c in children:
+                c.traverse(visitor,newarg)
+        else:
+            self.traverseChildren(visitor,arg)
+        return visitor
+
+    def traverseChildren(self,visitor,arg):
+        self._left_expr.traverse(visitor,arg.createChild(self, pos='left'))
+        self._right_expr.traverse(visitor,arg.createChild(self, pos='right'))
+
+
 class ReleaseLeftValue(Statement):
     def __init__(self, _type, lvalue):
         self._type   = _type
@@ -334,14 +365,12 @@ class ConditionalStatement(Statement):
                                                             rest_if_cs = "...",
                                                             else_s  = "else:{0}".format(self._else_stmt.longName() if self._else_stmt else ""))
     
-    def traverseChildren(self, handler, arg):
+    def traverseChildren(self, visitor, arg):
         for index, (cond, stmt) in enumerate(self._cond_stmt_list):
-            stmt.traverse(handler, 
-                          visitor.Arg(self,arg)(cond=cond, index=index, last=False))
-            cond.traverse(handler,
-                          visitor.Arg(self,arg)(index = index, last=False))
+            cond.traverse(visitor, arg.createChild(self, index=index, last=False))
+            stmt.traverse(visitor, arg.createChild(self, cond=cond, index=index, last=False))
         if self._else_stmt:
-            self._else_stmt.traverse(handler, visitor.Arg(self,arg)(last=True))
+            self._else_stmt.traverse(visitor, arg.createChild(self,last=True))
             
     def eachCondAndStatements(self):
         for cond, stmt in self._cond_stmt_list:
@@ -368,13 +397,13 @@ class Block(Statement):
         if self._seq: return "Block(begin-end)"
         else: return "Block(fork-join)"
     
-    def traverseChildren(self, handler, arg):
-        decl_arg = visitor.Arg(self,arg)( decl=True )
+    def traverseChildren(self, visitor, arg):
+        decl_arg = arg.createChild(self, decl=True)
         for decl in self._item_decls:
-            decl.traverse(handler, decl_arg)
-        stmt_arg = visitor.Arg(self,arg)( decl=False )
+            decl.traverse(visitor, decl_arg)
+        stmt_arg = arg.createChild(self, decl=False)
         for stmt in self._statements:
-            stmt.traverse(handler, stmt_arg)
+            stmt.traverse(visitor, stmt_arg)
     
     def eachStatements(self):
         for s in self._statements: yield s
@@ -401,8 +430,8 @@ class TimingControlStatement(Statement):
         for s in self._stmt: yield s
     def __str__(self):
         return "{0}{1}".format(self._timing, self._stmt)
-    def traverseChildren(self, handler, arg):
-        self._stmt.traverse(handler,visitor.Arg(self,arg))
+    def traverseChildren(self, visitor, arg):
+        self._stmt.traverse(visitor,arg.createChild(self))
 
 # ModuleGenerateItem
 
@@ -421,8 +450,8 @@ class ConstructStatementItem(Statement):
 
     def __str__(self):
         return self._construct_type + ":" + str(self._stmt)
-    def traverseChildren(self, handler, arg):
-        self._stmt.traverse(handler,visitor.Arg(self,arg))
+    def traverseChildren(self, visitor, arg):
+        self._stmt.traverse(visitor,arg.createChild(self))
 
 class ContinuousAssignmentItems(Statement):
     def __init__(self, continuous_type, stmt_list):
@@ -432,7 +461,7 @@ class ContinuousAssignmentItems(Statement):
         """
         assert(isinstance(stmt_list, NodeList))
         for s in stmt_list:
-            if not s.isBlocking(): raise Exception('contents of ContinuousAssignmentItems must be blocking assignment')
+            if not s.isBlocking: raise Exception('contents of ContinuousAssignmentItems must be blocking assignment')
 
         self._stmt_list       = stmt_list
         self._continuous_type = continuous_type
@@ -446,6 +475,6 @@ class ContinuousAssignmentItems(Statement):
     def __str__(self):
         return self._continuous_type + ":" + str(self._stmt_list)
 
-    def traverseChildren(self, handler, arg):
-        self._stmt_list.traverse(handler,visitor.Arg(self,arg))
+    def traverseChildren(self, visitor, arg):
+        self._stmt_list.traverse(visitor,arg.createChild(self))
 

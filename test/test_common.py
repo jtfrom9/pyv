@@ -118,7 +118,8 @@ def _stmt_print(result, out=sys.stdout, debug=False):
 
     out.write("{0}:\n".format(result.keys()[0]))
     node = result[0]
-    node.traverse(visitor.StatementPrettyPrinterVisitor(out),visitor.Arg(None,init_level=1))
+    node.traverse(visitor.StatementPrettyPrinterVisitor(out),visitor.Arg(None,1))
+    #node.traverse(visitor.TraverseTraceVisitor(),visitor.Arg(None,1))
 
 
 # def _defaultStartDebugAction( instring, loc, expr ):
