@@ -541,22 +541,14 @@ def event_expression():
             return ast.IdPrimary(token.hierarchical_identifier)
         else:
             return token.expression
-
-    _ = operatorPrecedence( ev_base_expr, [ (oneOf("or ,")("keyword"), 2, opAssoc.LEFT) ] )
-
+            
     @Action(ungroup=True)
     def action(token):
-        if isinstance(token,ast.Expression):
-            return token
-        elif token.keyword:
-            for i, t in enumerate(token):
-                print("[{0}] = {1}:{2}".format(i,t,type(t)))
+        return ast.BinaryExpression(token.keyword,[t for t in token[0::2]])
 
-            return ast.BinaryExpression(token.keyword,
-                                        [t for t in token[0::2]])
-        else:
-            raise NotImplementedCompletelyAction(token)
-    return (_, action)
+    _ = operatorPrecedence( ev_base_expr, [ (OR,                      2, opAssoc.LEFT, action),
+                                            (Literal(",")("keyword"), 2, opAssoc.LEFT, action) ])
+    return (_, None)
 
 @Grammar
 def procedural_timing_control_statement():

@@ -241,8 +241,6 @@ class BinaryExpression(Expression):  # fixme. not considered well for more than 
         return "(" + str(" " + self._op + " ").join( str(e) for e in self._exprs ) + ")"
     def traverseChildren(self,visitor,arg):
         for index, term in enumerate(self._exprs):
-            print("index={0}".format(index))
-            print("term={0}".format(nodeInfo(term)))
             term.traverse(visitor, arg.createChild(self, index=index))
 
 class ConditionalExpression(Expression):
@@ -281,7 +279,8 @@ class EdgeExpression(Expression):
         self._expr      = expr
     def __str__(self):
         return "(" + self._edge_type + ":" + str(self._expr) + ")"
-
+    def __repr__(self):
+        return repr_(self,{'edge_type':self._edge_type, 'expr':self._expr})
 
 
 # Statement

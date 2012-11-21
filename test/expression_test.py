@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, run_tests, debug, grammar
+from test_common import testOf, _print, _stmt_print, run_tests, debug, grammar
 
 @testOf(grammar.constant_function_call)
 def test112(self):
@@ -124,6 +124,24 @@ def test122(self):
     _print(self.check_pass("0 ? 0 ? 1 : 2 : 2"))
     _print(self.check_pass("(0 ? 1 : 2) ? 3 : 4"))
     _print(self.check_pass("func(1)"))
+    _print(self.check_pass("a + (b * c)"))
+    _print(self.check_pass("(a + b) * c"))
+    _print(self.check_pass("-1 + (b * c)"))
+    _print(self.check_pass("-1 + (-b * ^c)"))
+
+@testOf(grammar.event_expression)
+def test87(self):
+    debug(grammar.event_expression)
+    debug(grammar.expression)
+    # _stmt_print(self.check_pass("~en"))
+    # _stmt_print(self.check_pass("posedge A or negedge CLK"))
+    # _stmt_print(self.check_pass("posedge A , negedge CLK"))
+    # _stmt_print(self.check_pass("~en or posedge A or negedge CLK"))
+    _stmt_print(self.check_pass("~en or posedge A , negedge CLK"))
+    _stmt_print(self.check_pass("~en or posedge A or negedge CLK"))
+    _stmt_print(self.check_pass("(~en or posedge A  )or negedge CLK"))
+    _stmt_print(self.check_pass("~en or (posedge A or negedge CLK)"))  # must be pass! not implemented recursive Binary Exp print
+    _stmt_print(self.check_pass("~en ,posedge A or negedge CLK"))
 
 @testOf(grammar.lsb_constant_expression)
 def test123(self):
