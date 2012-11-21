@@ -52,36 +52,86 @@ class Arg(object):
             self.add_prop(key,value)
         return self
 
+    def clone(self):
+        arg = Arg(self.parent, self)
+        for key in (key for key in self._dict.keys() if key not in ('parent','level')):
+            arg.add_prop(key,value)
+        return arg
+
 root_arg = Arg(None)
 
-class BasicPrinterVisitor(GenericVisitorMixin, Visitor):
-    def __init__(self, out, indent=2):
-        self.out = out
-        self.indent = indent
 
-    def dispatch(self, node):
-        return None
+def suppress_traverse(fn):
+    def _handler(*argv):
+        fn(*argv)
+        return (x for x in [])
+    return _handler
 
-    def default_handler(self,node,arg):
-        #print("lv={0} : {1}".format(arg.level, node.__class__.__name__))
-        if isinstance(arg.parent, ast.ConditionalStatement):
-            if not arg.last:
-                self.out.write("{spc}{key} {cond} then:\n{spc2}{stmt}\n".format(
-                        spc  = " " * arg.level * self.indent,
-                        spc2 = " " * (arg.level * self.indent + 2),
-                        key  = "if" if arg.index==0 else "else if",
-                        cond = str(arg.cond),
-                        stmt = str(node)))
-            else:
-                self.out.write("{spc}else:\n{spc2}{stmt}\n".format(
-                        spc  = " " * arg.level * self.indent,
-                        spc2 = " " * (arg.level * self.indent + 2),
-                        stmt = str(node)))
+
+class StatementPrettyPrinterVisitor(Visitor):
+    def __init__(self, out_stream, indent=2):
+        self._out_stream = out_stream
+        self._indent     = indent
+
+    def __call__(self,node,arg):
+        if isinstance(node, ast.ConditionalStatement):
+            return self.handlerConditionalStatement(node,arg)
+        if isinstance(node, ast.Block):
+            return self.handlerBlock(node,arg)
+        elif isinstance(node, ast.ConstructStatementItem):
+            return self.handlerConstructStatementItem(node,arg)
+        elif isinstance(node, ast.ContinuousAssignmentItems):
+            return self.handlerContinuousAssignmentItems(node,arg)
+        elif isinstance(node, ast.NodeList):
+            return self.handlerNodeList(node,arg)
+        #elif isinstance(node, ast.Statement):
         else:
-            self.out.write("{spc}{data}\n".format(spc  = " " * arg.level * self.indent,
-                                                  data = str(node)))
+            return self.handlerAny(node,arg)
 
-        
+    def _write(self, string, level=0):
+        for s in string.split("\n"):
+            self._out_stream.write(" " * (self._indent * level) + s + "\n")
+
+    def handlerAny(self,node,arg):
+        self._write(str(node), arg.level)
+
+    @suppress_traverse
+    def handlerConditionalStatement(self,node,arg):
+        first = True
+        for cond, stmt in node.eachCondAndStatements():
+            if cond:
+                self._write("{key} {cond} then:".format(
+                        key  = "if" if first else "else if",
+                        cond = str(cond)), arg.level)
+                first = False
+            else:
+                self._write("else:", arg.level)
+
+            self(stmt,Arg(node,arg))
+
+    @suppress_traverse
+    def handlerBlock(self,block,arg):
+        self._write("{key}".format(key="begin" if block.isSequencial else "fork"), arg.level)
+        newarg = Arg(block,arg)
+        for s in block.eachStatements():
+            self(s,newarg)
+        self._write("{key}".format(key="end" if block.isSequencial else "join"), arg.level)
+
+    @suppress_traverse
+    def handlerConstructStatementItem(self,node,arg):
+        self._write(node.type, arg.level)
+        self(node.statement,Arg(node,arg))
+
+    @suppress_traverse
+    def handlerContinuousAssignmentItems(self,node,arg):
+        self._write(node.type, arg.level)
+        for s in node.eachStatements():
+            self(s,Arg(node,arg))
+
+    @suppress_traverse
+    def handlerNodeList(self,nlist,arg):
+        for n in nlist: self(n,arg)
+
 
 # # visit.py
 

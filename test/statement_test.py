@@ -144,6 +144,7 @@ join
 
 @testOf(grammar.statement)
 def test79(self):
+    _stmt_print(self.check_pass("e = x.abc[0];"))
     _stmt_print(self.check_pass("a<=1;"))
     _stmt_print(self.check_pass("a=1;"))
     _stmt_print(self.check_pass("""begin a=1; end"""))
@@ -191,7 +192,7 @@ def test84(self):
 
 @testOf(grammar.delay_value)
 def _test(self):
-    debug(grammar.delay_value)
+    #debug(grammar.delay_value)
     _print(self.check_pass("10"))
     _print(self.check_pass("X+2"))
 
@@ -274,17 +275,24 @@ def test90(self):
     if ( a==0 ) x = 1;
  end
  """))
- #    _stmt_print(self.check_pass("""
- # if (X > 3) a = 1;
- # else begin
- #    if (X > 2) begin 
- #       a = 2;
- #    end else begin
- #       X = 1;
- #       Y = 1;
- #    end
- # else a = 3;
- # """))
+    _stmt_print(self.check_pass("""
+ if (X > 3) a = 1;
+ else begin
+    if (X > 2) begin 
+       a = 2;
+    end else begin
+       X = 1;
+       Y = 1;
+    end
+ end
+ """))
+    _stmt_print(self.check_pass("""
+ if (A > 0) a = 1;
+ else if (B > 0) begin
+    b = 1;
+ end else 
+    c = 1;
+ """))
 
 
 @testOf(grammar.if_else_if_statement)

@@ -118,10 +118,8 @@ def _stmt_print(result, out=sys.stdout, debug=False):
 
     out.write("{0}:\n".format(result.keys()[0]))
     node = result[0]
-    if isinstance(node,ast.Traversable):
-        node.traverse(visitor.BasicPrinterVisitor(out),visitor.Arg(None,init_level=1))
-    else:
-        print("  " + str(node))
+    node.traverse(visitor.StatementPrettyPrinterVisitor(out),visitor.Arg(None,init_level=1))
+
 
 # def _defaultStartDebugAction( instring, loc, expr ):
 #     print ("Match " + _ustr(expr) + " at loc " + _ustr(loc) + "(%d,%d)" % ( lineno(loc,instring), col(loc,instring) ))

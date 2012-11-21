@@ -565,26 +565,27 @@ def wait_statement():
 # A.6.6 Conditional statements
 @Grammar
 def conditional_statement():
-    _ = (IF + LP + expression + RP + statement_or_null + Optional( ELSE + alias(statement_or_null,"statement_else") )
+    _ = (if_else_if_statement
          |
-         if_else_if_statement)
+         IF + LP + expression + RP + statement_or_null + Optional( ELSE + alias(statement_or_null,"statement_else") ))
+
     def action(token):
-        if token.if_else_if_statement:
-            return token.if_else_if_statement
-        else:
+        if not token.if_else_if_statement:
             return ast.ConditionalStatement( [(token.expression, token.statement_or_null)], 
                                              unalias(token.statement_else) if token.statement_else else None )
+        else:
+            return token.if_else_if_statement
     return (_,action)
 
 @Grammar
 def if_else_if_statement():
     _ = ( IF + LP + expression + RP + statement_or_null + 
           ZeroOrMore( Group(ELSE + IF + LP + expression + RP + statement_or_null) )("elseif_blocks") +
-          Optional( ELSE + alias(statement_or_null, "stmt_else") ) )
+          Optional( ELSE + alias(statement_or_null, "statement_else") ) )
     def action(token):
         return ast.ConditionalStatement( [ (token.expression, token.statement_or_null) ] +
-                                [ (block.expression, block.statement_or_null) for block in token.elseif_blocks ],
-                                token.statement_else )
+                                         [ (elseif.expression, elseif.statement_or_null) for elseif in token.elseif_blocks ],
+                                         unalias(token.statement_else) if token.statement_else else None )
     return (_,action)
 
 

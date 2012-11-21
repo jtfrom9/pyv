@@ -10,15 +10,21 @@ class AstNode(object):
     def __repr__(self):
         return self.__str__();
 
-class Traversable(AstNode):
-    __metaclass__ = ABCMeta
-    @abstractmethod
-    def traverse(self,handler,arg):
+    def traverseChildren(self,handler,arg):
         pass
 
-class Null(Traversable):
-    def traverse(self,handler,arg): 
-        handler(self,arg)
+    def traverse(self,handler,arg):
+        children = handler(self, arg)
+        if children:
+            newarg = arg.clone()
+            for c in children:
+                c.traverse(handler,newarg)
+        else:
+            self.traverseChildren(handler,arg)
+        return handler
+
+class Null(AstNode):
+    pass
 null = Null()
 
 def nodeInfo(node):
@@ -270,7 +276,7 @@ class EdgeExpression(Expression):
 
 # Statement
 
-class NodeList(Traversable):
+class NodeList(AstNode):
     def __init__(self, nodes):
         self._nodes = nodes
     def __str__(self):
@@ -283,15 +289,13 @@ class NodeList(Traversable):
     def __iter__(self):
         for n in self._nodes: yield n
 
-    def traverse(self, handler, arg):
-        handler(self,arg)
-        newarg = visitor.Arg(self,arg)
-        for node in self._nodes:
-            node.traverse(handler, newarg)
+    def traverseChildren(self,handler,arg):
+        newarg = arg.clone()
+        for n in self:
+            n.traverse(handler,newarg)
 
-class Statement(Traversable):
-    def traverse(self,handler,arg):
-        handler(self, arg)
+class Statement(AstNode):
+    pass
 
 class Assignment(Statement):
     def __init__(self, left, delay_event, right, blocking=True):
@@ -314,7 +318,7 @@ class ReleaseLeftValue(Statement):
         self._type   = _type
         self._lvalue = lvalue
     def __str__(self):
-        return self._type + ":" + str(self._lvalue)
+        return self._type + " " + str(self._lvalue)
 
 class ConditionalStatement(Statement):
     def __init__(self, cond_stmt_list, else_stmt):
@@ -330,14 +334,21 @@ class ConditionalStatement(Statement):
                                                             rest_if_cs = "...",
                                                             else_s  = "else:{0}".format(self._else_stmt.longName() if self._else_stmt else ""))
     
-    def traverse(self, handler, arg):
-        handler(self, arg)
+    def traverseChildren(self, handler, arg):
         for index, (cond, stmt) in enumerate(self._cond_stmt_list):
             stmt.traverse(handler, 
                           visitor.Arg(self,arg)(cond=cond, index=index, last=False))
+            cond.traverse(handler,
+                          visitor.Arg(self,arg)(index = index, last=False))
         if self._else_stmt:
             self._else_stmt.traverse(handler, visitor.Arg(self,arg)(last=True))
             
+    def eachCondAndStatements(self):
+        for cond, stmt in self._cond_stmt_list:
+            yield (cond, stmt)
+        if self._else_stmt:
+            yield (None, self._else_stmt)
+
 
 class CaseStatement(Statement):
     pass
@@ -350,17 +361,23 @@ class Block(Statement):
         self._item_decls = item_decls
         self._statements = statements
         self._seq        = seq
+
+    isSequencial = property(lambda self: self._seq)
+
     def __str__(self):
         if self._seq: return "Block(begin-end)"
         else: return "Block(fork-join)"
-    def traverse(self, handler, arg):
-        handler(self, arg)
+    
+    def traverseChildren(self, handler, arg):
         decl_arg = visitor.Arg(self,arg)( decl=True )
         for decl in self._item_decls:
             decl.traverse(handler, decl_arg)
         stmt_arg = visitor.Arg(self,arg)( decl=False )
         for stmt in self._statements:
             stmt.traverse(handler, stmt_arg)
+    
+    def eachStatements(self):
+        for s in self._statements: yield s
 
 
 class Trigger(Statement):
@@ -384,8 +401,7 @@ class TimingControlStatement(Statement):
         for s in self._stmt: yield s
     def __str__(self):
         return "{0}{1}".format(self._timing, self._stmt)
-    def traverse(self, handler, arg):
-        handler(self,arg)
+    def traverseChildren(self, handler, arg):
         self._stmt.traverse(handler,visitor.Arg(self,arg))
 
 # ModuleGenerateItem
@@ -399,10 +415,13 @@ class ConstructStatementItem(Statement):
         assert(isinstance(stmt,Statement))
         self._construct_type = construct_type
         self._stmt           = stmt
+    
+    type      = property(lambda self: self._construct_type)
+    statement = property(lambda self: self._stmt)
+
     def __str__(self):
         return self._construct_type + ":" + str(self._stmt)
-    def traverse(self, handler, arg):
-        handler(self, arg)
+    def traverseChildren(self, handler, arg):
         self._stmt.traverse(handler,visitor.Arg(self,arg))
 
 class ContinuousAssignmentItems(Statement):
@@ -418,9 +437,15 @@ class ContinuousAssignmentItems(Statement):
         self._stmt_list       = stmt_list
         self._continuous_type = continuous_type
 
+    type = property(lambda self: self._continuous_type)
+
+    def eachStatements(self):
+        for s in self._stmt_list:
+            yield s
+
     def __str__(self):
         return self._continuous_type + ":" + str(self._stmt_list)
-    def traverse(self, handler, arg):
-        handler(self, arg)
+
+    def traverseChildren(self, handler, arg):
         self._stmt_list.traverse(handler,visitor.Arg(self,arg))
 
