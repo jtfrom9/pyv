@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-import sys
+import sys, inspect
 from os import path
 
 from pyparsing import (Keyword, Literal, Regex, Regex, MatchFirst, NotAny, CharsNotIn, Suppress, 
                        Forward, Group, Optional, ZeroOrMore, OneOrMore, 
                        delimitedList, operatorPrecedence, opAssoc, oneOf,
-                       ParseBaseException,
+                       ParseBaseException, ParseFatalException, ParseException,
                        ParseResults)
 
 import ast
@@ -66,28 +66,27 @@ def delim(expr, delimiter=','):
 def unalias(token): return token[0]
 def ungroup(token): return token[0]
 
-# def GroupedAction(action):
-#     import inspect
-#     try:
-#         frame = inspect.currentframe(2)
-#     except ValueError as e:
-#         return None
-#     else:
-#         filename = frame.f_code.co_filename
-#         lineno   = frame.f_lineno
-#     def _decorator(_s,loc,token):
-#         result = None
-#         try:
-#             result = action(_s, loc, token)
-#         except Exception as e:
-#             raise ParseFatalException(_s, loc, 
-#                                       "\n  File \"{filename}\", line {lineno}\n    {reason}".
-#                                       format(action   = action.__name__,
-#                                              filename = filename,
-#                                              lineno   = lineno,
-#                                              reason   = e))
-#         return result
-#     return _decorator
+def setAction(grammmar, action, _lineno=None, _filename=None):
+
+    def _wrapAction(s,loc,token):
+        try:
+            return action(token)
+        except Exception as e:
+            lineno   = _lineno   if _lineno   else inspect.getsourcelines(action)[1] 
+            filename = _filename if _filename else inspect.getsourcefile(action)
+            print("??????" + str(e))
+            print(argv)
+            print("lineno={0}".format(lineno))
+            ex =  ParseFatalException(#s, loc, 
+                                     "\n  File \"{filename}\", line {lineno}\n    {reason}".
+                                     format(action   = action.__name__,
+                                            filename = filename,
+                                            lineno   = lineno,
+                                            reason   = e))
+            print(ex)
+            raise ex
+    grammmar.setParseAction(_wrapAction)
+    #grammmar.setParseAction(action)
 
 def Action(*argv,**kw):
     def deco_func(action):
@@ -96,7 +95,8 @@ def Action(*argv,**kw):
         else:
             new_func = action
         for grammar in argv:
-            grammar.setParseAction(new_func)
+            #grammar.setParseAction(new_func)
+            setAction(grammar, new_func, inspect.getsourcelines(action)[1], inspect.getsourcefile(action))
         return new_func
     return deco_func
 
@@ -744,18 +744,64 @@ def system_function_call( _ = system_task_identifier + Optional( LP + Optional(d
 
 
 # A.8.3 Expressions
-@Grammar
-def constant_base_expression(): 
-    return (constant_expression, lambda t: t[0])
+
+def binaryOperatorPrecedence(term):
+
+    @Action(ungroup=True)
+    def action(token):
+        return ast.BinaryExpression(token[1], token[0::2])
+    
+    @Action(ungroup=True)
+    def trinominalExpr(token):
+        print( "[" + " ".join(str(x) for x in token) + "]")
+        
+        tlist = [t for t in token]
+
+        def check_trinominal_expr(pos):
+            if tlist[pos] != ":":
+                return False
+            if (pos >= 3 and (tlist[pos - 2] != "?")):
+                return False
+            return True
+        
+        while(True):
+            for pos in range(len(tlist)-2, 0, -1):
+                if check_trinominal_expr(pos):
+                    cond  = tlist[pos-3]
+                    expr1 = tlist[pos-1]
+                    expr2 = tlist[pos+1]
+                    del(tlist[pos-3:pos+2])
+                    tlist.insert(pos-3, ast.ConditionalExpression(cond,expr1,expr2))
+                    break
+            else:
+                raise ParseException("***ERROR***")
+            if len(tlist)==1:
+                break
+        return tlist[0]
+
+    #return operatorPrecedence( term, [ (binary_operator, 2, opAssoc.LEFT, action) ] )
+    return operatorPrecedence( term, [ (oneOf("**"),            2, opAssoc.LEFT, action),
+                                       (oneOf("* / %"),         2, opAssoc.LEFT, action),
+                                       (oneOf("+ -"),           2, opAssoc.LEFT, action),
+                                       (oneOf("<< >> <<< >>>"), 2, opAssoc.LEFT, action),
+                                       (oneOf("< <= > >="),     2, opAssoc.LEFT, action),
+                                       (oneOf("== != === !=="), 2, opAssoc.LEFT, action),
+                                       (oneOf("& ~&"),          2, opAssoc.LEFT, action),
+                                       (oneOf("^ ^~ ~^"),       2, opAssoc.LEFT, action),
+                                       (oneOf("| ~|"),          2, opAssoc.LEFT, action),
+                                       (oneOf("&&"),            2, opAssoc.LEFT, action),
+                                       (oneOf("||"),            2, opAssoc.LEFT, action),
+                                       #(oneOf("? :"),           2, opAssoc.LEFT, trinominalExpr),
+                                       ] )
+
 
 @Grammar
 def constant_expression():
-    basic_primary = _group( unary_operator + constant_primary |
-                            constant_primary                  |
-                            string                            ,
-                            "basic_primary")
+    basic_primary = ( unary_operator + constant_primary |
+                      constant_primary                  |
+                      string                            )
 
-    @Action(basic_primary, ungroup=True)
+    @Action(basic_primary)
     def basicPrimaryAction(token):
         if token.unary_operator:
             return ast.UnaryExpression(token.unary_operator, token.constant_primary)
@@ -764,31 +810,30 @@ def constant_expression():
         else:
             raise NotImplementedCompletelyAction(token)
     
-    basic_expr = Forward()
+    constant_basic_expr = binaryOperatorPrecedence( basic_primary )
 
-    cond_expr = ( alias(basic_expr,"exp_cond") + Q + 
+    cond_expr = ( alias(constant_basic_expr,"exp_cond") + Q + 
                   alias(constant_expression,"exp_if") + COLON + alias(constant_expression,"exp_else") )
     cond_expr.setParseAction(lambda t: 
                              ast.ConditionalExpression(unalias(t.exp_cond), unalias(t.exp_if), unalias(t.exp_else)))
 
+    cond_expr.setName("cond_expr")
+    cond_expr.setDebug()
+
     expr = cond_expr | basic_primary 
     expr.setParseAction(lambda t: t[0])
 
-    basic_expr           << operatorPrecedence( basic_primary, [ (binary_operator, 2, opAssoc.LEFT) ] )
-    _constant_expression  = operatorPrecedence( expr,          [ (binary_operator, 2, opAssoc.LEFT) ] )
+    return (binaryOperatorPrecedence(expr), None)
 
-    @Action(basic_expr, ungroup=True)
-    def action(token):
-        if isinstance(token, ast.Expression):
-            return token
-        elif token.binary_operator:
-            return ast.BinaryExpression(token.binary_operator, 
-                                        [t for t in token[0::2]])
-        else:
-            raise NotImplementedCompletelyAction(token)
+@Grammar
+def constant_base_expression(): 
+    return (constant_expression, lambda t: t[0])
 
-    return (_constant_expression, action)
+@Grammar
+def lsb_constant_expression(): return (constant_expression, lambda t: t)
 
+@Grammar
+def msb_constant_expression(): return (constant_expression, lambda t: t)
 
 @Grammar
 def constant_mintypmax_expression():
@@ -820,14 +865,14 @@ def dimension_constant_expression( _ = constant_expression ):
     return (_, lambda t: t)
 
 
-basic_expr = Forward()
+#basic_expr = Forward()
 
-@Grammar
-def conditional_expression():
-    return ( alias(basic_expr,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else"),
-             lambda token: ast.ConditionalExpression( unalias(token.exp_cond),
-                                                      unalias(token.exp_if),
-                                                      unalias(token.exp_else) ))
+# @Grammar
+# def conditional_expression():
+#     return ( alias(expression,"exp_cond") + Q + alias(expression,"exp_if") + COLON + alias(expression,"exp_else"),
+#              lambda token: ast.ConditionalExpression( unalias(token.exp_cond),
+#                                                       unalias(token.exp_if),
+#                                                       unalias(token.exp_else) ))
 
 @Grammar
 def expression():
@@ -845,25 +890,9 @@ def expression():
     term = conditional_expression | basic_primary
     term.setParseAction(lambda t: t)
 
-    basic_expr << operatorPrecedence( basic_primary,  [ (binary_operator, 2, opAssoc.LEFT) ])
-    _expression = operatorPrecedence( term,           [ (binary_operator, 2, opAssoc.LEFT) ])
-
-    @Action(basic_expr, ungroup=True)
-    def action(token):
-        if isinstance(token, ast.Expression):
-            return token
-        elif token.binary_operator:
-            return ast.BinaryExpression(token.binary_operator, 
-                                        [t for t in token[0::2]])
-        else:
-            raise NotImplementedCompletelyAction(token)
-    return (_expression, action)
-
-@Grammar
-def lsb_constant_expression(): return (constant_expression, lambda t: t)
-
-@Grammar
-def msb_constant_expression(): return (constant_expression, lambda t: t)
+    #basic_expr << binaryOperatorPrecedence( basic_primary )
+    #return (binaryOperatorPrecedence( term ), None)
+    return (binaryOperatorPrecedence( basic_primary ), None)
 
 @Grammar
 def mintypmax_expression():
@@ -873,22 +902,6 @@ def mintypmax_expression():
         if token.exp: return unalias(token.exp)
         else: raise NotImplementedCompletelyAction(token)
     return (_,action)
-
-@GrammarNotImplementedYet
-def module_path_conditional_expression():
-    return (module_path_expression + Q + module_path_expression + COLON + module_path_expression, )
-
-@GrammarNotImplementedYet
-def module_path_expression():
-    return (( module_path_primary                                                           |
-              unary_module_path_operator + module_path_primary                              |
-              module_path_expression + binary_module_path_operator + module_path_expression |
-              module_path_conditional_expression                                            ), )
-
-@GrammarNotImplementedYet
-def module_path_mintypmax_expression():
-    return (( module_path_expression | 
-              module_path_expression + COLON + module_path_expression + COLON + module_path_expression ), )
 
 @Grammar
 def range_expression():
@@ -907,6 +920,22 @@ def range_expression():
         else:
             return ast.Range(token.msb_constant_expression, token.lsb_constant_expression)
     return (_,action)
+
+@GrammarNotImplementedYet
+def module_path_conditional_expression():
+    return (module_path_expression + Q + module_path_expression + COLON + module_path_expression, )
+
+@GrammarNotImplementedYet
+def module_path_expression():
+    return (( module_path_primary                                                           |
+              unary_module_path_operator + module_path_primary                              |
+              module_path_expression + binary_module_path_operator + module_path_expression |
+              module_path_conditional_expression                                            ), )
+
+@GrammarNotImplementedYet
+def module_path_mintypmax_expression():
+    return (( module_path_expression | 
+              module_path_expression + COLON + module_path_expression + COLON + module_path_expression ), )
 
 @GrammarNotImplementedYet
 def width_constant_expression(): 
