@@ -544,10 +544,28 @@ def event_expression():
             
     @Action(ungroup=True)
     def action(token):
-        return ast.BinaryExpression(token.keyword,[t for t in token[0::2]])
+        """
+        supported operator: 'or'  ','
+        all operators has same precedence level and are left assosiativity
+        """
+        tlist = [t for t in token]
 
-    _ = operatorPrecedence( ev_base_expr, [ (OR,                      2, opAssoc.LEFT, action),
-                                            (Literal(",")("keyword"), 2, opAssoc.LEFT, action) ])
+        def recur(tlist):
+            while(True):
+                if len(tlist)==1:
+                    return tlist[0]
+                left  = tlist.pop(0)
+                op    = tlist.pop(0)
+                right = tlist.pop(0)
+                tlist.insert(0, ast.BinaryExpression(op,[left,right]))
+
+        for op in tlist[3::2]:
+            if tlist[1]!=op:
+                return recur(tlist)
+        else:
+            return ast.BinaryExpression(tlist[1],[t for t in tlist[0::2]])
+
+    _ = operatorPrecedence( ev_base_expr, [ (oneOf("or ,"),   2, opAssoc.LEFT, action) ])
     return (_, None)
 
 @Grammar
