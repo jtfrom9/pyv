@@ -1,63 +1,94 @@
 # -*- coding: utf-8 -*-
-import sys, os
+import sys, os, traceback
 import unittest
 from pyparsing import stringEnd, ParseBaseException, ParseException, ParseSyntaxException, ParseFatalException, ParseResults
 
 sys.path.append(os.path.join(os.path.dirname(__file__),os.pardir))
 from src import grammar, ast, visitor
 
-class GrammarTestCase(unittest.TestCase):
-    import abc
-    __metaclass__ = abc.ABCMeta
+def format_traceback_last_of(tb, count):
+    def tail(iterator, count):
+        import collections, itertools
+        num_of_elem = len(iterator) if isinstance(iterator, collections.Sized) else len(list(iterator))
+        for x in itertools.islice(iterator, 
+                                  (num_of_elem - count if num_of_elem >= count else 0),
+                                  None):
+            yield x
 
-    @abc.abstractmethod
+    return "".join(f for f in traceback.format_list(tail(traceback.extract_tb(tb),count))).strip()
+    
+
+class GrammarTestCase(unittest.TestCase):
     def grammar(self):
         pass
 
     def do_parse(self, text):
         return (self.grammar() + stringEnd).parseString(text)
 
+    def onException(self):
+        ex, v, tb = sys.exc_info()
+        tb_num = 5
+        print("Exception: {cls}: {reason}\n".format(cls=type(v), reason=str(v)))
+        print("[Traceback last of {num}]:")
+        print(format_traceback_last_of(sys.exc_info()[2], tb_num))
+
     def check_pass(self, text, expect=None, msg=None):
         print("\ncheck_pass: \"{0}\"".format(text))
         try:
             result = self.do_parse(text)
+        except ParseBaseException as e:
+            self.setFail()
+            print("Error: " + str(e))
+            return None
         except Exception as e:
-            print("{0}: {1}".format(e.__class__.__name__, str(e)))
-            raise e
-            
-        print("parse OK.")
-        if expect:
-            errmsg = "input = \"{0}\", expect = {1}, result = {2}".format(text, expect, result)
-            if msg: 
-                errmsg += "\n   " + msg
-            self.assertEqual(result, expect, errmsg)
+            self.setFail()
+            self.onException()
+            return None
         else:
-            self.assertTrue(result)
+            print("OK.")
+            if expect:
+                errmsg = "input = \"{0}\", expect = {1}, result = {2}".format(text, expect, result)
+                if msg: 
+                    errmsg += "\n   " + msg
+                self.assertEqual(result, expect, errmsg)
+            else:
+                self.assertTrue(result)
         return result
 
     def check_fail(self, text):
         print("\ncheck_fail: \"{0}\"".format(text))
-        #self.assertRaises(Exception, lambda : self.do_parse(text))
         try:
-            self.do_parse(text)
+            result = self.do_parse(text)
         except ParseBaseException as e:
-            print("{0}: {1}".format(e.__class__.__name__, str(e)))
-            print("fail expected. OK.")
+            print("OK. Error expected: " + str(e))
+            return None
+        except Exception as e:
+            self.setFail()
+            print("Error. type of exception is NOT expected.")
+            self.onException()
+            return None
         else:
-            self.fail("\"{0}\" expected fail...")
-        return None
+            self.setFail()
+            print("Error. This must be fail...")
+            return result
 
 def testOf(grammar):
     def _decolator(test_func):
         class _TestCase(GrammarTestCase):
             def setUp(self):
                 print("\n{0}: Test({1}) Start:".format(grammar.resultsName, test_func.__name__))
+                self._result = True
             def tearDown(self):
                 print("\n{0}: Test({1}) End".format(grammar.resultsName,test_func.__name__))
             def grammar(self):
                 return grammar
+            def setFail(self):
+                self._result = False
             def runTest(self):
                 test_func(self)
+                if not self._result:
+                    self.fail("fail on some test")
+
         _TestCase.__name__   = test_func.__name__
         _TestCase.__module__ = test_func.__module__
         return _TestCase
@@ -76,6 +107,8 @@ def run_tests(tests=[]):
         unittest.TextTestRunner().run(suite)
 
 def _print(result):
+    if result is None:
+        return
     if isinstance(result,ParseResults):
         print(result.asXML())
     print(ast.nodeInfo(result))

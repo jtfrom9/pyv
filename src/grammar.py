@@ -66,29 +66,6 @@ def delim(expr, delimiter=','):
 def unalias(token): return token[0]
 def ungroup(token): return token[0]
 
-# def GroupedAction(action):
-#     import inspect
-#     try:
-#         frame = inspect.currentframe(2)
-#     except ValueError as e:
-#         return None
-#     else:
-#         filename = frame.f_code.co_filename
-#         lineno   = frame.f_lineno
-#     def _decorator(_s,loc,token):
-#         result = None
-#         try:
-#             result = action(_s, loc, token)
-#         except Exception as e:
-#             raise ParseFatalException(_s, loc, 
-#                                       "\n  File \"{filename}\", line {lineno}\n    {reason}".
-#                                       format(action   = action.__name__,
-#                                              filename = filename,
-#                                              lineno   = lineno,
-#                                              reason   = e))
-#         return result
-#     return _decorator
-
 def Action(*argv,**kw):
     def deco_func(action):
         if kw.get('ungroup',False):
