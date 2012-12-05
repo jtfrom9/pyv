@@ -6,7 +6,7 @@ from test_common import testOf, grammar, debug
 
 @testOf(grammar.non_zero_unsigned_number)
 def test0(self):
-    debug(grammar.non_zero_unsigned_number)
+    #debug(grammar.non_zero_unsigned_number)
     self.check_pass("1")
     self.check_pass(" 1")
     self.check_pass("1 ")

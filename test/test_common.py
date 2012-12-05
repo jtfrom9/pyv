@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys, os, traceback
 import unittest
-from pyparsing import stringEnd, ParseBaseException, ParseException, ParseSyntaxException, ParseFatalException, ParseResults
+from pyparsing import stringEnd, ParseBaseException, ParseResults
 
 sys.path.append(os.path.join(os.path.dirname(__file__),os.pardir))
 from src import grammar, ast, visitor
@@ -29,7 +29,7 @@ class GrammarTestCase(unittest.TestCase):
         ex, v, tb = sys.exc_info()
         tb_num = 5
         print("Exception: {cls}: {reason}\n".format(cls=type(v), reason=str(v)))
-        print("[Traceback last of {num}]:")
+        print("[Traceback last of {num}]:".format(num=tb_num))
         print(format_traceback_last_of(sys.exc_info()[2], tb_num))
 
     def check_pass(self, text, expect=None, msg=None):

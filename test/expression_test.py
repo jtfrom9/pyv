@@ -157,8 +157,8 @@ def test122(self):
 
 @testOf(grammar.event_expression)
 def test87(self):
-    debug(grammar.event_expression)
-    debug(grammar.expression)
+    # debug(grammar.event_expression)
+    # debug(grammar.expression)
     # _stmt_print(self.check_pass("~en"))
     # _stmt_print(self.check_pass("posedge A or negedge CLK"))
     # _stmt_print(self.check_pass("posedge A , negedge CLK"))

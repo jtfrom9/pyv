@@ -4,10 +4,16 @@ import unittest
 
 from test_common import testOf, _print, run_tests, debug, grammar
 
+@testOf(grammar.concatenation)
+def _test131(self):
+    _print(self.check_fail("{1,2,}"))
+
 @testOf(grammar.constant_primary)
 def test131(self):
+    _print(self.check_fail("{1,2,}"))
     _print(self.check_pass("1"))
     _print(self.check_pass("{1,2,3}"))
+    _print(self.check_fail("{1,2,}"))
     _print(self.check_pass("(1)"))
     _print(self.check_pass("({1,2,3})"))
     _print(self.check_pass("func(0,1,2)"))
@@ -19,9 +25,13 @@ def test131(self):
 def test132(self):
     pass
 
+@testOf(grammar.expression)
+def _test133(self):
+    _print(self.check_pass("-10"))
+
 @testOf(grammar.primary)
 def test133(self):
-    _print(self.check_pass("10"))
+    _print(self.check_fail("-10"))
     _print(self.check_pass("foo(1)"))
     _print(self.check_pass("$display(a,b,c)"))
     _print(self.check_pass("foo.bar.hoge[5].A[1]"))

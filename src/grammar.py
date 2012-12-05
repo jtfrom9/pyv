@@ -5,7 +5,7 @@ from os import path
 from pyparsing import (Keyword, Literal, Regex, Regex, MatchFirst, NotAny, CharsNotIn, Suppress, 
                        Forward, Group, Optional, ZeroOrMore, OneOrMore, 
                        delimitedList, operatorPrecedence, opAssoc, oneOf,
-                       ParseBaseException,
+                       ParseException, ParseSyntaxException,
                        ParseResults)
 
 import ast
@@ -46,22 +46,37 @@ def alias(grammar, name):
     else:
         return Group(grammar)
 
-def _group(expr, err=None):
+class ErrorReportException(ParseException):
+    pass
+
+def _group(expr, errmsg=None):
     class WrapGroup(Group):
         def __init__(self, expr):
             super(WrapGroup,self).__init__(expr)
-        def parseImpl(*args):
-            self = args[0]
+        def parseImpl(self, *args):
+            target = None
             try:
-                return super(WrapGroup,self).parseImpl(*(args[1:]))
-            except ParseBaseException,pbe:
-                pbe.msg = "Syntax Error: " + err
-                raise
+                if len(args)>=2:
+                    target = "\'{0}\'".format(args[0][args[1]:])
+                return super(WrapGroup,self).parseImpl(*args)
+            except ParseException as e:
+                if errmsg:
+                    raise ErrorReportException("Syntax Error: " + errmsg)
+                elif not isinstance(e, ErrorReportException):
+                    raise ErrorReportException("Syntax Error: " + target)
+                else:
+                    raise
+            except ParseSyntaxException as e:
+                if errmsg: 
+                    e.msg = "Syntax Error: " + errmsg
+                    raise e
+                else:
+                    raise
     return WrapGroup(expr)
 
 def delim(expr, delimiter=','):
-    return _group( delimitedList(expr,delimiter) - NotAny(delimiter),
-                   err = "invalid ','" )
+    return _group( delimitedList(expr,delimiter) - NotAny(delimiter) ,
+                   errmsg = "invalid ','" )
 
 def unalias(token): return token[0]
 def ungroup(token): return token[0]
@@ -507,9 +522,6 @@ def event_expression():
                      hierarchical_identifier |
                      expression              )
 
-    # ev_base_expr.setName("ev_base")
-    # ev_base_expr.setDebug()
-
     @Action(ev_base_expr)
     def ev_base_expr_action(token):
         if token.keyword:
@@ -823,9 +835,6 @@ def constant_expression():
     cond_expr.setParseAction(lambda t: 
                              ast.ConditionalExpression(unalias(t.exp_cond), unalias(t.exp_if), unalias(t.exp_else)))
 
-    cond_expr.setName("cond_expr")
-    cond_expr.setDebug()
-
     expr = cond_expr | basic_primary 
     expr.setParseAction(lambda t: t[0])
 
@@ -961,8 +970,7 @@ def primary():
                 hierarchical_identifier                                                                               |
                 concatenation                                                                                         |
                 multiple_concatenation                                                                                |
-                LP + mintypmax_expression + RP                                                                        ,
-                err = "primary")
+                LP + mintypmax_expression + RP                                                                        )
     @Action(ungroup=True)
     def action(token):
         if token.number:
@@ -985,8 +993,7 @@ def constant_primary():
                 constant_concatenation                  |
                 constant_multiple_concatenation         |
                 constant_function_call                  |
-                LP + constant_mintypmax_expression + RP ,
-                err = "constant_primary" )
+                LP + constant_mintypmax_expression + RP )
     @Action(ungroup=True)
     def action(token):
         if token.number:
