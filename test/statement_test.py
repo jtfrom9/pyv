@@ -389,13 +389,26 @@ def test93(self):
 
 @testOf(grammar.case_statement)
 def test94(self):
-    pass
+    _stmt_print(self.check_pass("""
+case( 1 )
+ X: x = 0;
+ Y: y = 0;
+endcase
+"""))
+    _stmt_print(self.check_pass("""
+casex( 1 )
+ X: x = 0;
+ Y: y = 0;
+endcase
+"""))
 
 
 @testOf(grammar.case_item)
 def test95(self):
-    pass
-
+    _print(self.check_pass("A: a=1;"))
+    _print(self.check_pass("A,B: a=1;"))
+    _print(self.check_pass("default: a=1;"))
+    
 
 @testOf(grammar.function_case_statement)
 def test96(self):

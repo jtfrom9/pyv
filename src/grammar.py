@@ -608,23 +608,27 @@ def ifElseifStatementAction(token):
 
 
 # A.6.7 Case statements
-case_statement << Group( CASE  + LP + expression + RP + OneOrMore( case_item ) + ENDCASE |
-                         CASEZ + LP + expression + RP + OneOrMore( case_item ) + ENDCASE |
-                         CASEX + LP + expression + RP + OneOrMore( case_item ) + ENDCASE )
-case_item      << Group( delimitedList( expression ) + COLON + statement_or_null |
-                         DEFAULT + Optional( COLON ) + statement_or_null         )
+case_statement          << ( alias(CASE, "ctype") + LP + expression + RP + OneOrMore( case_item          )("_items") + ENDCASE |
+                             alias(CASEZ,"ctype") + LP + expression + RP + OneOrMore( case_item          )("_items") + ENDCASE |
+                             alias(CASEX,"ctype") + LP + expression + RP + OneOrMore( case_item          )("_items") + ENDCASE )
+function_case_statement << ( alias(CASE, "ctype") + LP + expression + RP + OneOrMore( function_case_item )("_items") + ENDCASE |
+                             alias(CASEZ,"ctype") + LP + expression + RP + OneOrMore( function_case_item )("_items") + ENDCASE |
+                             alias(CASEX,"ctype") + LP + expression + RP + OneOrMore( function_case_item )("_items") + ENDCASE )
 
-function_case_statement << Group( CASE  + LP + expression + RP + OneOrMore (function_case_item ) + ENDCASE |
-                                  CASEZ + LP + expression + RP + OneOrMore (function_case_item ) + ENDCASE |
-                                  CASEX + LP + expression + RP + OneOrMore (function_case_item ) + ENDCASE )
-function_case_item      << Group( delimitedList( expression ) + COLON + function_statement_or_null |
-                                  DEFAULT + Optional( COLON ) + function_statement_or_null         )
-
-
-@Action(case_statement)
+@Action(case_statement, function_case_statement)
 def caseStatementAction(token):
-    pass
+    return ast.CaseStatement(unalias(token.ctype), token.expression, [i for i in token._items])
 
+
+case_item          << ( delim( expression )("exprs") + COLON + alias(statement_or_null,         "stmt")  |
+                        DEFAULT + Optional( COLON )          + alias(statement_or_null,         "stmt")  )
+function_case_item << ( delim( expression )("exprs") + COLON + alias(function_statement_or_null,"stmt")  |
+                        DEFAULT + Optional( COLON )          + alias(function_statement_or_null,"stmt")  )
+
+@Action(case_item, function_case_item)
+def caseItemAction(token):
+    return ast.CaseStatement.Item([expr for expr in token.exprs],
+                                  unalias(token.stmt))
 
 # A.6.8 Loop statements
 function_loop_statement << Group( 

@@ -70,7 +70,8 @@ class StatementPrettyPrinterVisitor(Visitor):
                                   ast.Block,
                                   ast.ConstructStatementItem,
                                   ast.ContinuousAssignmentItems,
-                                  ast.NodeList 
+                                  ast.NodeList,
+                                  ast.CaseStatement,
                                   ],
                                 self, 
                                 node,
@@ -121,4 +122,8 @@ class StatementPrettyPrinterVisitor(Visitor):
         for n in nlist: 
             self.visit(n,arg)
 
-
+    def handlerCaseStatement(self,node,arg):
+        self._write(arg.level, "{key}:".format(key = str(node)))
+        new_arg = arg.createChild(node)
+        for item in node.eachItems():
+            self.visit(item, new_arg)

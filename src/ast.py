@@ -379,7 +379,34 @@ class ConditionalStatement(Statement):
 
 
 class CaseStatement(Statement):
-    pass
+    class Item(object):
+        def __init__(self, cond_exprs, stmt):
+            self.cond_exprs = cond_exprs
+            self.stmt       = stmt
+        def __str__(self):
+            if len(self.cond_exprs) > 0:
+                cond_str = "case " + ",".join(str(e) for e in self.cond_exprs)
+            else:
+                cond_str = "case-default"
+            return "({cond}: {stmt})".format(
+                cond = cond_str,
+                stmt = str(self.stmt))
+    def __init__(self, case_type, expr, case_items):
+        """
+        - case_type : str ( 'case' | 'casez' | 'casex' )
+        - expr      : Expression
+        - stmt      : list (of Item)
+        """
+        self._case_type  = case_type
+        self._expr       = expr
+        self._case_items = case_items
+    def __str__(self):
+        return "{0}({1})".format(self._case_type, str(self._expr))
+
+    def eachItems(self):
+        for i in self._case_items:
+            yield i
+
 
 class LoopStatement(Statement):
     pass
