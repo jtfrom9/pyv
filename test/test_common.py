@@ -18,6 +18,12 @@ def format_traceback_last_of(tb, count):
     return "".join(f for f in traceback.format_list(tail(traceback.extract_tb(tb),count))).strip()
     
 
+def format_error_detail(e):
+    msg  = e.msg + "\n"
+    msg += e.line + "\n"
+    msg += " " * (e.col -1) + "^"
+    return msg
+
 class GrammarTestCase(unittest.TestCase):
     def grammar(self):
         pass
@@ -38,7 +44,7 @@ class GrammarTestCase(unittest.TestCase):
             result = self.do_parse(text)
         except ParseBaseException as e:
             self.setFail()
-            print("Error: " + str(e))
+            print("Error: " + format_error_detail(e))
             return None
         except Exception as e:
             self.setFail()
@@ -60,7 +66,7 @@ class GrammarTestCase(unittest.TestCase):
         try:
             result = self.do_parse(text)
         except ParseBaseException as e:
-            print("OK. Error expected: " + str(e))
+            print("OK. Error expected: " + format_error_detail(e))
             return None
         except Exception as e:
             self.setFail()

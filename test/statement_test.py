@@ -298,10 +298,21 @@ def test90(self):
 
 @testOf(grammar.if_else_if_statement)
 def test91(self):
-    debug(grammar.conditional_statement)
-    debug(grammar.if_else_if_statement)
-
-
+    _stmt_print(self.check_fail("""if (A > 0) a = 1;
+ else if (B > 0) b = 1;
+ end else        f = 1;
+ else if (C > 0) c = 1;
+ else if (D > 0) d = 1;
+ else if (E > 0) e = 1;
+ """))
+    _stmt_print(self.check_pass("""if (A > 0) a = 1;
+ else if (B > 0) b = 1;
+ else if (C > 0) c = 1;
+ else if (D > 0) d = 1;
+ else if (E > 0) e = 1;
+ else        f = 1;
+ """))
+    
 
 @testOf(grammar.function_conditional_statement)
 def test92(self):
@@ -358,7 +369,22 @@ def test92(self):
 
 @testOf(grammar.function_if_else_if_statement)
 def test93(self):
-    pass
+    _stmt_print(self.check_fail("""
+ if (A > 0) a = 1;
+ else if (B > 0) b = 1;
+ end else        f = 1;
+ else if (C > 0) c = 1;
+ else if (D > 0) d = 1;
+ else if (E > 0) e = 1;
+ """))
+    _stmt_print(self.check_pass("""
+ if (A > 0) a = 1;
+ else if (B > 0) b = 1;
+ else if (C > 0) c = 1;
+ else if (D > 0) d = 1;
+ else if (E > 0) e = 1;
+ else        f = 1;
+ """))
 
 
 @testOf(grammar.case_statement)
