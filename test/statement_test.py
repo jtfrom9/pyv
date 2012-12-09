@@ -427,7 +427,19 @@ def test98(self):
 
 @testOf(grammar.loop_statement)
 def test99(self):
-    pass
+    _print(self.check_pass("""
+ for ( i=0; i<10; i=i+1) 
+  count <= foo(i);
+"""))
+    _print(self.check_pass("""
+ while( 1 ) begin
+   if (reset)
+     x = 0;
+  else begin
+    count <= foo(i);
+  end
+ end
+"""))
 
 
 @testOf(grammar.system_task_enable)

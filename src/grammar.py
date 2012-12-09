@@ -631,32 +631,27 @@ def caseItemAction(token):
                                   unalias(token.stmt))
 
 # A.6.8 Loop statements
-function_loop_statement << Group( 
-    FOREVER + function_statement                       |
-    REPEAT + LP + expression + RP + function_statement |
-    WHILE  + LP + expression + RP + function_statement 
-    |
-    FOR + LP + variable_assignment + SEMICOLON + expression + SEMICOLON + variable_assignment + RP +
-    function_statement )
+loop_statement          << ( FOREVER                        + alias(statement,"stmt") |
+                             REPEAT  + LP + expression + RP + alias(statement,"stmt") |
+                             WHILE   + LP + expression + RP + alias(statement,"stmt") |
+                             FOR     + LP + alias(variable_assignment,"init") + SEMICOLON + expression + SEMICOLON + alias(variable_assignment,"next") + RP 
+                             + alias(statement,"stmt") )
+function_loop_statement << ( FOREVER                        + alias(function_statement,"stmt") |
+                             REPEAT  + LP + expression + RP + alias(function_statement,"stmt") |
+                             WHILE   + LP + expression + RP + alias(function_statement,"stmt") |
+                             FOR     + LP + alias(variable_assignment,"init") + SEMICOLON + expression + SEMICOLON + alias(variable_assignment,"next") + RP 
+                             + alias(function_statement,"stmt") )
 
-loop_statement << Group(
-    FOREVER + statement                       |
-    REPEAT + LP + expression + RP + statement |
-    WHILE  + LP + expression + RP + statement 
-    |
-    FOR + LP + variable_assignment("init") + SEMICOLON + expression + SEMICOLON + variable_assignment("next") + RP +
-    statement )
-
-@Action(loop_statement)
+@Action(loop_statement,function_statement)
 def loopStatementAction(token):
-    print("loopStatementAction: {0}".format(token.keyword))
-    if token.keyword != 'for':
+    if token.keyword == 'forever':
         pass
-    else:
-        print("init={0}".format(token.init))
-        print("exp={0}".format(token.expression))
-        print("next={0}".format(token.next))
-                            
+    elif token.keyword == 'repeat':
+        pass
+    elif token.keyword == 'while':
+        pass
+    else: # for
+        pass
         
 # A.6.9 Task enable statements
 system_task_enable << Group( 
