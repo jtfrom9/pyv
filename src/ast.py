@@ -32,7 +32,7 @@ def nodeInfo(node):
     if isinstance(node,pp.ParseResults):
         return "pr: {0}".format([prop for prop in dir(node) if not prop.startswith("__")])
     if isinstance(node,AstNode):
-        return "ast: {0}".format(repr(node))
+        return "ast.{0}: {1}".format(node.__class__.__name__, repr(node))
     return type(node)
 
 def repr_(inst, *kws):

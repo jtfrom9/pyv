@@ -121,7 +121,7 @@ def _print(result):
         return
     if isinstance(result,ParseResults):
         print(result.asXML())
-    print(ast.nodeInfo(result))
+    print(ast.nodeInfo(result[0]))
 
 def _id_print(result):
     print(result.asXML())
