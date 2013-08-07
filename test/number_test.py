@@ -4,26 +4,26 @@ import unittest
 
 from test_common import (
     testOf, testOfSkipped,
-    _print, run_tests,debug, grammar )
+    print_result, run_tests,debug, grammar )
 
 @testOf(grammar.number)
 def test(self):
-    _print(self.check_pass("23.5"))
-    _print(self.check_pass("1.0e+1"))
-    _print(self.check_pass("0.0E-30"))
-    _print(self.check_pass("0.0"))
-    _print(self.check_pass("123"))
-    _print(self.check_pass("01"))
-    _print(self.check_pass("'d0"))
-    _print(self.check_pass("5'd0"))
+    print_result(self.try_parse_pass("23.5"))
+    print_result(self.try_parse_pass("1.0e+1"))
+    print_result(self.try_parse_pass("0.0E-30"))
+    print_result(self.try_parse_pass("0.0"))
+    print_result(self.try_parse_pass("123"))
+    print_result(self.try_parse_pass("01"))
+    print_result(self.try_parse_pass("'d0"))
+    print_result(self.try_parse_pass("5'd0"))
 
 @testOf(grammar.real_number)
 def test141(self):
-    _print(self.check_pass("23.5"))
+    print_result(self.try_parse_pass("23.5"))
 
 @testOf(grammar.exp)
 def test142(self):
-    _print(self.check_pass("e"))
+    print_result(self.try_parse_pass("e"))
 
 
 @testOfSkipped(grammar.decimal_number)
@@ -63,8 +63,8 @@ def test149(self):
 
 @testOf(grammar.unsigned_number)
 def test150(self):
-    _print(self.check_pass("1"))
-    _print(self.check_pass("123"))
+    print_result(self.try_parse_pass("1"))
+    print_result(self.try_parse_pass("123"))
 
 
 @testOfSkipped(grammar.binary_value)

@@ -25,6 +25,9 @@ def format_error_detail(e):
     return msg
 
 class GrammarTestCase(unittest.TestCase):
+    def setUp(self):
+        self._count_try_parse = 0
+
     def grammar(self):
         pass
 
@@ -38,8 +41,14 @@ class GrammarTestCase(unittest.TestCase):
         print("[Traceback last of {num}]:".format(num=tb_num))
         print(format_traceback_last_of(sys.exc_info()[2], tb_num))
 
-    def check_pass(self, text, expect=None, msg=None):
-        print("\ncheck_pass: \"{0}\"".format(text))
+    def header_msg(self, fname, text):
+        return "\n{test}:{name}: \"{ptext}\"".format(test  = self.__class__.__name__+".{0}".format(self._count_try_parse), 
+                                                     name  = fname,
+                                                     ptext  =text)
+
+    def try_parse_pass(self, text, expect=None, msg=None):
+        print(self.header_msg("try_parse_pass",text))
+        self._count_try_parse += 1
         try:
             result = self.do_parse(text)
         except ParseBaseException as e:
@@ -51,7 +60,7 @@ class GrammarTestCase(unittest.TestCase):
             self.onException()
             return None
         else:
-            print("OK.")
+            print("parse OK.")
             if expect:
                 errmsg = "input = \"{0}\", expect = {1}, result = {2}".format(text, expect, result)
                 if msg: 
@@ -61,8 +70,9 @@ class GrammarTestCase(unittest.TestCase):
                 self.assertTrue(result)
         return result
 
-    def check_fail(self, text):
-        print("\ncheck_fail: \"{0}\"".format(text))
+    def try_parse_fail(self, text):
+        print(self.header_msg("try_parse_fail",text))
+        self._count_try_parse += 1
         try:
             result = self.do_parse(text)
         except ParseBaseException as e:
@@ -82,6 +92,7 @@ def testOf(grammar,skip=False):
     def _decolator(test_func):
         class _TestCase(GrammarTestCase):
             def setUp(self):
+                super(_TestCase,self).setUp()
                 print("\n{0}: Test({1}) Start:".format(grammar.resultsName, test_func.__name__))
                 self._result = True
             def tearDown(self):
@@ -116,14 +127,14 @@ def run_tests(tests=[]):
         suite = unittest.defaultTestLoader.loadTestsFromNames([modname + "." + test for test in tests])
         unittest.TextTestRunner().run(suite)
 
-def _print(result):
+def print_result(result):
     if result is None:
         return
     if isinstance(result,ParseResults):
         print(result.asXML())
     print(ast.nodeInfo(result[0]))
 
-def _id_print(result):
+def print_result_as_id(result):
     print(result.asXML())
     idAst = result[0]
     if idAst.hasIndex(): print("Index={0}".format(idAst.getIndex()))
@@ -132,32 +143,32 @@ def _id_print(result):
         for index,id in enumerate(idAst.each_id()):
             print("  name[{0}] str={1}, repr={2}".format(index,str(id),repr(id)))
 
-def ___stmt_print(obj, level=0, indent=3, out=sys.stdout, debug=False):
-    if debug:
-        print("_stmt_print: level={0}, obj={1} ({2})".format(level, ast.nodeInfo(obj), type(obj)))
-    if isinstance(obj, ParseResults):
-        out.write("{spc}{data}:\n".format(spc=" "*indent*level,
-                                          data = obj.keys()[0]))
-        #out.write(obj.resultsName +':\n')
-        for x in obj:
-            _stmt_print(x, level+1, indent, debug = debug)
-    elif isinstance(obj, ast.IterableAstNode):
-        #_stmt_pprint(obj.asList(), level, indent, out)
-        import pprint
-        out.write("{spc}{data}\n".format(spc=" "*indent*level,
-                                       data=pprint.pformat(obj.asList(),indent=indent, width=10)))
-    elif obj is not None:
-        out.write(str(obj)+'\n')
-    else:
-        pass # if None
+# def _print_result_result_as_stmt(obj, level=0, indent=3, out=sys.stdout, debug=False):
+#     if debug:
+#         print("print_result_as_stmt: level={0}, obj={1} ({2})".format(level, ast.nodeInfo(obj), type(obj)))
+#     if isinstance(obj, ParseResults):
+#         out.write("{spc}{data}:\n".format(spc=" "*indent*level,
+#                                           data = obj.keys()[0]))
+#         #out.write(obj.resultsName +':\n')
+#         for x in obj:
+#             print_result_as_stmt(x, level+1, indent, debug = debug)
+#     elif isinstance(obj, ast.IterableAstNode):
+#         #_stmt_pprint(obj.asList(), level, indent, out)
+#         import pprint
+#         out.write("{spc}{data}\n".format(spc=" "*indent*level,
+#                                        data=pprint.pformat(obj.asList(),indent=indent, width=10)))
+#     elif obj is not None:
+#         out.write(str(obj)+'\n')
+#     else:
+#         pass # if None
 
 
-def _stmt_print(result, out=sys.stdout, debug=False):
+def print_result_as_stmt(result, out=sys.stdout, debug=False):
     if not result:
         return
 
     if debug:
-        print("_stmt_print: level={0}, obj={1} ({2})".format(level, ast.nodeInfo(obj), type(obj)))
+        print("print_result_as_stmt: level={0}, obj={1} ({2})".format(level, ast.nodeInfo(obj), type(obj)))
 
     out.write("{0}:\n".format(result.keys()[0]))
     node = result[0]
