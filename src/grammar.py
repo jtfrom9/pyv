@@ -634,8 +634,9 @@ def caseItemAction(token):
 loop_statement          << ( FOREVER                        + alias(statement,"stmt") |
                              REPEAT  + LP + expression + RP + alias(statement,"stmt") |
                              WHILE   + LP + expression + RP + alias(statement,"stmt") |
-                             FOR     + LP + alias(variable_assignment,"init") + SEMICOLON + expression + SEMICOLON + alias(variable_assignment,"next") + RP 
-                             + alias(statement,"stmt") )
+                             FOR     + 
+                             LP + alias(variable_assignment,"init") + SEMICOLON + expression + SEMICOLON + 
+                             alias(variable_assignment,"next") + RP    + alias(statement,"stmt") )
 function_loop_statement << ( FOREVER                        + alias(function_statement,"stmt") |
                              REPEAT  + LP + expression + RP + alias(function_statement,"stmt") |
                              WHILE   + LP + expression + RP + alias(function_statement,"stmt") |
@@ -651,7 +652,10 @@ def loopStatementAction(token):
     elif token.keyword == 'while':
         pass
     else: # for
-        pass
+        return ast.ForLoopStatement(unalias(token.init), 
+                                    token.expression, 
+                                    unalias(token.next),
+                                    unalias(token.stmt))
         
 # A.6.9 Task enable statements
 system_task_enable << Group( 

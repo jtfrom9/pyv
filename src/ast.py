@@ -395,7 +395,7 @@ class CaseStatement(Statement):
         """
         - case_type : str ( 'case' | 'casez' | 'casex' )
         - expr      : Expression
-        - stmt      : list (of Item)
+        - case_items: list (of Item)
         """
         self._case_type  = case_type
         self._expr       = expr
@@ -407,9 +407,25 @@ class CaseStatement(Statement):
         for i in self._case_items:
             yield i
 
-
 class LoopStatement(Statement):
     pass
+
+class ForLoopStatement(LoopStatement):
+    def __init__(self, init_assign, cond_expr, next_assign, stmt):
+        """
+        - init_assign : Assignment
+        - cond_expr   : Expression
+        - next_assign : Assignment
+        - stmt        : Statement
+        """
+        self._init_assign = init_assign
+        self._cond_expr   = cond_expr
+        self._next_assign = next_assign
+        self._stmt        = stmt
+    def __str__(self):
+        return "For({0};{1};{2})...".format(str(self._init_assign),
+                                            str(self._cond_expr),
+                                            str(self._next_assign))
 
 class Block(Statement):
     def __init__(self, item_decls, statements, seq=True):

@@ -430,19 +430,19 @@ def test98(self):
 
 @testOf(grammar.loop_statement)
 def test99(self):
-    print_result(self.try_parse_pass("""
+    print_result_as_stmt(self.try_parse_pass("""
  for ( i=0; i<10; i=i+1) 
   count <= foo(i);
 """))
-    print_result(self.try_parse_pass("""
- while( 1 ) begin
-   if (reset)
-     x = 0;
-  else begin
-    count <= foo(i);
-  end
- end
-"""))
+#     print_result_as_stmt(self.try_parse_pass("""
+#  while( 1 ) begin
+#    if (reset)
+#      x = 0;
+#   else begin
+#     count <= foo(i);
+#   end
+#  end
+# """))
 
 
 @testOfSkipped(grammar.system_task_enable)

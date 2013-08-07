@@ -166,7 +166,6 @@ def print_result_as_id(result):
 def print_result_as_stmt(result, out=sys.stdout, debug=False):
     if not result:
         return
-
     if debug:
         print("print_result_as_stmt: level={0}, obj={1} ({2})".format(level, ast.nodeInfo(obj), type(obj)))
 
