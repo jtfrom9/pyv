@@ -2,7 +2,10 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, _stmt_print, run_tests, debug, fail, grammar, ast
+from test_common import (
+    testOf, testOfSkipped,
+    _print, _stmt_print, run_tests, debug, fail, 
+    grammar, ast )
 
 @testOf(grammar.conditional_statement)
 def test(self):
@@ -186,7 +189,7 @@ def test83(self):
     _stmt_print(self.check_pass("@A"))
     _stmt_print(self.check_pass("#A"))
 
-@testOf(grammar.disable_statement)
+@testOfSkipped(grammar.disable_statement)
 def test84(self):
     pass
 
@@ -410,17 +413,17 @@ def test95(self):
     _print(self.check_pass("default: a=1;"))
     
 
-@testOf(grammar.function_case_statement)
+@testOfSkipped(grammar.function_case_statement)
 def test96(self):
     pass
 
 
-@testOf(grammar.function_case_item)
+@testOfSkipped(grammar.function_case_item)
 def test97(self):
     pass
 
 
-@testOf(grammar.function_loop_statement)
+@testOfSkipped(grammar.function_loop_statement)
 def test98(self):
     pass
 
@@ -442,12 +445,12 @@ def test99(self):
 """))
 
 
-@testOf(grammar.system_task_enable)
+@testOfSkipped(grammar.system_task_enable)
 def test100(self):
     pass
 
 
-@testOf(grammar.task_enable)
+@testOfSkipped(grammar.task_enable)
 def test101(self):
     pass
 

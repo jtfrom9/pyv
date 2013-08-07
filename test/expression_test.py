@@ -2,7 +2,9 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, _stmt_print, run_tests, debug, grammar
+from test_common import (
+    testOf, testOfSkipped,
+    _print, _stmt_print, run_tests, debug, grammar )
 
 @testOf(grammar.constant_function_call)
 def test112(self):
@@ -195,17 +197,17 @@ def test124(self):
     _print(self.check_pass("func(1)"))
 
 
-@testOf(grammar.module_path_conditional_expression)
+@testOfSkipped(grammar.module_path_conditional_expression)
 def test125(self):
     pass
 
 
-@testOf(grammar.module_path_expression)
+@testOfSkipped(grammar.module_path_expression)
 def test126(self):
     pass
 
 
-@testOf(grammar.module_path_mintypmax_expression)
+@testOfSkipped(grammar.module_path_mintypmax_expression)
 def test127(self):
     pass
 
@@ -222,7 +224,7 @@ def test129(self):
     _print(self.check_pass("1:0"))
     _print(self.check_fail("1+:0"))
 
-@testOf(grammar.width_constant_expression)
+@testOfSkipped(grammar.width_constant_expression)
 def test130(self):
     pass
 

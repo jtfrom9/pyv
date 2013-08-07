@@ -2,7 +2,9 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, run_tests,debug, grammar
+from test_common import (
+    testOf, testOfSkipped,
+    _print, run_tests,debug, grammar )
 
 @testOf(grammar.number)
 def test(self):
@@ -24,37 +26,37 @@ def test142(self):
     _print(self.check_pass("e"))
 
 
-@testOf(grammar.decimal_number)
+@testOfSkipped(grammar.decimal_number)
 def test143(self):
     pass
 
 
-@testOf(grammar.binary_number)
+@testOfSkipped(grammar.binary_number)
 def test144(self):
     pass
 
 
-@testOf(grammar.octal_number)
+@testOfSkipped(grammar.octal_number)
 def test145(self):
     pass
 
 
-@testOf(grammar.hex_number)
+@testOfSkipped(grammar.hex_number)
 def test146(self):
     pass
 
 
-@testOf(grammar.sign)
+@testOfSkipped(grammar.sign)
 def test147(self):
     pass
 
 
-@testOf(grammar.size)
+@testOfSkipped(grammar.size)
 def test148(self):
     pass
 
 
-@testOf(grammar.non_zero_unsigned_number)
+@testOfSkipped(grammar.non_zero_unsigned_number)
 def test149(self):
     pass
 
@@ -65,72 +67,72 @@ def test150(self):
     _print(self.check_pass("123"))
 
 
-@testOf(grammar.binary_value)
+@testOfSkipped(grammar.binary_value)
 def test151(self):
     pass
 
 
-@testOf(grammar.octal_value)
+@testOfSkipped(grammar.octal_value)
 def test152(self):
     pass
 
 
-@testOf(grammar.hex_value)
+@testOfSkipped(grammar.hex_value)
 def test153(self):
     pass
 
 
-@testOf(grammar.decimal_base)
+@testOfSkipped(grammar.decimal_base)
 def test154(self):
     pass
 
 
-@testOf(grammar.binary_base)
+@testOfSkipped(grammar.binary_base)
 def test155(self):
     pass
 
 
-@testOf(grammar.octal_base)
+@testOfSkipped(grammar.octal_base)
 def test156(self):
     pass
 
 
-@testOf(grammar.hex_base)
+@testOfSkipped(grammar.hex_base)
 def test157(self):
     pass
 
 
-@testOf(grammar.non_zero_decimal_digit)
+@testOfSkipped(grammar.non_zero_decimal_digit)
 def test158(self):
     pass
 
 
-@testOf(grammar.decimal_digit)
+@testOfSkipped(grammar.decimal_digit)
 def test159(self):
     pass
 
 
-@testOf(grammar.binary_digit)
+@testOfSkipped(grammar.binary_digit)
 def test160(self):
     pass
 
 
-@testOf(grammar.octal_digit)
+@testOfSkipped(grammar.octal_digit)
 def test161(self):
     pass
 
 
-@testOf(grammar.hex_digit)
+@testOfSkipped(grammar.hex_digit)
 def test162(self):
     pass
 
 
-@testOf(grammar.x_digit)
+@testOfSkipped(grammar.x_digit)
 def test163(self):
     pass
 
 
-@testOf(grammar.z_digit)
+@testOfSkipped(grammar.z_digit)
 def test164(self):
     pass
 

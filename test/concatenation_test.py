@@ -2,7 +2,9 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, run_tests, debug, grammar
+from test_common import (
+    testOf, testOfSkipped,
+    _print, run_tests, debug, grammar )
 
 #print(dir(grammar.concatenation))
 
@@ -51,17 +53,17 @@ def test104(self):
     #_print(self.check_pass("{ 0 {2,3} }"))
     pass
 
-@testOf(grammar.module_path_concatenation)
+@testOfSkipped(grammar.module_path_concatenation)
 def test105(self):
     pass
 
 
-@testOf(grammar.module_path_multiple_concatenation)
+@testOfSkipped(grammar.module_path_multiple_concatenation)
 def test106(self):
     pass
 
 
-@testOf(grammar.multiple_concatenation)
+@testOfSkipped(grammar.multiple_concatenation)
 def test107(self):
     pass
 

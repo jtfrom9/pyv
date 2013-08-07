@@ -78,7 +78,7 @@ class GrammarTestCase(unittest.TestCase):
             print("Error. This must be fail...")
             return result
 
-def testOf(grammar):
+def testOf(grammar,skip=False):
     def _decolator(test_func):
         class _TestCase(GrammarTestCase):
             def setUp(self):
@@ -90,6 +90,7 @@ def testOf(grammar):
                 return grammar
             def setFail(self):
                 self._result = False
+            @unittest.skipIf(skip,"NotImplemented")
             def runTest(self):
                 test_func(self)
                 if not self._result:
@@ -99,6 +100,9 @@ def testOf(grammar):
         _TestCase.__module__ = test_func.__module__
         return _TestCase
     return _decolator
+
+def testOfSkipped(grammar):
+    return testOf(grammar,True)
 
 def run_tests(tests=[]):
     import sys

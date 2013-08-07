@@ -2,7 +2,9 @@
 import sys
 import unittest
 
-from test_common import testOf, _print, run_tests, debug, grammar
+from test_common import (
+    testOf, testOfSkipped,
+    _print, run_tests, debug, grammar )
 
 @testOf(grammar.concatenation)
 def _test131(self):
@@ -21,7 +23,7 @@ def test131(self):
     _print(self.check_pass("{{{{1}}}}"))
     _print(self.check_fail("A"))
     
-@testOf(grammar.module_path_primary)
+@testOfSkipped(grammar.module_path_primary)
 def test132(self):
     pass
 

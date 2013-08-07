@@ -2,7 +2,9 @@
 import sys
 import unittest
 
-from test_common import testOf, run_tests, debug, grammar, _id_print
+from test_common import (
+    testOf, testOfSkipped,
+    run_tests, debug, grammar, _id_print )
 
 @testOf(grammar.simple_identifier)
 def test169(self):
@@ -11,7 +13,7 @@ def test169(self):
     self.check_pass("hoge")
 
 
-@testOf(grammar.escaped_identifier)
+@testOfSkipped(grammar.escaped_identifier)
 def test170(self):
     pass
 
@@ -29,12 +31,12 @@ def test172(self):
     _id_print(self.check_pass("hoge"))
 
 
-@testOf(grammar.block_identifier)
+@testOfSkipped(grammar.block_identifier)
 def test173(self):
     pass
 
 
-@testOf(grammar.escaped_arrayed_identifier)
+@testOfSkipped(grammar.escaped_arrayed_identifier)
 def test174(self):
     pass
 
@@ -72,7 +74,7 @@ def test185(self):
     self.check_fail("-X")
 
 
-@testOf(grammar.escaped_hierarchical_identifier)
+@testOfSkipped(grammar.escaped_hierarchical_identifier)
 def test186(self):
     pass
 
@@ -99,7 +101,7 @@ def test195(self):
     _id_print(self.check_pass("hoge[5].foo.bar.A[10]"))
 
 
-@testOf(grammar.escaped_hierarchical_branch)
+@testOfSkipped(grammar.escaped_hierarchical_branch)
 def test196(self):
     pass
     
